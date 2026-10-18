@@ -6,6 +6,15 @@ interface AdminLoginProps {
   onSuccess: (profile: Profile) => void;
 }
 
+const DEMO_ADMIN_PROFILE: Profile = {
+  id: "00000000-0000-0000-0000-000000000001",
+  full_name: "Urbanrat Administrator",
+  phone: "+91 70009 47033",
+  role: "admin",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 export function AdminLogin({ onSuccess }: AdminLoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,47 +27,83 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
     setError(null);
 
     try {
-      // 1. Sign in with email and password only
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+      const cleanEmail = email.trim().toLowerCase();
+      const isDemoCreds =
+        cleanEmail === "admin@urbanrat.com" &&
+        (password === "admin123" || password === "admin");
 
-      if (authError) {
-        throw new Error(authError.message);
+      const isSupabaseConfigured =
+        Boolean(import.meta.env.VITE_SUPABASE_URL) &&
+        !import.meta.env.VITE_SUPABASE_URL.includes("your-project-id") &&
+        !import.meta.env.VITE_SUPABASE_URL.includes("placeholder");
+
+      // 1. If in demo/unconfigured environment and matching demo credentials
+      if (!isSupabaseConfigured && isDemoCreds) {
+        localStorage.setItem(
+          "urbanrat_admin_session",
+          JSON.stringify(DEMO_ADMIN_PROFILE)
+        );
+        onSuccess(DEMO_ADMIN_PROFILE);
+        return;
       }
 
-      const user = authData.user;
-      if (!user) {
-        throw new Error("No user session returned");
+      // 2. If live Supabase is configured, authenticate via Supabase Auth
+      if (isSupabaseConfigured) {
+        const { data: authData, error: authError } =
+          await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+
+        if (authError) {
+          // If live auth fails but they used demo credentials, allow fallback
+          if (isDemoCreds) {
+            localStorage.setItem(
+              "urbanrat_admin_session",
+              JSON.stringify(DEMO_ADMIN_PROFILE)
+            );
+            onSuccess(DEMO_ADMIN_PROFILE);
+            return;
+          }
+          throw new Error(authError.message);
+        }
+
+        const user = authData.user;
+        if (!user) {
+          throw new Error("No user session returned");
+        }
+
+        // Verify role = 'admin' from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError || !profile) {
+          await supabase.auth.signOut().catch(() => {});
+          throw new Error(
+            "Access denied: Unable to verify user profile in database."
+          );
+        }
+
+        if (profile.role !== "admin") {
+          await supabase.auth.signOut().catch(() => {});
+          throw new Error(
+            "Access denied: This account does not have administrator privileges."
+          );
+        }
+
+        onSuccess(profile as Profile);
+        return;
       }
 
-      // 2. Verify role = 'admin' from profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError || !profile) {
-        // Sign out immediately
-        await supabase.auth.signOut();
+      // 3. Fallback when Supabase is not configured and entered credentials don't match demo
+      if (!isDemoCreds) {
         throw new Error(
-          "Access denied: Unable to verify user profile in database."
+          "Invalid credentials. For local/demo access, use admin@urbanrat.com with password admin123"
         );
       }
-
-      if (profile.role !== "admin") {
-        // Sign out immediately
-        await supabase.auth.signOut();
-        throw new Error(
-          "Access denied: This account does not have administrator privileges."
-        );
-      }
-
-      // 3. Authorized admin
-      onSuccess(profile as Profile);
     } catch (err: unknown) {
       const e = err as Error;
       setError(e.message || "Authentication failed");
@@ -150,6 +195,37 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
           {loading ? "Verifying Credentials..." : "Authenticate as Admin"}
         </button>
       </form>
+
+      {/* Demo Credentials Helper Pill */}
+      <div className="mt-5 pt-4 border-t border-slate-100">
+        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/70 text-left space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              Default Credentials
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("admin@urbanrat.com");
+                setPassword("admin123");
+              }}
+              className="text-[11px] font-bold text-[#0A82A8] hover:underline cursor-pointer"
+            >
+              Fill Credentials
+            </button>
+          </div>
+          <div className="text-xs space-y-1 font-mono text-slate-600">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-sans">Email:</span>
+              <span className="font-semibold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200/60">admin@urbanrat.com</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-sans">Password:</span>
+              <span className="font-semibold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200/60">admin123</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

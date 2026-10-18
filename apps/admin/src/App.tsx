@@ -10,6 +10,22 @@ export default function App() {
   useEffect(() => {
     async function checkCurrentAdmin() {
       try {
+        // 1. Check local demo session first
+        const demoSession = localStorage.getItem("urbanrat_admin_session");
+        if (demoSession) {
+          try {
+            const parsed = JSON.parse(demoSession);
+            if (parsed && parsed.role === "admin") {
+              setAdminProfile(parsed);
+              setCheckingSession(false);
+              return;
+            }
+          } catch {
+            localStorage.removeItem("urbanrat_admin_session");
+          }
+        }
+
+        // 2. Check Supabase auth session
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -25,7 +41,7 @@ export default function App() {
             setAdminProfile(profile as Profile);
           } else {
             // Not an admin, clear session
-            await supabase.auth.signOut();
+            await supabase.auth.signOut().catch(() => {});
             setAdminProfile(null);
           }
         }
@@ -40,7 +56,8 @@ export default function App() {
   }, []);
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
+    localStorage.removeItem("urbanrat_admin_session");
+    await supabase.auth.signOut().catch(() => {});
     setAdminProfile(null);
   }
 
