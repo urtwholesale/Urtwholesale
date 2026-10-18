@@ -142,9 +142,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   )}`;
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-16">
-      {/* ── Breadcrumb / Back Navigation ── */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-16 -mt-4 sm:mt-0">
+      {/* ── Breadcrumb / Back Navigation (Desktop only, Mobile uses TopBar back button) ── */}
+      <div className="hidden sm:flex items-center justify-between">
         <button
           type="button"
           onClick={() => {
@@ -172,18 +172,18 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative aspect-square rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-xs flex items-center justify-center p-4 group select-none"
+            className="relative aspect-square sm:rounded-3xl overflow-hidden bg-white sm:border sm:border-slate-100 sm:shadow-xs flex items-center justify-center p-0 group select-none -mx-4 sm:mx-0 border-b border-slate-100 sm:border-b-0"
           >
             <img
               src={images[activeImageIndex]}
               alt={product.name}
-              className="w-full h-full object-contain rounded-2xl transition-transform duration-300"
+              className="w-full h-full object-cover object-center transition-transform duration-500"
             />
 
             {/* Badges */}
             {discountPercent > 0 && (
               <div
-                className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-md"
+                className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-md"
                 style={{
                   background: "linear-gradient(135deg, #FF6B6B 0%, #E83A59 100%)",
                 }}
@@ -193,7 +193,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             )}
 
             {product.is_urbanrat_brand && (
-              <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-[#0A82A8] border border-slate-200/60 shadow-xs flex items-center space-x-1">
+              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-[#0A82A8] border border-slate-200/60 shadow-xs flex items-center space-x-1">
                 <Zap className="w-3 h-3 text-[#5ADBE5]" />
                 <span>Urbanrat Original</span>
               </div>
@@ -210,7 +210,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                       (prev) => (prev - 1 + images.length) % images.length
                     )
                   }
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-700 hover:bg-white active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-700 hover:bg-white active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -220,7 +220,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   onClick={() =>
                     setActiveImageIndex((prev) => (prev + 1) % images.length)
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-700 hover:bg-white active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-700 hover:bg-white active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -229,7 +229,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
             {/* Swipe instruction pill for mobile */}
             {images.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-[10px] text-white font-medium md:hidden">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs text-[10px] text-white font-medium md:hidden">
                 Swipe for more ({activeImageIndex + 1}/{images.length})
               </div>
             )}
@@ -237,13 +237,13 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
           {/* Thumbnails row */}
           {images.length > 1 && (
-            <div className="flex space-x-2.5 overflow-x-auto pb-1 scrollbar-none justify-center">
+            <div className="flex space-x-2.5 overflow-x-auto pb-1 scrollbar-none justify-center px-4 sm:px-0">
               {images.map((img, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`w-14 h-14 rounded-2xl overflow-hidden border-2 bg-white transition cursor-pointer ${
+                  className={`w-14 h-14 rounded-2xl overflow-hidden border-2 bg-white transition cursor-pointer shrink-0 ${
                     activeImageIndex === idx
                       ? "border-[#0A82A8] shadow-xs ring-2 ring-[#5ADBE5]/40"
                       : "border-slate-200/80 opacity-70 hover:opacity-100"
@@ -263,6 +263,11 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         {/* Right: Product Details & Purchase Actions */}
         <div className="space-y-5 lg:col-span-7 xl:col-span-7">
           <div>
+            <div className="flex items-center gap-2 mb-2 sm:hidden">
+              <span className="text-[11px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 shadow-2xs">
+                SKU: {product.sku || "UR-ACCESSORY"}
+              </span>
+            </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug">
               {product.name}
             </h1>
