@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { MarketplacePage } from "./MarketplacePage";
-import type { Product } from "@urbanrat/shared";
+import { fetchBanners } from "../services/storeService";
+import type { Product, Banner } from "@urbanrat/shared";
 import { Zap, ShieldCheck, Award, Flame } from "lucide-react";
 
 interface UrbanratPageProps {
@@ -8,9 +10,19 @@ interface UrbanratPageProps {
 }
 
 export function UrbanratPage({ onAddToCart, cartCount = 0 }: UrbanratPageProps) {
+  const [banner, setBanner] = useState<Banner | null>(null);
+
+  useEffect(() => {
+    fetchBanners("urbanrat_hero").then((banners) => {
+      if (banners.length > 0) {
+        setBanner(banners[0]!);
+      }
+    });
+  }, []);
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
-      {/* ── Branded Header Banner ── */}
+      {/* ── Branded Header Banner from Live Database ── */}
       <section className="relative overflow-hidden rounded-3xl p-6 sm:p-10 bg-slate-950 text-white shadow-xl border border-cyan-900/40">
         {/* Ambient Gradient Glow */}
         <div
@@ -23,15 +35,16 @@ export function UrbanratPage({ onAddToCart, cartCount = 0 }: UrbanratPageProps) 
         <div className="relative z-10 max-w-2xl lg:max-w-3xl">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#5ADBE5] bg-white/10 backdrop-blur-md border border-white/10 mb-4">
             <Zap className="w-3.5 h-3.5 text-[#5ADBE5]" />
-            <span>Urbanrat In-House Labs</span>
+            <span>{banner?.badge_text || "Urbanrat In-House Labs"}</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
-            The Urbanrat Standard.
+            {banner?.title || "The Urbanrat Standard."}
           </h1>
 
           <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Engineered exclusively for extreme durability, daily drops, and maximum power delivery. Certified for commercial retail quality with hassle-free wholesale warranty.
+            {banner?.subtitle ||
+              "Engineered exclusively for extreme durability, daily drops, and maximum power delivery. Certified for commercial retail quality with hassle-free wholesale warranty."}
           </p>
 
           <div className="mt-6 grid grid-cols-3 gap-2.5 sm:gap-3 text-center">

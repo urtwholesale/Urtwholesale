@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router";
-import { fetchProductBySlug, fetchRelatedProducts } from "../services/storeService";
+import {
+  fetchProductBySlug,
+  fetchRelatedProducts,
+  fetchStoreSettings,
+} from "../services/storeService";
 import { ProductCard } from "../components/ProductCard";
 import { ProductDetailSkeleton } from "../components/Skeletons";
 import { EmptyState } from "../components/EmptyState";
@@ -35,6 +39,14 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState("917000947033");
+
+  // Load dynamic WhatsApp number from store_settings
+  useEffect(() => {
+    fetchStoreSettings().then((s) => {
+      if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
+    });
+  }, []);
 
   // Swipe support for mobile gallery
   const touchStartX = useRef<number | null>(null);
@@ -137,7 +149,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     navigate("/cart");
   }
 
-  const whatsappInquiryUrl = `https://wa.me/917000947033?text=${encodeURIComponent(
+  const whatsappInquiryUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     `Hi URT Wholesale, I am interested in wholesale order: ${product.name} (SKU: ${product.sku || "N/A"}). Price: ₹${product.price}`
   )}`;
 

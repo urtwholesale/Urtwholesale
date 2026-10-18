@@ -3,8 +3,13 @@ import { Link } from "react-router";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, CategoryChipsSkeleton } from "../components/Skeletons";
 import { EmptyState } from "../components/EmptyState";
-import { fetchCategories, fetchProducts } from "../services/storeService";
-import type { Product, Category } from "@urbanrat/shared";
+import {
+  fetchCategories,
+  fetchProducts,
+  fetchBanners,
+  fetchStoreSettings,
+} from "../services/storeService";
+import type { Product, Category, Banner, StoreSettings } from "@urbanrat/shared";
 import {
   ShieldCheck,
   Truck,
@@ -23,6 +28,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [heroBanner, setHeroBanner] = useState<Banner | null>(null);
+  const [brandBanner, setBrandBanner] = useState<Banner | null>(null);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,17 +39,26 @@ export function HomePage({ onAddToCart }: HomePageProps) {
     async function loadHomeData() {
       setLoading(true);
       try {
-        const [cats, featuredRes, arrivalsRes] = await Promise.all([
+        const [cats, featuredRes, arrivalsRes, banners, storeSettings] = await Promise.all([
           fetchCategories(),
           fetchProducts({ isFeatured: true, limit: 6 }),
           fetchProducts({ limit: 6, sort: "newest" }),
+          fetchBanners(),
+          fetchStoreSettings(),
         ]);
 
         if (isMounted) {
-          // Parent categories for chips
+          // Parent categories for horizontal scroll chips
           setCategories(cats.filter((c) => c.parent_id === null));
           setFeaturedProducts(featuredRes.products);
           setNewArrivals(arrivalsRes.products);
+          setSettings(storeSettings);
+
+          const hero = banners.find((b) => b.placement === "home_hero");
+          if (hero) setHeroBanner(hero);
+
+          const brand = banners.find((b) => b.placement === "home_brand");
+          if (brand) setBrandBanner(brand);
         }
       } catch (err) {
         console.error("Error loading home data:", err);
@@ -58,7 +75,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
   return (
     <div className="space-y-7 sm:space-y-10 animate-in fade-in duration-300 pb-8">
-      {/* ── 1. Hero Banner Area with Brand Gradient & Accessories Showcase ── */}
+      {/* ── 1. Hero Banner Area from Live Database Banners ── */}
       <section className="relative overflow-hidden rounded-3xl p-5 sm:p-8 md:p-10 lg:p-12 bg-gradient-to-br from-[#5ADBE5]/15 via-white to-[#0A82A8]/10 border border-[#5ADBE5]/30 shadow-xs">
         {/* Ambient radial glow */}
         <div
@@ -73,38 +90,38 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           <div className="lg:col-span-7 xl:col-span-7 text-left space-y-4">
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#0A82A8] bg-white shadow-xs border border-[#5ADBE5]/30">
               <Sparkles className="w-3.5 h-3.5 text-[#5ADBE5]" />
-              <span>URP Wholesale Direct</span>
+              <span>{heroBanner?.badge_text || "URP Wholesale Direct"}</span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-black text-slate-900 tracking-tight leading-[1.15]">
-              Next-Gen Mobile Gear,{" "}
-              <span className="bg-gradient-to-b from-[#5ADBE5] to-[#0A82A8] bg-clip-text text-transparent">
-                Factory Direct
-              </span>
+              {heroBanner?.title || "Next-Gen Mobile Gear, Factory Direct"}
             </h1>
 
             <p className="text-xs sm:text-sm md:text-base lg:text-lg text-slate-600 max-w-xl leading-relaxed">
-              Engineered 9H tempered glass, 65W GaN fast chargers, and indestructible braided cables. Premium retail quality at wholesale prices.
+              {heroBanner?.subtitle ||
+                "Engineered 9H tempered glass, 65W GaN fast chargers, and indestructible braided cables. Premium retail quality at wholesale prices."}
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <Link
-                to="/marketplace"
+                to={heroBanner?.cta_link || "/marketplace"}
                 className="inline-flex items-center space-x-2 py-3 px-6 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all"
                 style={{
                   background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
                 }}
               >
-                <span>Explore Marketplace</span>
+                <span>{heroBanner?.cta_text || "Explore Marketplace"}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
 
-              <Link
-                to="/urbanrat"
-                className="py-3 px-5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm hover:bg-slate-50 transition shadow-xs"
-              >
-                Urbanrat Original
-              </Link>
+              {heroBanner?.secondary_cta_text && (
+                <Link
+                  to={heroBanner.secondary_cta_link || "/urbanrat"}
+                  className="py-3 px-5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm hover:bg-slate-50 transition shadow-xs"
+                >
+                  {heroBanner.secondary_cta_text}
+                </Link>
+              )}
             </div>
           </div>
 
@@ -112,7 +129,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           <div className="lg:col-span-5 xl:col-span-5 relative">
             <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300">
               <img
-                src="/hero-accessories.jpg"
+                src={heroBanner?.image_url || "/hero-accessories.jpg"}
                 alt="Wholesale Mobile Accessories - 9H Tempered Glass, GaN Fast Chargers, Indestructible Cables, Car Mounts"
                 className="w-full h-auto object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[4/3]"
                 loading="eager"
@@ -130,20 +147,42 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           </div>
         </div>
 
-        {/* Value Badges */}
+        {/* Value Badges from Database store_settings */}
         <div className="mt-8 pt-5 border-t border-slate-200/60 grid grid-cols-2 sm:grid-cols-3 gap-4 text-slate-600 text-xs">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-[#0A82A8] shrink-0" />
-            <span className="font-semibold">100% Quality Inspected</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Truck className="w-4 h-4 text-[#0A82A8] shrink-0" />
-            <span className="font-semibold">Pan-India Express Dispatch</span>
-          </div>
-          <div className="hidden sm:flex items-center space-x-2">
-            <Zap className="w-4 h-4 text-[#0A82A8] shrink-0" />
-            <span className="font-semibold">Wholesale Bulk Margin Ready</span>
-          </div>
+          {settings?.value_badges && settings.value_badges.length > 0 ? (
+            settings.value_badges.map((badge, idx) => (
+              <div
+                key={idx}
+                className={`flex items-center space-x-2 ${
+                  idx > 1 ? "hidden sm:flex" : ""
+                }`}
+              >
+                {badge.icon === "Truck" ? (
+                  <Truck className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                ) : badge.icon === "Zap" ? (
+                  <Zap className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                )}
+                <span className="font-semibold">{badge.text}</span>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                <span className="font-semibold">100% Quality Inspected</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Truck className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                <span className="font-semibold">Pan-India Express Dispatch</span>
+              </div>
+              <div className="hidden sm:flex items-center space-x-2">
+                <Zap className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                <span className="font-semibold">Wholesale Bulk Margin Ready</span>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -207,7 +246,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                 Featured Highlights
               </h2>
               <p className="text-[11px] text-slate-500">
-                Top rated accessories chosen by tech retailers
+                Wholesale accessories selected for high retail turnover
               </p>
             </div>
           </div>
@@ -234,45 +273,35 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           </div>
         ) : (
           <EmptyState
-            title="No featured products right now"
+            title="No featured products found"
             description="Explore our full catalog in the marketplace."
           />
         )}
       </section>
 
-      {/* ── 4. Urbanrat Brand Highlight Section ── */}
+      {/* ── 4. Brand Highlight Section from Live Database Banners ── */}
       <section className="relative overflow-hidden rounded-3xl p-5 sm:p-8 bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950 text-white shadow-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-lg">
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/10 text-[#5ADBE5] border border-white/10">
               <Zap className="w-3 h-3 text-[#5ADBE5]" />
-              <span>In-House Engineering</span>
+              <span>{brandBanner?.badge_text || "In-House Engineering"}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Urbanrat Original Gear
+              {brandBanner?.title || "Urbanrat Original Gear"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Designed from scratch with high-density ballistic nylon, Gallium Nitride internals, and sapphire-infused glass. Built for heavy commercial and daily use.
+              {brandBanner?.subtitle ||
+                "Designed from scratch with high-density ballistic nylon, Gallium Nitride internals, and sapphire-infused glass. Built for heavy commercial and daily use."}
             </p>
-            <div className="pt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-300">
-              <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10">
-                ✓ 9H Sapphire Hardness
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10">
-                ✓ 50,000+ Bend Testing
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10">
-                ✓ 1-Year Swap Guarantee
-              </span>
-            </div>
           </div>
 
           <div className="shrink-0">
             <Link
-              to="/urbanrat"
+              to={brandBanner?.cta_link || "/urbanrat"}
               className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl text-slate-950 font-black text-xs sm:text-sm bg-gradient-to-r from-[#5ADBE5] to-[#1EAFC7] hover:opacity-95 shadow-lg active:scale-95 transition"
             >
-              <span>Explore Collection</span>
+              <span>{brandBanner?.cta_text || "Explore Collection"}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

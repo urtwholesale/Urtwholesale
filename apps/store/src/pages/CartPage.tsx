@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import type { Product, CustomerDetails } from "@urbanrat/shared";
 import {
@@ -18,8 +18,8 @@ import {
 import { buildWhatsAppMessage } from "../utils/buildWhatsAppMessage";
 import {
   generateUniqueOrderId,
-  createOrder,
-  type CreateOrderPayload,
+  createVerifiedOrder,
+  fetchStoreSettings,
 } from "../services/storeService";
 
 interface CartPageProps {
@@ -56,6 +56,15 @@ export function CartPage({
     return { name: "", phone: "", address: "", pincode: "" };
   });
 
+  const [whatsappNumber, setWhatsappNumber] = useState("917000947033");
+
+  // Load dynamic WhatsApp number from store_settings
+  useEffect(() => {
+    fetchStoreSettings().then((s) => {
+      if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
+    });
+  }, []);
+
   type FormErrors = Partial<Record<keyof CustomerDetails, string>>;
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -90,7 +99,6 @@ export function CartPage({
       setErrors((prev: FormErrors) => ({ ...prev, [field]: undefined }));
     }
   }
-
 
   function validateForm(): boolean {
     const newErrors: {
@@ -143,7 +151,8 @@ export function CartPage({
       const orderId = await generateUniqueOrderId();
       const cleanPhone = customer.phone.replace(/\D/g, "");
 
-      const orderPayload: CreateOrderPayload = {
+      // 2. Build verified order input with product_id & quantity (server calculates true price)
+      const verifiedInput = {
         id: orderId,
         customer: {
           name: customer.name.trim(),
@@ -153,32 +162,25 @@ export function CartPage({
         },
         items: cartItems.map((item) => ({
           product_id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
           quantity: item.quantity,
-          image: item.product.images[0] || null,
         })),
-        subtotal,
-        savings: totalDiscount,
-        shipping: 0,
-        total: subtotal,
         whatsapp_message: null,
       };
 
-      // 2. Save order to database
-      const savedOrder = await createOrder(orderPayload);
+      // 3. Save order to database with server-verified prices via RPC
+      const savedOrder = await createVerifiedOrder(verifiedInput);
 
-      // 3. Build WhatsApp message with real orderId and orderUrl
+      // 4. Build WhatsApp message with real orderId and orderUrl
       const origin = window.location.origin;
       const orderUrl = `${origin}/order/${savedOrder.id}`;
 
       const whatsappMessage = buildWhatsAppMessage({
         orderId: savedOrder.id,
-        items: cartItems,
-        subtotal,
-        savings: totalDiscount,
-        shipping: "FREE",
-        total: subtotal,
+        items: (savedOrder.items && savedOrder.items.length > 0) ? savedOrder.items : cartItems,
+        subtotal: savedOrder.subtotal ?? subtotal,
+        savings: savedOrder.savings ?? totalDiscount,
+        shipping: savedOrder.shipping === 0 ? "FREE" : savedOrder.shipping,
+        total: savedOrder.total ?? subtotal,
         customer: {
           name: customer.name.trim(),
           phone: cleanPhone,
@@ -187,18 +189,19 @@ export function CartPage({
         orderUrl,
       });
 
-      // 4. Open WhatsApp with properly formatted message
-      const whatsappCheckoutUrl = `https://wa.me/917000947033?text=${encodeURIComponent(
+      // 5. Open WhatsApp with properly formatted message
+      const whatsappCheckoutUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
         whatsappMessage
       )}`;
 
       window.open(whatsappCheckoutUrl, "_blank");
 
-      // 5. Clear cart after successful checkout
+      // 6. Clear cart after successful checkout
       onClearCart();
-    } catch (err) {
-      console.error("[Cart] Checkout order creation failed:", err);
-      setErrorToast("Failed to save order. Please check your network and try again.");
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("[Cart] Checkout order creation failed:", e);
+      setErrorToast(e?.message || "Failed to save order. Please check your network and try again.");
       setTimeout(() => setErrorToast(null), 4000);
     } finally {
       setIsSubmitting(false);

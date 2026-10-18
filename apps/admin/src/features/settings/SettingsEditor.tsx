@@ -1,0 +1,234 @@
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { Save, Check, Loader2, Phone, Search, Store } from "lucide-react";
+
+export function SettingsEditor() {
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [popularSearches, setPopularSearches] = useState("");
+  const [storeName, setStoreName] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedToast, setSavedToast] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        setLoading(true);
+        const { data, error: err } = await supabase
+          .from("store_settings")
+          .select("key, value");
+
+        if (err) throw err;
+
+        if (data) {
+          for (const row of data) {
+            if (row.key === "whatsapp_number" && typeof row.value === "string") {
+              setWhatsappNumber(row.value);
+            } else if (row.key === "popular_searches" && Array.isArray(row.value)) {
+              setPopularSearches(row.value.join(", "));
+            } else if (row.key === "store_info" && typeof row.value === "object") {
+              setStoreName(row.value.name || "");
+              setTagline(row.value.tagline || "");
+            }
+          }
+        }
+      } catch (err: unknown) {
+        const e = err as Error;
+        console.error("Failed to load store settings:", e);
+        setError(e.message || "Failed to load settings");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    try {
+      const searchesArray = popularSearches
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      // Upsert settings
+      const updates = [
+        {
+          key: "whatsapp_number",
+          value: JSON.stringify(whatsappNumber.trim()),
+          description: "Primary WhatsApp order dispatch & support number",
+          updated_at: new Date().toISOString(),
+        },
+        {
+          key: "popular_searches",
+          value: JSON.stringify(searchesArray),
+          description: "Top search keywords shown in mobile search drawer",
+          updated_at: new Date().toISOString(),
+        },
+        {
+          key: "store_info",
+          value: JSON.stringify({
+            name: storeName.trim(),
+            tagline: tagline.trim(),
+            currency: "₹",
+          }),
+          description: "General store branding metadata",
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      for (const item of updates) {
+        const { error: upsertErr } = await supabase
+          .from("store_settings")
+          .upsert({
+            key: item.key,
+            value: JSON.parse(item.value),
+            description: item.description,
+            updated_at: item.updated_at,
+          });
+
+        if (upsertErr) throw upsertErr;
+      }
+
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("Save settings error:", e);
+      setError(e.message || "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center">
+        <Loader2 className="w-6 h-6 text-[#0A82A8] animate-spin mx-auto mb-2" />
+        <p className="text-xs text-slate-400">Loading store settings...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Store Settings</h2>
+          <p className="text-xs text-slate-500">
+            Manage WhatsApp contact, popular searches, and store metadata
+          </p>
+        </div>
+        {savedToast && (
+          <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 animate-in fade-in">
+            <Check className="w-3.5 h-3.5" />
+            <span>Saved to Supabase!</span>
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSave} className="space-y-4">
+        {/* WhatsApp Phone */}
+        <div>
+          <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+            <Phone className="w-3.5 h-3.5 text-[#0A82A8]" />
+            <span>WhatsApp Dispatch &amp; Support Phone Number</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={whatsappNumber}
+            onChange={(e) => setWhatsappNumber(e.target.value)}
+            placeholder="917000947033"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+          />
+          <p className="text-[11px] text-slate-400 mt-1">
+            Include country code without '+' or spaces (e.g. 917000947033). Used for all customer WhatsApp order dispatches.
+          </p>
+        </div>
+
+        {/* Popular Searches */}
+        <div>
+          <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+            <Search className="w-3.5 h-3.5 text-[#0A82A8]" />
+            <span>Popular Search Keywords (comma-separated)</span>
+          </label>
+          <input
+            type="text"
+            value={popularSearches}
+            onChange={(e) => setPopularSearches(e.target.value)}
+            placeholder="iPhone 16 Glass, 65W GaN, 100W Cable, AirBass Pro, MagSafe Car"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+          />
+          <p className="text-[11px] text-slate-400 mt-1">
+            Keywords displayed as one-tap chips inside the customer mobile search drawer.
+          </p>
+        </div>
+
+        {/* Store Name & Tagline */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+              <Store className="w-3.5 h-3.5 text-[#0A82A8]" />
+              <span>Store Name</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              placeholder="URT Wholesale"
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Store Tagline
+            </label>
+            <input
+              type="text"
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="Factory Direct Wholesale Mobile Gear"
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            />
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="py-2.5 px-6 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
+            style={{
+              background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+            }}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Saving to Supabase...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>Save Store Settings</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

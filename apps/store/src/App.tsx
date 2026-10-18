@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router";
 import type { Product } from "@urbanrat/shared";
-import { MOCK_PRODUCTS } from "./data/mockData";
-import { fetchProducts } from "./services/storeService";
+import {
+  isSupabaseConfigured,
+  fetchProducts,
+  fetchStoreSettings,
+} from "./services/storeService";
+import { supabase } from "./lib/supabase";
+import { StoreNotConfigured } from "./components/StoreNotConfigured";
 import { TopBar } from "./components/TopBar";
 import { NavigationDock } from "./components/NavigationDock";
 import { HomePage } from "./pages/HomePage";
@@ -14,6 +19,7 @@ import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { CartPage } from "./pages/CartPage";
 import { OrderPage } from "./pages/OrderPage";
 import { Search, X, Loader2, ArrowRight } from "lucide-react";
+import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
 
 /**
  * Ensures whenever a user navigates or clicks a link from anywhere on a page,
@@ -36,18 +42,13 @@ interface CartStateItem {
   quantity: number;
 }
 
-const POPULAR_SEARCHES = [
-  "iPhone 16 Glass",
-  "65W GaN",
-  "100W Cable",
-  "AirBass Pro",
-  "MagSafe Car",
-];
-
-import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
+const GUEST_CART_KEY = "urt_guest_cart";
 
 export default function App() {
   const navigate = useNavigate();
+
+  // If Supabase environment variables are missing, enforce configuration screen
+  const configured = isSupabaseConfigured();
 
   // Initialize global haptics for all buttons, links, and navigation items
   useEffect(() => {
@@ -55,16 +56,80 @@ export default function App() {
     return cleanup;
   }, []);
 
-  // Cart state initialized with 1 sample item so user immediately sees badge
-  const [cartItems, setCartItems] = useState<CartStateItem[]>([
-    { product: MOCK_PRODUCTS[0]!, quantity: 1 },
-  ]);
+  // Cart starts completely empty [] (persisting guests in localStorage, syncs to DB for auth users)
+  const [cartItems, setCartItems] = useState<CartStateItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(GUEST_CART_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync guest cart changes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(GUEST_CART_KEY, JSON.stringify(cartItems));
+    } catch {
+      // Ignore storage write issues
+    }
+  }, [cartItems]);
+
+  // Sync cart with Supabase public.cart_items when authenticated user is present
+  useEffect(() => {
+    if (!configured) return;
+
+    let isMounted = true;
+    async function syncAuthCart() {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        if (!auth.user) return;
+
+        const { data, error } = await supabase
+          .from("cart_items")
+          .select("quantity, products(*)")
+          .eq("user_id", auth.user.id);
+
+        if (!error && data && data.length > 0 && isMounted) {
+          const dbItems: CartStateItem[] = data
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .filter((row: any) => row.products)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((row: any) => ({
+              product: row.products as Product,
+              quantity: row.quantity,
+            }));
+          if (dbItems.length > 0) {
+            setCartItems(dbItems);
+          }
+        }
+      } catch (err) {
+        console.warn("[Urbanrat Store] Auth cart sync skipped:", err);
+      }
+    }
+
+    syncAuthCart();
+    return () => {
+      isMounted = false;
+    };
+  }, [configured]);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searching, setSearching] = useState(false);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
+
+  // Load dynamic popular search suggestions from store_settings
+  useEffect(() => {
+    if (!configured) return;
+    fetchStoreSettings().then((settings) => {
+      if (settings.popular_searches && settings.popular_searches.length > 0) {
+        setPopularSearches(settings.popular_searches);
+      }
+    });
+  }, [configured]);
 
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -138,6 +203,11 @@ export default function App() {
     setSearchOpen(false);
     setSearchQuery("");
     navigate(`/product/${slug}`);
+  }
+
+  // Enforce zero mock fallback: if Supabase is unconfigured, display StoreNotConfigured screen
+  if (!configured) {
+    return <StoreNotConfigured />;
   }
 
   return (
@@ -231,14 +301,14 @@ export default function App() {
               </button>
             </div>
 
-            {/* Popular Search Suggestions when query is blank */}
-            {!searchQuery.trim() && (
+            {/* Popular Search Suggestions from store_settings */}
+            {!searchQuery.trim() && popularSearches.length > 0 && (
               <div className="space-y-2 py-1">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   Popular Searches
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {POPULAR_SEARCHES.map((term) => (
+                  {popularSearches.map((term) => (
                     <button
                       key={term}
                       type="button"
@@ -297,21 +367,6 @@ export default function App() {
                 </div>
               ) : null}
             </div>
-
-            {searchQuery.trim() && searchResults.length > 0 && (
-              <div className="pt-2 border-t border-slate-100 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchOpen(false);
-                    navigate(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
-                  }}
-                  className="text-xs font-bold text-[#0A82A8] hover:underline"
-                >
-                  View all results in Marketplace →
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}

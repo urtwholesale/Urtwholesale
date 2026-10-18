@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { fetchOrderById } from "../services/storeService";
+import { fetchOrderById, fetchStoreSettings } from "../services/storeService";
 import type { Order } from "@urbanrat/shared";
 import {
   Package,
@@ -21,6 +21,13 @@ export function OrderPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [whatsappNumber, setWhatsappNumber] = useState("917000947033");
+
+  useEffect(() => {
+    fetchStoreSettings().then((s) => {
+      if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
+    });
+  }, []);
 
   useEffect(() => {
     async function loadOrder() {
@@ -73,7 +80,7 @@ export function OrderPage() {
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a
-            href="https://wa.me/917000947033?text=Hello%20URT%20Wholesale%2C%20I%20need%20help%20finding%20my%20order"
+            href={`https://wa.me/${whatsappNumber}?text=Hello%20URT%20Wholesale%2C%20I%20need%20help%20finding%20my%20order`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center space-x-2 py-2.5 px-6 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold text-xs transition"
