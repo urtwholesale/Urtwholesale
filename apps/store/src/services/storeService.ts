@@ -31,7 +31,9 @@ function isSupabaseConfigured(): boolean {
     url &&
       key &&
       !url.includes("your-project-id") &&
-      !key.includes("your-anon-key")
+      !url.includes("placeholder") &&
+      !key.includes("your-anon-key") &&
+      !key.includes("placeholder")
   );
 }
 
