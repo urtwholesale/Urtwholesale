@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* ── Brand tokens ── */
+@theme {
+  --color-brand-light: #5ADBE5;
+  --color-brand: #1EAFC7;
+  --color-brand-dark: #0A82A8;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Brand gradient utility ── */
+@utility brand-gradient {
+  background: linear-gradient(to bottom, var(--color-brand-light), var(--color-brand-dark));
+}
+
+/* ── Glassmorphism utility ── */
+@utility glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Base resets ── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #f8f9fb;
+    color: #1a1a1a;
+    min-height: 100dvh;
+  }
+}
