@@ -1,5 +1,6 @@
 import { NavLink } from "react-router";
 import { Home, ShoppingBag, LayoutGrid, Zap, Menu } from "lucide-react";
+import { triggerHaptic } from "../utils/haptics";
 
 interface NavItem {
   to: string;
@@ -32,6 +33,7 @@ export function NavigationDock() {
               to={item.to}
               end={item.to === "/"}
               aria-label={item.label}
+              onClick={() => triggerHaptic("selection")}
               className={({ isActive }) =>
                 `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
                   isActive

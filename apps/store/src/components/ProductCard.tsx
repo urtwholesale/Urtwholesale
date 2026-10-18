@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import type { Product } from "@urbanrat/shared";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
+import { triggerHaptic } from "../utils/haptics";
 
 interface ProductCardProps {
   product: Product;
@@ -8,10 +10,28 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  const [isAdded, setIsAdded] = useState(false);
+
   // Calculate discount percentage
   const discountPercent = product.mrp
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
     : 0;
+
+  function handleAddToCartClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Trigger success rhythmic haptic feedback
+    triggerHaptic("success");
+
+    setIsAdded(true);
+    onAddToCart?.(product);
+
+    // Keep checkmark for 1.8 seconds, then morph smoothly back to plus
+    setTimeout(() => {
+      setIsAdded(false);
+    }, 1800);
+  }
 
   return (
     <div className="group relative bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-3.5 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_28px_-6px_rgba(10,130,168,0.12)] transition-all duration-300 flex flex-col justify-between">
@@ -73,20 +93,29 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             </span>
           </div>
 
-          {/* Circular Add / Arrow Button */}
+          {/* Morphing Add to Cart / Correct Checkmark Button */}
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              onAddToCart?.(product);
-            }}
-            aria-label={`Add ${product.name} to cart`}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer group/btn"
+            onClick={handleAddToCartClick}
+            aria-label={isAdded ? `Added ${product.name} to cart` : `Add ${product.name} to cart`}
+            className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white cursor-pointer transition-all duration-300 ${
+              isAdded
+                ? "scale-110 shadow-[0_4px_16px_rgba(16,185,129,0.5)] ring-2 ring-emerald-300"
+                : "shadow-sm hover:shadow-md active:scale-90"
+            }`}
             style={{
-              background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+              background: isAdded
+                ? "linear-gradient(135deg, #10B981 0%, #059669 100%)"
+                : "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
             }}
           >
-            <Plus className="w-4 h-4 sm:w-4.5 sm:h-4.5 group-hover/btn:rotate-90 transition-transform duration-300" />
+            {isAdded ? (
+              <span className="flex items-center justify-center animate-in zoom-in-75 duration-200">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3] text-white" />
+              </span>
+            ) : (
+              <Plus className="w-4 h-4 sm:w-4.5 sm:h-4.5 group-hover:rotate-90 transition-transform duration-300" />
+            )}
           </button>
         </div>
       </div>

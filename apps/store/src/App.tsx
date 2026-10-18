@@ -44,8 +44,16 @@ const POPULAR_SEARCHES = [
   "MagSafe Car",
 ];
 
+import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
+
 export default function App() {
   const navigate = useNavigate();
+
+  // Initialize global haptics for all buttons, links, and navigation items
+  useEffect(() => {
+    const cleanup = initGlobalHaptics();
+    return cleanup;
+  }, []);
 
   // Cart state initialized with 1 sample item so user immediately sees badge
   const [cartItems, setCartItems] = useState<CartStateItem[]>([
@@ -87,6 +95,7 @@ export default function App() {
   }, [searchQuery]);
 
   function handleAddToCart(product: Product, quantity = 1) {
+    triggerHaptic("success");
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -104,6 +113,7 @@ export default function App() {
   }
 
   function handleUpdateQuantity(productId: string, quantity: number) {
+    triggerHaptic("light");
     if (quantity <= 0) {
       handleRemoveItem(productId);
       return;
@@ -116,6 +126,7 @@ export default function App() {
   }
 
   function handleRemoveItem(productId: string) {
+    triggerHaptic("medium");
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
   }
 

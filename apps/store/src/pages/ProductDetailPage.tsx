@@ -18,6 +18,7 @@ import {
   Zap,
   CheckCircle2,
 } from "lucide-react";
+import { triggerHaptic } from "../utils/haptics";
 
 interface ProductDetailPageProps {
   onAddToCart: (product: Product, quantity: number) => void;
@@ -123,6 +124,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
   function handleAddToCart() {
     if (!product) return;
+    triggerHaptic("success");
     onAddToCart(product, quantity);
     setAddedToast(true);
     setTimeout(() => setAddedToast(false), 2200);
@@ -130,6 +132,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
   function handleBuyNow() {
     if (!product) return;
+    triggerHaptic("medium");
     onAddToCart(product, quantity);
     navigate("/cart");
   }
