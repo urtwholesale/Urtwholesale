@@ -15,7 +15,6 @@
     "build": "npm run build:store && npm run build:admin"
   },
   "dependencies": {
-    "@esbuild/win32-x64": "^0.25.0",
     "@supabase/supabase-js": "^2.106.2",
     "lucide-react": "^1.16.0",
     "react": "^19.3.0",
