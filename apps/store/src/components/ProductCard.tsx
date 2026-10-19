@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import type { Product } from "@urbanrat/shared";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Layers } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 
 interface ProductCardProps {
@@ -12,9 +12,16 @@ interface ProductCardProps {
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [isAdded, setIsAdded] = useState(false);
 
-  // Calculate discount percentage
+  // Check for bulk pricing tiers
+  const tiers = product.price_tiers || [];
+  const hasBulkDeals = tiers.length > 1;
+  const bestPrice = hasBulkDeals
+    ? Math.min(...tiers.map((t) => t.unit_price))
+    : product.price;
+
+  // Calculate discount percentage based on best price
   const discountPercent = product.mrp
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+    ? Math.round(((product.mrp - bestPrice) / product.mrp) * 100)
     : 0;
 
   function handleAddToCartClick(e: React.MouseEvent) {
@@ -61,8 +68,21 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Brand Tag (Top Left) */}
         {product.is_urbanrat_brand && (
-          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/90 backdrop-blur-md text-[#0A82A8] border border-white/60 shadow-xs">
-            Urbanrat
+          <div className="absolute top-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-[#0A82A8] border border-white/60 shadow-xs">
+            <img
+              src="/logo.png"
+              alt="Urbanrat"
+              className="w-3 h-3 rounded-full object-cover"
+            />
+            <span>Urbanrat</span>
+          </div>
+        )}
+
+        {/* Bulk Deals Badge (Bottom Left overlay) */}
+        {hasBulkDeals && (
+          <div className="absolute bottom-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-900/85 backdrop-blur-md text-[#5ADBE5] border border-cyan-500/30 shadow-xs">
+            <Layers className="w-2.5 h-2.5 text-[#5ADBE5]" />
+            <span>Bulk Deals</span>
           </div>
         )}
       </Link>
@@ -78,22 +98,34 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         {/* Bottom row: Pricing & Quick Add Button */}
         <div className="mt-3 pt-2 border-t border-slate-50 flex items-center justify-between">
           <div className="flex flex-col">
-            <div className="flex items-baseline space-x-1.5">
+            <div className="flex items-baseline space-x-1">
+              {hasBulkDeals ? (
+                <span className="text-[11px] font-bold text-slate-500">
+                  From
+                </span>
+              ) : null}
               <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                ₹{product.price.toLocaleString("en-IN")}
+                ₹{bestPrice.toLocaleString("en-IN")}
               </span>
-              {product.mrp && product.mrp > product.price && (
+              {product.mrp && product.mrp > bestPrice && (
                 <span className="text-[11px] sm:text-xs text-slate-400 line-through">
                   ₹{product.mrp.toLocaleString("en-IN")}
                 </span>
               )}
             </div>
-            <span className="text-[10px] text-emerald-600 font-semibold tracking-wide">
-              Free Shipping
-            </span>
+            <div className="flex items-center space-x-1.5 mt-0.5">
+              <span className="text-[10px] text-emerald-600 font-semibold tracking-wide">
+                Free Shipping
+              </span>
+              {hasBulkDeals && (
+                <span className="text-[9px] font-bold text-[#0A82A8] bg-cyan-50 px-1.5 py-0.2 rounded">
+                  {tiers.length} Tiers
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Morphing Add to Cart / Correct Checkmark Button */}
+          {/* Morphing Add to Cart / Checkmark Button */}
           <button
             type="button"
             onClick={handleAddToCartClick}

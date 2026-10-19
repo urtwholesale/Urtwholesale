@@ -210,6 +210,11 @@ export function CustomerAuth() {
     <div className="w-full bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-7">
       {/* Title */}
       <div className="text-center mb-6">
+        <img
+          src="/logo.png"
+          alt="Urbanrat"
+          className="w-14 h-14 rounded-full mx-auto object-cover shadow-sm mb-3"
+        />
         <h2 className="text-xl font-bold text-slate-900">
           Welcome to Urbanrat
         </h2>

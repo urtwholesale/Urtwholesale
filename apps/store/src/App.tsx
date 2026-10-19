@@ -3,10 +3,12 @@ import { Routes, Route, useNavigate, useLocation } from "react-router";
 import type { Product } from "@urbanrat/shared";
 import {
   isSupabaseConfigured,
-  fetchProducts,
-  fetchStoreSettings,
+  searchProducts,
+  PRODUCT_SELECT,
+  formatProduct,
 } from "./services/storeService";
 import { supabase } from "./lib/supabase";
+import { useSettings } from "./context/SettingsContext";
 import { StoreNotConfigured } from "./components/StoreNotConfigured";
 import { TopBar } from "./components/TopBar";
 import { NavigationDock } from "./components/NavigationDock";
@@ -46,6 +48,7 @@ const GUEST_CART_KEY = "urt_guest_cart";
 
 export default function App() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
 
   // If Supabase environment variables are missing, enforce configuration screen
   const configured = isSupabaseConfigured();
@@ -75,40 +78,94 @@ export default function App() {
     }
   }, [cartItems]);
 
-  // Sync cart with Supabase public.cart_items when authenticated user is present
+  // On load: re-fetch each cart product and re-price/re-validate against live data
   useEffect(() => {
     if (!configured) return;
-
     let isMounted = true;
-    async function syncAuthCart() {
+
+    async function revalidateCart() {
       try {
         const { data: auth } = await supabase.auth.getUser();
-        if (!auth.user) return;
+        let itemsToValidate = cartItems;
 
-        const { data, error } = await supabase
-          .from("cart_items")
-          .select("quantity, products(*)")
-          .eq("user_id", auth.user.id);
+        // If user is authenticated, check for items saved in public.cart_items
+        if (auth?.user) {
+          const { data: dbCart, error: dbError } = await supabase
+            .from("cart_items")
+            .select(`quantity, products(${PRODUCT_SELECT})`)
+            .eq("user_id", auth.user.id);
 
-        if (!error && data && data.length > 0 && isMounted) {
-          const dbItems: CartStateItem[] = data
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .filter((row: any) => row.products)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((row: any) => ({
-              product: row.products as Product,
-              quantity: row.quantity,
-            }));
-          if (dbItems.length > 0) {
-            setCartItems(dbItems);
+          if (!dbError && dbCart && dbCart.length > 0) {
+            itemsToValidate = dbCart
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .filter((row: any) => row.products)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((row: any) => ({
+                product: formatProduct(row.products),
+                quantity: row.quantity,
+              }));
           }
         }
+
+        if (itemsToValidate.length === 0) return;
+
+        // Extract product IDs to query fresh live data
+        const productIds = Array.from(
+          new Set(itemsToValidate.map((item) => item.product.id))
+        );
+
+        const { data: freshProducts, error: prodError } = await supabase
+          .from("products")
+          .select(PRODUCT_SELECT)
+          .in("id", productIds)
+          .eq("is_active", true);
+
+        if (prodError || !freshProducts) return;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const liveMap = new Map<string, Product>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        freshProducts.forEach((p: any) => {
+          liveMap.set(p.id, formatProduct(p));
+        });
+
+        const validated: CartStateItem[] = [];
+        for (const item of itemsToValidate) {
+          const live = liveMap.get(item.product.id);
+          // If product was deleted, inactive, or stock is 0, drop it
+          if (!live || live.stock <= 0) continue;
+
+          const minQty = live.min_order_qty || 1;
+          const step = live.order_qty_step || 1;
+          let qty = item.quantity;
+
+          // Clamp to available stock
+          if (qty > live.stock) qty = live.stock;
+          // Ensure min_order_qty
+          if (qty < minQty) qty = minQty;
+          // Align with order_qty_step
+          if (step > 1) {
+            const remainder = qty % step;
+            if (remainder !== 0) {
+              qty = Math.max(minQty, qty - remainder);
+            }
+          }
+
+          validated.push({
+            product: live,
+            quantity: qty,
+          });
+        }
+
+        if (isMounted) {
+          setCartItems(validated);
+        }
       } catch (err) {
-        console.warn("[Urbanrat Store] Auth cart sync skipped:", err);
+        console.warn("[Urbanrat Store] Cart live re-validation skipped:", err);
       }
     }
 
-    syncAuthCart();
+    revalidateCart();
     return () => {
       isMounted = false;
     };
@@ -119,21 +176,13 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searching, setSearching] = useState(false);
-  const [popularSearches, setPopularSearches] = useState<string[]>([]);
 
-  // Load dynamic popular search suggestions from store_settings
-  useEffect(() => {
-    if (!configured) return;
-    fetchStoreSettings().then((settings) => {
-      if (settings.popular_searches && settings.popular_searches.length > 0) {
-        setPopularSearches(settings.popular_searches);
-      }
-    });
-  }, [configured]);
+  // Read popular searches dynamically from store_settings
+  const popularSearches = settings?.popular_searches || [];
 
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Debounced live search against Supabase
+  // Debounced live search against Supabase using trigram RPC searchProducts
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -144,11 +193,8 @@ export default function App() {
     setSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetchProducts({
-          search: searchQuery.trim(),
-          limit: 8,
-        });
-        setSearchResults(res.products);
+        const results = await searchProducts(searchQuery.trim(), 8);
+        setSearchResults(results);
       } catch (err) {
         console.error("Search failed:", err);
       } finally {
@@ -162,23 +208,27 @@ export default function App() {
   function handleAddToCart(product: Product, quantity = 1) {
     triggerHaptic("success");
     setCartItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
+      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        const existing = updated[existingIndex]!;
+        const newQty = existing.quantity + quantity;
+        updated[existingIndex] = {
+          ...existing,
+          quantity: product.stock ? Math.min(newQty, product.stock) : newQty,
+        };
+        return updated;
       }
       return [...prev, { product, quantity }];
     });
 
-    setToastMessage(`Added "${product.name.slice(0, 24)}..." to cart`);
-    setTimeout(() => setToastMessage(null), 2500);
+    setToastMessage(`Added ${product.name} to cart`);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2400);
   }
 
   function handleUpdateQuantity(productId: string, quantity: number) {
-    triggerHaptic("light");
     if (quantity <= 0) {
       handleRemoveItem(productId);
       return;
@@ -191,41 +241,34 @@ export default function App() {
   }
 
   function handleRemoveItem(productId: string) {
-    triggerHaptic("medium");
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
   }
 
   function handleClearCart() {
     setCartItems([]);
+    try {
+      localStorage.removeItem(GUEST_CART_KEY);
+    } catch {
+      // Ignore
+    }
   }
 
-  function handleSelectSearchResult(slug: string) {
-    setSearchOpen(false);
-    setSearchQuery("");
-    navigate(`/product/${slug}`);
-  }
-
-  // Enforce zero mock fallback: if Supabase is unconfigured, display StoreNotConfigured screen
   if (!configured) {
     return <StoreNotConfigured />;
   }
 
   return (
-    <div className="min-h-dvh bg-[#F8F9FB] flex flex-col font-sans text-slate-900 antialiased selection:bg-[#5ADBE5]/30">
-      {/* ── Auto Scroll to Top on every route change ── */}
+    <div className="min-h-screen bg-[#F8F9FB] text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-[#5ADBE5]/30">
       <ScrollToTop />
 
-      {/* ── Glassmorphism Top Bar (relative on mobile, fixed on desktop) ── */}
+      {/* ── Fixed Glassmorphism Top Navigation Bar ── */}
       <TopBar
         cartCount={totalCartCount}
         onOpenSearch={() => setSearchOpen(true)}
       />
 
-      {/* ── Fixed Floating Navigation Dock (Mobile Only) ── */}
-      <NavigationDock />
-
-      {/* ── Main Content Container ── */}
-      <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1780px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pt-20 sm:pt-22 md:pt-24 pb-28 sm:pb-32">
+      {/* ── Main Routed Page Content ── */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-28">
         <Routes>
           <Route path="/" element={<HomePage onAddToCart={handleAddToCart} />} />
           <Route
@@ -237,7 +280,10 @@ export default function App() {
               />
             }
           />
-          <Route path="/categories" element={<CategoriesPage onAddToCart={handleAddToCart} />} />
+          <Route
+            path="/categories"
+            element={<CategoriesPage onAddToCart={handleAddToCart} />}
+          />
           <Route
             path="/urbanrat"
             element={
@@ -301,7 +347,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* Popular Search Suggestions from store_settings */}
+            {/* Popular Search Suggestions from store_settings (hidden if empty) */}
             {!searchQuery.trim() && popularSearches.length > 0 && (
               <div className="space-y-2 py-1">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -323,53 +369,54 @@ export default function App() {
             )}
 
             {/* Live Search Results */}
-            <div className="max-h-80 overflow-y-auto space-y-2 no-scrollbar">
-              {searchResults.length > 0 ? (
-                searchResults.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => handleSelectSearchResult(product.slug)}
-                    className="w-full flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition text-left cursor-pointer group"
-                  >
-                    <img
-                      src={product.images[0] || ""}
-                      alt={product.name}
-                      className="w-12 h-12 rounded-xl object-contain bg-slate-100 border border-slate-100 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800 group-hover:text-[#0A82A8] truncate transition-colors">
-                        {product.name}
-                      </p>
-                      <div className="flex items-center space-x-2 mt-0.5">
-                        <span className="text-xs font-black text-slate-900">
-                          ₹{product.price.toLocaleString("en-IN")}
-                        </span>
-                        {product.is_urbanrat_brand && (
-                          <span className="text-[10px] font-bold text-[#0A82A8] bg-[#5ADBE5]/15 px-1.5 py-0.2 rounded">
-                            Urbanrat
-                          </span>
+            {searchQuery.trim() && (
+              <div className="max-h-80 overflow-y-auto space-y-2 pt-1 divide-y divide-slate-100">
+                {searchResults.length > 0 ? (
+                  searchResults.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        setSearchOpen(false);
+                        setSearchQuery("");
+                        navigate(`/product/${product.slug}`);
+                      }}
+                      className="pt-2 pb-2 first:pt-0 flex items-center justify-between hover:bg-slate-50 rounded-xl p-2 transition cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3 min-w-0 pr-2">
+                        {product.images[0] && (
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
+                          />
                         )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">
+                            {product.name}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            ₹{product.price.toLocaleString("en-IN")}
+                          </p>
+                        </div>
                       </div>
+                      <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
                     </div>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#0A82A8] group-hover:translate-x-0.5 transition-all shrink-0" />
-                  </button>
-                ))
-              ) : searchQuery.trim() ? (
-                <div className="text-center py-8">
-                  {searching ? (
-                    <p className="text-xs text-slate-400">Searching inventory...</p>
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-slate-700">No matching accessories found</p>
-                      <p className="text-[11px] text-slate-400">Try searching "iPhone", "charger", or "cable"</p>
+                  ))
+                ) : (
+                  !searching && (
+                    <div className="py-6 text-center text-xs text-slate-400">
+                      No matching products found for "{searchQuery}"
                     </div>
-                  )}
-                </div>
-              ) : null}
-            </div>
+                  )
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* ── Fixed Glassmorphism Bottom Navigation Dock ── */}
+      <NavigationDock />
     </div>
   );
 }

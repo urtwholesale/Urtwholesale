@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
-import { Save, Check, Loader2, Phone, Search, Store } from "lucide-react";
+import {
+  Save,
+  Check,
+  Loader2,
+  Phone,
+  Search,
+  Store,
+  KeyRound,
+  ShieldCheck,
+  User,
+  AlertCircle,
+} from "lucide-react";
 
 export function SettingsEditor() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -11,6 +22,14 @@ export function SettingsEditor() {
   const [saving, setSaving] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Admin Credentials State
+  const [adminUsername, setAdminUsername] = useState("Sjainthelegend");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [credSaving, setCredSaving] = useState(false);
+  const [credToast, setCredToast] = useState(false);
+  const [credError, setCredError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSettings() {
@@ -31,6 +50,8 @@ export function SettingsEditor() {
             } else if (row.key === "store_info" && typeof row.value === "object") {
               setStoreName(row.value.name || "");
               setTagline(row.value.tagline || "");
+            } else if (row.key === "admin_username" && typeof row.value === "string") {
+              setAdminUsername(row.value);
             }
           }
         }
@@ -106,6 +127,69 @@ export function SettingsEditor() {
     }
   }
 
+  async function handleUpdateCredentials(e: React.FormEvent) {
+    e.preventDefault();
+    setCredSaving(true);
+    setCredError(null);
+
+    try {
+      const trimmedUser = adminUsername.trim();
+      if (!trimmedUser) {
+        throw new Error("Admin username cannot be blank");
+      }
+
+      // If user provided a new password, validate and update in Supabase Auth
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          throw new Error("Password must be at least 6 characters long");
+        }
+        if (newPassword !== confirmPassword) {
+          throw new Error("New password and confirmation do not match");
+        }
+
+        const { error: pwErr } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (pwErr) throw pwErr;
+      }
+
+      // Save admin username to store_settings
+      const { error: settingErr } = await supabase
+        .from("store_settings")
+        .upsert({
+          key: "admin_username",
+          value: trimmedUser,
+          description: "Configured Admin Portal Username",
+          updated_at: new Date().toISOString(),
+        });
+
+      if (settingErr) throw settingErr;
+
+      // Update current user profile full_name to match admin username
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ full_name: trimmedUser, updated_at: new Date().toISOString() })
+          .eq("id", user.id);
+      }
+
+      setCredToast(true);
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setCredToast(false), 3000);
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("Credentials update error:", e);
+      setCredError(e.message || "Failed to update admin credentials");
+    } finally {
+      setCredSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center">
@@ -116,7 +200,8 @@ export function SettingsEditor() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
       <div className="flex items-center justify-between pb-4 border-b border-slate-100">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Store Settings</h2>
@@ -150,11 +235,11 @@ export function SettingsEditor() {
             required
             value={whatsappNumber}
             onChange={(e) => setWhatsappNumber(e.target.value)}
-            placeholder="917000947033"
+            placeholder="919876543210"
             className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
           />
           <p className="text-[11px] text-slate-400 mt-1">
-            Include country code without '+' or spaces (e.g. 917000947033). Used for all customer WhatsApp order dispatches.
+            Include country code without '+' or spaces (e.g. 919876543210). Used for all customer WhatsApp order dispatches.
           </p>
         </div>
 
@@ -229,6 +314,110 @@ export function SettingsEditor() {
           </button>
         </div>
       </form>
+    </div>
+
+      {/* Admin Portal Security & Credentials Card */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="w-5 h-5 text-[#0A82A8]" />
+              <h2 className="text-lg font-bold text-slate-900">
+                Admin Credentials & Master Password
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Change your fixed Admin Username and Master Password. Changes take effect immediately in your live Supabase database.
+            </p>
+          </div>
+          {credToast && (
+            <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 animate-in fade-in">
+              <Check className="w-3.5 h-3.5" />
+              <span>Credentials Updated!</span>
+            </span>
+          )}
+        </div>
+
+        {credError && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{credError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateCredentials} className="space-y-4">
+          <div>
+            <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+              <User className="w-3.5 h-3.5 text-[#0A82A8]" />
+              <span>Fixed Admin Username</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={adminUsername}
+              onChange={(e) => setAdminUsername(e.target.value)}
+              placeholder="Sjainthelegend"
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              The login username for the Admin Portal.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div>
+              <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+                <KeyRound className="w-3.5 h-3.5 text-[#0A82A8]" />
+                <span>New Master Password</span>
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Leave blank to keep current"
+                minLength={6}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repeat new password"
+                minLength={6}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={credSaving}
+              className="py-2.5 px-6 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
+              style={{
+                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+              }}
+            >
+              {credSaving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Updating Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Update Admin Credentials</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

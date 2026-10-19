@@ -98,3 +98,29 @@ on conflict (slug) do update set
   price = excluded.price,
   mrp = excluded.mrp,
   stock = excluded.stock;
+
+-- Insert Default Wholesale Price Tiers for Seeded Products
+insert into public.product_price_tiers (product_id, min_qty, unit_price)
+values
+  -- Urbanrat 9H Diamond Armor Tempered Glass
+  ('33333333-0000-0000-0000-000000000001', 1, 199.00),
+  ('33333333-0000-0000-0000-000000000001', 10, 169.00),
+  ('33333333-0000-0000-0000-000000000001', 50, 139.00),
+
+  -- Urbanrat 65W GaN III Turbo Power Adapter
+  ('33333333-0000-0000-0000-000000000002', 1, 999.00),
+  ('33333333-0000-0000-0000-000000000002', 10, 899.00),
+  ('33333333-0000-0000-0000-000000000002', 50, 799.00),
+
+  -- Urbanrat Armored 100W PD Braided Type-C Cable
+  ('33333333-0000-0000-0000-000000000003', 1, 249.00),
+  ('33333333-0000-0000-0000-000000000003', 10, 199.00),
+  ('33333333-0000-0000-0000-000000000003', 50, 149.00),
+
+  -- Urbanrat AirBass Pro ANC Earbuds
+  ('33333333-0000-0000-0000-000000000004', 1, 1299.00),
+  ('33333333-0000-0000-0000-000000000004', 10, 1149.00),
+  ('33333333-0000-0000-0000-000000000004', 50, 999.00)
+on conflict (product_id, min_qty) do update set
+  unit_price = excluded.unit_price;
+

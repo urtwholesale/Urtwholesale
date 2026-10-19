@@ -7,7 +7,7 @@ interface AdminLoginProps {
 }
 
 export function AdminLogin({ onSuccess }: AdminLoginProps) {
-  const [email, setEmail] = useState("");
+  const [usernameOrEmail, setUsernameOrEmail] = useState("Sjainthelegend");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,20 +18,47 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
     setError(null);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
+      const cleanInput = usernameOrEmail.trim();
+      let authEmail = cleanInput.toLowerCase();
 
-      // Authenticate strictly with Supabase Auth
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-
-      if (authError) {
-        throw new Error(authError.message);
+      // If user inputs username without domain (e.g. "Sjainthelegend"), map to admin auth email
+      if (!authEmail.includes("@")) {
+        authEmail = `${authEmail}@urtwholesale.com`;
       }
 
-      const user = authData.user;
+      // Authenticate with Supabase Auth
+      let authData: any = null;
+      let authError: any = null;
+
+      const res = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password,
+      });
+
+      authData = res.data;
+      authError = res.error;
+
+      // If user has custom email or fallback needed, try standard sjainthelegend@urtwholesale.com
+      if (authError && !cleanInput.includes("@")) {
+        const retryRes = await supabase.auth.signInWithPassword({
+          email: "sjainthelegend@urtwholesale.com",
+          password,
+        });
+        if (!retryRes.error) {
+          authData = retryRes.data;
+          authError = null;
+        }
+      }
+
+      if (authError) {
+        throw new Error(
+          authError.message === "Invalid login credentials"
+            ? "Invalid username or password. Please verify your credentials."
+            : authError.message
+        );
+      }
+
+      const user = authData?.user;
       if (!user) {
         throw new Error("No user session returned");
       }
@@ -70,14 +97,11 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
     <div className="w-full max-w-sm mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
       {/* Brand Header */}
       <div className="text-center mb-6">
-        <div
-          className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-white font-black text-xl shadow-md mb-3"
-          style={{
-            background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-          }}
-        >
-          A
-        </div>
+        <img
+          src="/logo.png"
+          alt="Urbanrat Admin"
+          className="w-14 h-14 rounded-full mx-auto object-cover shadow-sm mb-3"
+        />
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">
           Admin Portal
         </h2>
@@ -110,15 +134,15 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Admin Email
+            Admin Username or Email
           </label>
           <input
-            type="email"
+            type="text"
             required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@urbanrat.com"
+            autoComplete="username"
+            value={usernameOrEmail}
+            onChange={(e) => setUsernameOrEmail(e.target.value)}
+            placeholder="Sjainthelegend"
             className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
           />
         </div>

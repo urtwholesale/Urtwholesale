@@ -1,5 +1,8 @@
 export interface StoreSettings {
   whatsapp_number: string;
+  store_name?: string;
+  free_delivery_min?: number;
+  shipping_fee?: number;
   popular_searches: string[];
   value_badges: { icon: string; text: string }[];
   store_info: {
@@ -15,6 +18,8 @@ export interface Banner {
   subtitle: string;
   badge_text: string;
   image_url: string | null;
+  link_url?: string | null;
+  badges?: { icon?: string; text?: string; label?: string; value?: string }[];
   cta_text: string;
   cta_link: string;
   secondary_cta_text: string;

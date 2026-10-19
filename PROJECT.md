@@ -26,13 +26,13 @@ urbanrat-store/
 │   ├── store/                     # Customer-facing Storefront (Vite + React 19)
 │   │   ├── public/                # Static assets (favicons, banners)
 │   │   ├── src/
-│   │   │   ├── components/        # Reusable UI (TopBar, NavigationDock, ProductCard, etc.)
-│   │   │   ├── data/              # Resilient fallback mock data (MOCK_PRODUCTS, etc.)
+│   │   │   ├── components/        # Reusable UI (TopBar, NavigationDock, ProductCard, ErrorState, etc.)
+│   │   │   ├── context/           # Global application contexts (SettingsContext for store_settings)
 │   │   │   ├── features/auth/     # Customer authentication & profile modal
 │   │   │   ├── lib/               # Supabase client instantiation
-│   │   │   ├── pages/             # Route views (Home, Marketplace, Cart, Order, etc.)
-│   │   │   ├── services/          # Data service layer with live Supabase + fallback logic
-│   │   │   ├── utils/             # WhatsApp message generator, currency formatters
+│   │   │   ├── pages/             # Route views (Home, Marketplace, Cart, Order, Menu, etc.)
+│   │   │   ├── services/          # Pure live Supabase data service layer (no mock fallbacks)
+│   │   │   ├── utils/             # WhatsApp message generator, currency & haptic helpers
 │   │   │   ├── App.tsx            # Main application layout, routing & cart state
 │   │   │   ├── index.css          # Tailwind CSS v4 design tokens & theme classes
 │   │   │   └── main.tsx           # React DOM root
@@ -181,10 +181,10 @@ box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   - Public read access for all visitors.
   - Upload/Delete restricted to users with `role = 'admin'`.
 
-### Resilient Data Layer
-The storefront implements a dual-mode service architecture in `storeService.ts`:
-- **When Supabase is connected**: Queries live PostgreSQL tables with full filtering, sorting, and pagination.
-- **When offline / unconfigured**: Gracefully falls back to comprehensive mock data in `mockData.ts` with zero crashes or broken layouts.
+### Live Supabase Data Layer
+All mock data and fallback constants have been eliminated across the monorepo:
+- **Pure Live Data**: Queries live PostgreSQL tables and RPCs with volume price tiers, inventory locking, and admin settings.
+- **Resilient UI States**: Every data-driven view provides distinct Skeleton loading, EmptyState, and ErrorState with Retry mechanisms.
 
 ---
 

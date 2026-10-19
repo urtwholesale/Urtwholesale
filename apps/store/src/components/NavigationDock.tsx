@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { Home, ShoppingBag, LayoutGrid, Zap, Menu } from "lucide-react";
+import { Home, ShoppingBag, LayoutGrid, Menu } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 
 interface NavItem {
@@ -8,10 +8,20 @@ interface NavItem {
   label: string;
 }
 
+function UrbanratNavIcon() {
+  return (
+    <img
+      src="/logo.png"
+      alt="Urbanrat"
+      className="w-5 h-5 rounded-full object-cover shadow-2xs"
+    />
+  );
+}
+
 const NAV_ITEMS: NavItem[] = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/marketplace", icon: ShoppingBag, label: "Marketplace" },
-  { to: "/urbanrat", icon: Zap, label: "Urbanrat" },
+  { to: "/urbanrat", icon: UrbanratNavIcon, label: "Urbanrat" },
   { to: "/categories", icon: LayoutGrid, label: "Categories" },
   { to: "/menu", icon: Menu, label: "Menu" },
 ];

@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router";
-import { fetchOrderById, fetchStoreSettings } from "../services/storeService";
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "react-router";
+import { fetchOrderById } from "../services/storeService";
+import { useSettings } from "../context/SettingsContext";
+import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/ErrorState";
 import type { Order } from "@urbanrat/shared";
 import {
   Package,
   MapPin,
   MessageCircle,
   CreditCard,
-  ArrowRight,
   Clock,
   CheckCircle2,
   Truck,
@@ -19,34 +21,33 @@ import {
 
 export function OrderPage() {
   const { orderId } = useParams<{ orderId: string }>();
+  const { whatsappNumber } = useSettings();
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [whatsappNumber, setWhatsappNumber] = useState("917000947033");
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStoreSettings().then((s) => {
-      if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
-    });
-  }, []);
-
-  useEffect(() => {
-    async function loadOrder() {
-      if (!orderId) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const data = await fetchOrderById(orderId.trim());
-        setOrder(data);
-      } catch (err) {
-        console.error("Failed to load order:", err);
-      } finally {
-        setLoading(false);
-      }
+  const loadOrder = useCallback(async () => {
+    if (!orderId) {
+      setLoading(false);
+      return;
     }
-
-    loadOrder();
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchOrderById(orderId.trim());
+      setOrder(data);
+    } catch (err: any) {
+      console.error("Failed to load order:", err);
+      setError(err?.message || "Failed to retrieve order details.");
+    } finally {
+      setLoading(false);
+    }
   }, [orderId]);
+
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
 
   if (loading) {
     return (
@@ -57,38 +58,29 @@ export function OrderPage() {
     );
   }
 
-  // Invalid / Not Found State
+  if (error) {
+    return (
+      <div className="py-12">
+        <ErrorState
+          title="Could not load order"
+          message={error}
+          onRetry={loadOrder}
+        />
+      </div>
+    );
+  }
+
+  // Not Found State
   if (!order) {
     return (
-      <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 p-8 shadow-sm max-w-md mx-auto my-6 animate-in fade-in duration-300">
-        <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 mx-auto mb-4 border border-amber-100">
-          <AlertTriangle className="w-8 h-8" />
-        </div>
-        <h2 className="text-lg font-bold text-slate-800">Order Not Found</h2>
-        <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-          We couldn&apos;t locate an order with ID <span className="font-mono font-bold text-slate-700">#{orderId || "unknown"}</span>. Please verify your link or contact wholesale support.
-        </p>
-        <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
-          <Link
-            to="/marketplace"
-            className="inline-flex items-center justify-center space-x-2 py-2.5 px-6 rounded-2xl text-white font-semibold text-xs shadow-md transition active:scale-95"
-            style={{
-              background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-            }}
-          >
-            <span>Explore Catalog</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <a
-            href={`https://wa.me/${whatsappNumber}?text=Hello%20URT%20Wholesale%2C%20I%20need%20help%20finding%20my%20order`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center space-x-2 py-2.5 px-6 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold text-xs transition"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>Support Chat</span>
-          </a>
-        </div>
+      <div className="py-8">
+        <EmptyState
+          icon={<AlertTriangle className="w-8 h-8 text-amber-500" />}
+          title="Order Not Found"
+          description={`We couldn't locate an order with ID #${orderId || "unknown"}. Please check your link or contact support.`}
+          actionText="Explore Marketplace"
+          onAction={() => (window.location.href = "/marketplace")}
+        />
       </div>
     );
   }
@@ -113,90 +105,120 @@ export function OrderPage() {
     minute: "2-digit",
   });
 
-  const whatsappInquiryUrl = `https://wa.me/917000947033?text=${encodeURIComponent(
-    `Hello URT Wholesale, I would like to inquire about my order #${order.id}.`
-  )}`;
+  const whatsappInquiryUrl = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+        `Hello URT Wholesale, I would like to inquire about my order #${order.id}.`
+      )}`
+    : null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 pb-16 w-full max-w-5xl 2xl:max-w-6xl mx-auto">
-      {/* ── Top Order Header ── */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-sm space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold text-slate-400">Order ID</span>
-              <span className="font-mono text-sm sm:text-base font-extrabold text-slate-900">
-                #{order.id}
-              </span>
-            </div>
-            <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 mt-0.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>Placed on {orderDate}</span>
-            </div>
+    <div className="space-y-6 animate-in fade-in duration-300 pb-16">
+      {/* ── Order Header Banner ── */}
+      <div className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Order #{order.id}
+            </h1>
+            <span
+              className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${statusConfig.bg} ${statusConfig.text}`}
+            >
+              <StatusIcon className="w-3.5 h-3.5" />
+              <span>{order.status}</span>
+            </span>
           </div>
 
-          <span
-            className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${statusConfig.bg} ${statusConfig.text}`}
-          >
-            <StatusIcon className="w-3.5 h-3.5" />
-            <span>{order.status}</span>
-          </span>
+          <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1.5">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span>Placed on {orderDate}</span>
+          </p>
         </div>
+
+        {whatsappInquiryUrl && (
+          <a
+            href={whatsappInquiryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs border border-emerald-200/80 transition"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-600" />
+            <span>Track on WhatsApp</span>
+          </a>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ── Left Column: Items List ── */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
+        {/* ── Left Column: Items & Customer Details ── */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+          {/* Order Items List */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-4">
             <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
               <ShoppingBag className="w-4 h-4 text-[#0A82A8]" />
-              <h2 className="font-bold text-sm text-slate-900">
-                Ordered Items ({order.items.reduce((s, i) => s + i.quantity, 0)})
+              <h2 className="font-extrabold text-sm text-slate-900">
+                Ordered Items ({order.items?.length || 0})
               </h2>
             </div>
 
             <div className="space-y-3">
-              {order.items.map((item, index) => (
-                <div
-                  key={`${item.product_id}-${index}`}
-                  className="flex items-center space-x-3.5 p-3 rounded-2xl bg-slate-50/80 border border-slate-100"
-                >
-                  <div className="w-14 h-14 rounded-xl bg-white overflow-hidden shrink-0 border border-slate-200/70">
-                    <img
-                      src={item.image || "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=200&auto=format&fit=crop&q=80"}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+              {order.items?.map((item: any, idx: number) => {
+                const name = item.product?.name ?? item.name ?? "Item";
+                const unitPrice = item.unit_price ?? item.price ?? 0;
+                const qty = item.quantity;
+                const lineTotal = item.line_total ?? unitPrice * qty;
+                const img = item.product?.images?.[0] ?? item.images?.[0] ?? "";
 
-                  <div className="flex-1 min-w-0 pr-2">
-                    <p className="font-semibold text-xs sm:text-sm text-slate-800 truncate">
-                      {item.name}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {item.quantity} × ₹{item.price.toLocaleString("en-IN")}
-                    </p>
-                  </div>
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/70 border border-slate-100/80"
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 pr-2">
+                      <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                        {img ? (
+                          <img
+                            src={img}
+                            alt={name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="w-5 h-5 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-xs text-slate-900 truncate">
+                          {name}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Qty: <span className="font-bold">{qty}</span> × ₹
+                          {unitPrice.toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                    </div>
 
-                  <span className="font-bold text-xs sm:text-sm text-slate-900 shrink-0">
-                    ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                  </span>
-                </div>
-              ))}
+                    <div className="text-right shrink-0">
+                      <span className="font-black text-xs sm:text-sm text-slate-900">
+                        ₹{lineTotal.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Delivery Details Card */}
+          {/* Delivery Coordinates */}
           {order.customer && (
-            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-3">
               <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
                 <MapPin className="w-4 h-4 text-[#0A82A8]" />
-                <h2 className="font-bold text-sm text-slate-900">Delivery Information</h2>
+                <h2 className="font-extrabold text-sm text-slate-900">
+                  Delivery Destination
+                </h2>
               </div>
 
-              <div className="space-y-2 text-xs text-slate-700">
+              <div className="text-xs space-y-1.5 text-slate-600">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Recipient:</span>
+                  <span className="text-slate-400">Recipient Name:</span>
                   <span className="font-semibold text-slate-900">{order.customer.name}</span>
                 </div>
                 <div className="flex justify-between">
@@ -217,7 +239,7 @@ export function OrderPage() {
 
         {/* ── Right Column: Order Summary & Actions ── */}
         <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
+          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-4">
             <h2 className="font-bold text-base text-slate-900">Payment Summary</h2>
 
             <div className="space-y-2 text-xs text-slate-600 border-b border-slate-100 pb-3">
@@ -253,7 +275,6 @@ export function OrderPage() {
             </div>
 
             <div className="space-y-2 pt-2">
-              {/* Pay Now Button (Disabled placeholder per spec) */}
               <button
                 type="button"
                 disabled
@@ -264,16 +285,17 @@ export function OrderPage() {
                 <span>Pay Now (Direct Payment Coming Soon)</span>
               </button>
 
-              {/* Chat on WhatsApp */}
-              <a
-                href={whatsappInquiryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99]"
-              >
-                <MessageCircle className="w-4.5 h-4.5" />
-                <span>Chat on WhatsApp</span>
-              </a>
+              {whatsappInquiryUrl && (
+                <a
+                  href={whatsappInquiryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99]"
+                >
+                  <MessageCircle className="w-4.5 h-4.5" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+              )}
             </div>
           </div>
         </div>

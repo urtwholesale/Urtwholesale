@@ -1,14 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import {
   fetchProductBySlug,
   fetchRelatedProducts,
-  fetchStoreSettings,
+  getApprovedReviews,
+  submitReview,
 } from "../services/storeService";
+import { useSettings } from "../context/SettingsContext";
+import { supabase } from "../lib/supabase";
 import { ProductCard } from "../components/ProductCard";
 import { ProductDetailSkeleton } from "../components/Skeletons";
 import { EmptyState } from "../components/EmptyState";
-import type { Product } from "@urbanrat/shared";
+import { ErrorState } from "../components/ErrorState";
+import {
+  getUnitPrice,
+  getNextTier,
+  getTierRanges,
+  type Product,
+  type Review,
+} from "@urbanrat/shared";
 import {
   ArrowLeft,
   ShieldCheck,
@@ -19,8 +29,10 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
-  Zap,
   CheckCircle2,
+  Star,
+  Send,
+  Layers,
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 
@@ -31,62 +43,79 @@ interface ProductDetailPageProps {
 export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { whatsappNumber } = useSettings();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState("917000947033");
 
-  // Load dynamic WhatsApp number from store_settings
-  useEffect(() => {
-    fetchStoreSettings().then((s) => {
-      if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
-    });
-  }, []);
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewBody, setReviewBody] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   // Swipe support for mobile gallery
   const touchStartX = useRef<number | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadProductData = useCallback(async () => {
+    if (!slug) return;
+    setLoading(true);
+    setError(null);
+    setActiveImageIndex(0);
 
-    async function loadProductData() {
-      if (!slug) return;
-      setLoading(true);
-      setActiveImageIndex(0);
-      setQuantity(1);
-
-      try {
-        const prod = await fetchProductBySlug(slug);
-        if (isMounted) {
-          setProduct(prod);
-          if (prod) {
-            const related = await fetchRelatedProducts(prod.id, prod.category_id);
-            if (isMounted) setRelatedProducts(related);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load product detail:", err);
-      } finally {
-        if (isMounted) setLoading(false);
+    try {
+      const prod = await fetchProductBySlug(slug);
+      setProduct(prod);
+      if (prod) {
+        setQuantity(prod.min_order_qty || 1);
+        const [related, approvedRevs, authRes] = await Promise.all([
+          fetchRelatedProducts(prod.id, prod.category_id).catch(() => []),
+          getApprovedReviews(prod.id).catch(() => []),
+          supabase.auth.getUser().catch(() => ({ data: { user: null } })),
+        ]);
+        setRelatedProducts(related);
+        setReviews(approvedRevs);
+        setCurrentUser(authRes.data.user);
       }
+    } catch (err: any) {
+      console.error("Failed to load product detail:", err);
+      setError(err?.message || "Failed to load product details.");
+    } finally {
+      setLoading(false);
     }
-
-    loadProductData();
-    return () => {
-      isMounted = false;
-    };
   }, [slug]);
+
+  useEffect(() => {
+    loadProductData();
+  }, [loadProductData]);
 
   if (loading) {
     return (
       <div className="space-y-6 pb-12 animate-in fade-in duration-300">
         <div className="h-4 w-16 bg-slate-100 rounded" />
         <ProductDetailSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-8">
+        <ErrorState
+          title="Could not load product"
+          message={error}
+          onRetry={loadProductData}
+        />
       </div>
     );
   }
@@ -102,13 +131,42 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     );
   }
 
-  const images = product.images.length > 0
-    ? product.images
-    : ["https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800&auto=format&fit=crop&q=80"];
+  const tiers = product.price_tiers || [];
+  const minQty = product.min_order_qty || 1;
+  const step = product.order_qty_step || 1;
+  const stock = product.stock;
 
-  const discountPercent = product.mrp
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
-    : 0;
+  // Quantity stepper math
+  function handleDecrement() {
+    setQuantity((prev) => Math.max(minQty, prev - step));
+  }
+
+  function handleIncrement() {
+    setQuantity((prev) => {
+      const next = prev + step;
+      if (stock > 0 && next > stock) return prev;
+      return next;
+    });
+  }
+
+  // Tier pricing calculations
+  const unitPrice = getUnitPrice(tiers, quantity);
+  const estimatedLineTotal = unitPrice * quantity;
+  const nextTier = getNextTier(tiers, quantity);
+  const tierRangeLabels = getTierRanges(tiers);
+  const firstTierPrice = tiers[0]?.unit_price ?? product.price;
+
+  const images =
+    product.images.length > 0
+      ? product.images
+      : [
+          "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800&auto=format&fit=crop&q=80",
+        ];
+
+  const discountPercent =
+    product.mrp && product.mrp > unitPrice
+      ? Math.round(((product.mrp - unitPrice) / product.mrp) * 100)
+      : 0;
 
   function handleTouchStart(e: React.TouchEvent) {
     const touch = e.touches[0];
@@ -124,10 +182,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     const diff = touchStartX.current - touch.clientX;
     if (Math.abs(diff) > 40) {
       if (diff > 0) {
-        // Swipe left -> next image
         setActiveImageIndex((prev) => (prev + 1) % images.length);
       } else {
-        // Swipe right -> previous image
         setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
       }
     }
@@ -149,13 +205,31 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     navigate("/cart");
   }
 
-  const whatsappInquiryUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-    `Hi URT Wholesale, I am interested in wholesale order: ${product.name} (SKU: ${product.sku || "N/A"}). Price: ₹${product.price}`
-  )}`;
+  async function handleReviewSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!product || !currentUser) return;
+    setSubmittingReview(true);
+    setReviewError(null);
+    try {
+      await submitReview({
+        productId: product.id,
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        body: reviewBody.trim() || undefined,
+      });
+      setReviewSuccess(true);
+      setReviewTitle("");
+      setReviewBody("");
+    } catch (err: any) {
+      setReviewError(err?.message || "Failed to submit review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-16 -mt-4 sm:mt-0">
-      {/* ── Breadcrumb / Back Navigation (Desktop only, Mobile uses TopBar back button) ── */}
+      {/* ── Breadcrumb / Back Navigation ── */}
       <div className="hidden sm:flex items-center justify-between">
         <button
           type="button"
@@ -205,8 +279,12 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             )}
 
             {product.is_urbanrat_brand && (
-              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-[#0A82A8] border border-slate-200/60 shadow-xs flex items-center space-x-1">
-                <Zap className="w-3 h-3 text-[#5ADBE5]" />
+              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-[#0A82A8] border border-slate-200/60 shadow-xs flex items-center space-x-1.5">
+                <img
+                  src="/logo.png"
+                  alt="Urbanrat"
+                  className="w-3.5 h-3.5 rounded-full object-cover"
+                />
                 <span>Urbanrat Original</span>
               </div>
             )}
@@ -280,81 +358,224 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 SKU: {product.sku || "UR-ACCESSORY"}
               </span>
             </div>
+
+            {/* Rating Stars (Only shown if rating_count > 0) */}
+            {Boolean(product.rating_count && product.rating_count > 0) && (
+              <div className="flex items-center space-x-2 mb-1.5">
+                <div className="flex items-center text-amber-400">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-3.5 h-3.5 ${
+                        i < Math.round(Number(product.rating_avg) || 0)
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-slate-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-black text-slate-800">
+                  {Number(product.rating_avg).toFixed(1)}
+                </span>
+                <span className="text-xs text-slate-400">
+                  ({product.rating_count}{" "}
+                  {product.rating_count === 1 ? "review" : "reviews"})
+                </span>
+              </div>
+            )}
+
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug">
               {product.name}
             </h1>
-            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
-              {product.description}
-            </p>
+
+            {product.short_description && (
+              <p className="mt-1 text-xs sm:text-sm font-medium text-slate-600">
+                {product.short_description}
+              </p>
+            )}
+
+            {product.description && (
+              <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                {product.description}
+              </p>
+            )}
+
+            {/* Warranty Badge */}
+            {Boolean(product.warranty_months && product.warranty_months > 0) && (
+              <div className="mt-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{product.warranty_months} Months Wholesale Warranty</span>
+              </div>
+            )}
           </div>
 
-          {/* Pricing Box */}
-          <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1.5">
+          {/* ── Bulk Pricing Table ── */}
+          {tiers.length > 0 && (
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-[#0A82A8]" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                    Tiered Volume Pricing
+                  </h3>
+                </div>
+                <span className="text-[10px] text-slate-400 font-semibold">
+                  Unit Price per Piece
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {tiers.map((tier, idx) => {
+                  const rangeStr = tierRangeLabels[idx] || `${tier.min_qty}+`;
+                  const isFirstTier = idx === 0;
+                  const savingsVsFirst =
+                    !isFirstTier && firstTierPrice > tier.unit_price
+                      ? Math.round(
+                          ((firstTierPrice - tier.unit_price) / firstTierPrice) * 100
+                        )
+                      : 0;
+
+                  // Active tier logic based on current quantity
+                  const isActive =
+                    quantity >= tier.min_qty &&
+                    (idx === tiers.length - 1 || quantity < tiers[idx + 1]!.min_qty);
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`relative rounded-2xl p-3 border transition-all ${
+                        isActive
+                          ? "bg-sky-50/80 border-[#0A82A8] ring-2 ring-[#5ADBE5]/40 shadow-xs"
+                          : "bg-slate-50/60 border-slate-100 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-extrabold text-slate-600">
+                          {rangeStr} pcs
+                        </span>
+                        {savingsVsFirst > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800">
+                            Save {savingsVsFirst}%
+                          </span>
+                        )}
+                        {isActive && savingsVsFirst === 0 && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-[#0A82A8] text-white">
+                            Active
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-base font-black text-slate-900 tracking-tight">
+                        ₹{tier.unit_price.toLocaleString("en-IN")}
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          /pc
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Pricing Box & Quantity Stepper */}
+          <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-4">
             <div className="flex items-baseline space-x-2.5">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                ₹{product.price.toLocaleString("en-IN")}
+                ₹{unitPrice.toLocaleString("en-IN")}
               </span>
-              {product.mrp && product.mrp > product.price && (
+              <span className="text-xs text-slate-400 font-medium">/ unit</span>
+
+              {product.mrp && product.mrp > unitPrice && (
                 <span className="text-sm text-slate-400 line-through">
                   ₹{product.mrp.toLocaleString("en-IN")}
-                </span>
-              )}
-              {discountPercent > 0 && (
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                  Save ₹{(product.mrp! - product.price).toLocaleString("en-IN")}
                 </span>
               )}
             </div>
 
             {/* Stock Status Indicator */}
-            <div className="pt-1 flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  product.stock > 20
+                  stock > (product.low_stock_threshold || 10)
                     ? "bg-emerald-500"
-                    : product.stock > 0
+                    : stock > 0
                     ? "bg-amber-500"
                     : "bg-rose-500"
                 }`}
               />
               <span className="text-xs font-bold text-slate-700">
-                {product.stock > 20
-                  ? `In Stock (${product.stock} units ready to ship)`
-                  : product.stock > 0
-                  ? `Low Stock (${product.stock} units remaining)`
+                {stock > (product.low_stock_threshold || 10)
+                  ? `In Stock (${stock} units ready to ship)`
+                  : stock > 0
+                  ? `Low Stock (${stock} units remaining)`
                   : "Out of Stock"}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Tax invoice included • Pan-India courier dispatch within 24 hours
-            </p>
-          </div>
 
-          {/* Quantity Stepper */}
-          <div className="flex items-center space-x-4 bg-white p-3 rounded-2xl border border-slate-100">
-            <span className="text-xs font-bold text-slate-700">Order Quantity</span>
-            <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 cursor-pointer"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="w-10 text-center font-black text-xs text-slate-800">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+            {/* Quantity Stepper respecting min_order_qty, order_qty_step and stock */}
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">
+                  Quantity (Min: {minQty}
+                  {step > 1 ? `, Step: ${step}` : ""})
+                </span>
+
+                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={handleDecrement}
+                    disabled={quantity <= minQty}
+                    aria-label="Decrease quantity"
+                    className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-12 text-center font-black text-xs text-slate-800">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleIncrement}
+                    disabled={stock > 0 && quantity + step > stock}
+                    aria-label="Increase quantity"
+                    className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Line Total Math (clearly labeled as an estimate) */}
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-slate-500 font-medium">
+                  Estimated Subtotal:
+                </span>
+                <div className="text-right">
+                  <span className="text-slate-900 font-black text-sm">
+                    ₹{estimatedLineTotal.toLocaleString("en-IN")}
+                  </span>
+                  <span className="ml-1 text-[10px] text-slate-400 font-normal">
+                    (estimated)
+                  </span>
+                </div>
+              </div>
+
+              {/* Nudge: Add N more to get tier price */}
+              {nextTier && (
+                <div className="pt-1">
+                  <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-100 text-[11px] font-semibold text-sky-800 flex items-center space-x-1.5">
+                    <span className="text-sm">💡</span>
+                    <span>
+                      Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
+                      <strong>
+                        ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
+                      </strong>
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-            <span className="text-xs font-semibold text-slate-500">
-              Subtotal: <span className="text-slate-900 font-bold">₹{(product.price * quantity).toLocaleString("en-IN")}</span>
-            </span>
           </div>
 
           {/* Action Buttons: Add to Cart & Buy Now */}
@@ -363,7 +584,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="flex-1 py-3.5 px-6 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                disabled={stock <= 0}
+                className="flex-1 py-3.5 px-6 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5 disabled:opacity-50"
                 style={{
                   background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
                 }}
@@ -381,23 +603,54 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+                disabled={stock <= 0}
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
               >
                 Buy Now
               </button>
             </div>
 
-            {/* WhatsApp Inquiry */}
-            <a
-              href={whatsappInquiryUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center space-x-2 py-3 px-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200/80 transition"
-            >
-              <MessageCircle className="w-4 h-4 text-emerald-600" />
-              <span>Direct WhatsApp Inquiry / Bulk Quote</span>
-            </a>
+            {/* WhatsApp Inquiry (Only if whatsappNumber exists) */}
+            {whatsappNumber && (
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+                  `Hi URT Wholesale, I am interested in wholesale order: ${product.name} (SKU: ${
+                    product.sku || "N/A"
+                  }). Estimate: ₹${estimatedLineTotal} for ${quantity} pcs.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center space-x-2 py-3 px-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200/80 transition"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                <span>Direct WhatsApp Inquiry / Bulk Quote</span>
+              </a>
+            )}
           </div>
+
+          {/* Technical Specs Grid from specs jsonb */}
+          {product.specs && Object.keys(product.specs).length > 0 && (
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                Specifications
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {Object.entries(product.specs).map(([key, val]) => (
+                  <div
+                    key={key}
+                    className="flex justify-between py-2 px-3 rounded-xl bg-slate-50 border border-slate-100/60"
+                  >
+                    <span className="font-semibold text-slate-500 capitalize">
+                      {key.replace(/_/g, " ")}
+                    </span>
+                    <span className="font-bold text-slate-900 text-right">
+                      {String(val)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Guarantees */}
           <div className="grid grid-cols-3 gap-2 pt-2 text-center text-slate-600 text-[11px]">
@@ -411,11 +664,166 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             </div>
             <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
               <RotateCcw className="w-4 h-4 text-[#0A82A8] mx-auto mb-1" />
-              <span className="font-semibold">Dead on Arrival Guarantee</span>
+              <span className="font-semibold">DOA Guarantee</span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── Customer Reviews & Ratings ── */}
+      <section className="pt-8 border-t border-slate-100 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              Customer Reviews
+            </h2>
+            <p className="text-xs text-slate-400">
+              Verified wholesale buyer feedback
+            </p>
+          </div>
+          {Boolean(product.rating_count && product.rating_count > 0) && (
+            <div className="text-right">
+              <span className="text-lg font-black text-slate-900">
+                {Number(product.rating_avg).toFixed(1)}
+              </span>
+              <span className="text-xs text-slate-400 font-medium"> / 5.0</span>
+            </div>
+          )}
+        </div>
+
+        {/* Approved Reviews List */}
+        {reviews.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {reviews.map((rev) => (
+              <div
+                key={rev.id}
+                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-amber-400">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-3.5 h-3.5 ${
+                          i < rev.rating
+                            ? "fill-amber-400 text-amber-400"
+                            : "text-slate-200"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(rev.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                {rev.title && (
+                  <h4 className="text-xs font-bold text-slate-900">{rev.title}</h4>
+                )}
+                {rev.body && (
+                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                    {rev.body}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 text-center text-xs text-slate-500">
+            No approved reviews yet. Verified buyers can submit feedback below!
+          </div>
+        )}
+
+        {/* Write a Review Section */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-3">
+          <h3 className="text-sm font-extrabold text-slate-800">
+            Write a Wholesale Review
+          </h3>
+
+          {currentUser ? (
+            reviewSuccess ? (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Thank you! Your review has been submitted and will appear once approved by moderation.
+                </span>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="space-y-3">
+                {reviewError && (
+                  <p className="text-xs text-rose-600 font-semibold">
+                    {reviewError}
+                  </p>
+                )}
+
+                {/* Rating Stars Input */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-slate-700">Rating:</span>
+                  <div className="flex items-center space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className="p-1 cursor-pointer focus:outline-none"
+                      >
+                        <Star
+                          className={`w-5 h-5 ${
+                            star <= reviewRating
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-slate-300"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    placeholder="Review headline (optional)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <textarea
+                    value={reviewBody}
+                    onChange={(e) => setReviewBody(e.target.value)}
+                    rows={3}
+                    placeholder="Share your experience regarding build quality, margins, or packaging..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow hover:shadow-md active:scale-95 transition disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                  style={{
+                    background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                  }}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>
+                    {submittingReview ? "Submitting..." : "Submit Review"}
+                  </span>
+                </button>
+              </form>
+            )
+          ) : (
+            <p className="text-xs text-slate-500">
+              Please{" "}
+              <Link to="/menu" className="font-bold text-[#0A82A8] underline">
+                sign in to your customer account
+              </Link>{" "}
+              to write a review.
+            </p>
+          )}
+        </div>
+      </section>
 
       {/* ── Related Products Row ── */}
       {relatedProducts.length > 0 && (
@@ -437,7 +845,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <ProductCard
                 key={rel.id}
                 product={rel}
-                onAddToCart={(p) => onAddToCart(p, 1)}
+                onAddToCart={(p) => onAddToCart(p, p.min_order_qty || 1)}
               />
             ))}
           </div>

@@ -7,7 +7,26 @@ import type {
   StoreSettings,
   Banner,
   StorePage,
+  PriceTier,
+  Address,
+  Review,
 } from "@urbanrat/shared";
+
+/**
+ * Custom typed error class for store services
+ */
+export class StoreError extends Error {
+  readonly code?: string;
+  readonly details?: unknown;
+
+  constructor(message: string, code?: string, details?: unknown) {
+    super(message);
+    this.name = "StoreError";
+    this.code = code;
+    this.details = details;
+    Object.setPrototypeOf(this, StoreError.prototype);
+  }
+}
 
 export interface ProductFilterOptions {
   categoryId?: string | null;
@@ -16,9 +35,10 @@ export interface ProductFilterOptions {
   isUrbanratBrand?: boolean;
   isFeatured?: boolean;
   search?: string;
-  sort?: "price_asc" | "price_desc" | "newest";
+  sort?: "price_asc" | "price_desc" | "newest" | "price-asc" | "price-desc";
   priceMin?: number;
   priceMax?: number;
+  inStockOnly?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -26,6 +46,23 @@ export interface ProductFilterOptions {
 export interface ProductsResponse {
   products: Product[];
   total: number;
+}
+
+export const PRODUCT_SELECT = "*, price_tiers:product_price_tiers(*)";
+
+/**
+ * Normalizes and sorts price tiers ascending by min_qty in one place
+ */
+export function formatProduct(raw: any): Product {
+  const rawTiers = raw.price_tiers || raw.product_price_tiers || [];
+  const price_tiers: PriceTier[] = Array.isArray(rawTiers)
+    ? [...rawTiers].sort((a, b) => a.min_qty - b.min_qty)
+    : [];
+
+  return {
+    ...raw,
+    price_tiers,
+  };
 }
 
 /**
@@ -44,42 +81,41 @@ export function isSupabaseConfigured(): boolean {
   );
 }
 
-/**
- * Fetch all active categories (parents and subcategories) from live database
- */
-export async function fetchCategories(): Promise<Category[]> {
+function ensureConfigured() {
   if (!isSupabaseConfigured()) {
-    return [];
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
-
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching categories:", error);
-      return [];
-    }
-
-    return (data as Category[]) || [];
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching categories:", err);
-    return [];
+    throw new StoreError(
+      "Supabase connection is not configured.",
+      "CONFIG_MISSING"
+    );
   }
 }
 
 /**
- * Fetch products with live filtering, search, sorting, and pagination
+ * Fetch all active categories from live database
+ */
+export async function fetchCategories(): Promise<Category[]> {
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return (data as Category[]) || [];
+}
+
+/**
+ * Fetch products with live filtering, sorting on products.price, and joined price tiers
  */
 export async function fetchProducts(
   options: ProductFilterOptions = {}
 ): Promise<ProductsResponse> {
-  if (!isSupabaseConfigured()) {
-    return { products: [], total: 0 };
-  }
+  ensureConfigured();
 
   const {
     categoryId,
@@ -91,413 +127,631 @@ export async function fetchProducts(
     sort = "newest",
     priceMin,
     priceMax,
+    inStockOnly,
     limit = 50,
     offset = 0,
   } = options;
 
-  try {
-    let query = supabase
-      .from("products")
-      .select("*", { count: "exact" })
-      .eq("is_active", true);
+  let query = supabase
+    .from("products")
+    .select(PRODUCT_SELECT, { count: "exact" })
+    .eq("is_active", true);
 
-    if (isUrbanratBrand !== undefined) {
-      query = query.eq("is_urbanrat_brand", isUrbanratBrand);
-    }
-
-    if (isFeatured !== undefined) {
-      query = query.eq("is_featured", isFeatured);
-    }
-
-    if (subCategoryId) {
-      query = query.eq("category_id", subCategoryId);
-    } else if (categoryId) {
-      // Find category and its children
-      const allCats = await fetchCategories();
-      const childIds = allCats
-        .filter((c) => c.parent_id === categoryId)
-        .map((c) => c.id);
-      const matchIds = [categoryId, ...childIds];
-      query = query.in("category_id", matchIds);
-    } else if (categorySlug && categorySlug !== "all") {
-      const allCats = await fetchCategories();
-      const target = allCats.find((c) => c.slug === categorySlug);
-      if (target) {
-        const childIds = allCats
-          .filter((c) => c.parent_id === target.id)
-          .map((c) => c.id);
-        const matchIds = [target.id, ...childIds];
-        query = query.in("category_id", matchIds);
-      }
-    }
-
-    if (priceMin !== undefined && priceMin > 0) {
-      query = query.gte("price", priceMin);
-    }
-
-    if (priceMax !== undefined && priceMax > 0) {
-      query = query.lte("price", priceMax);
-    }
-
-    if (search && search.trim()) {
-      query = query.ilike("name", `%${search.trim()}%`);
-    }
-
-    if (sort === "price_asc") {
-      query = query.order("price", { ascending: true });
-    } else if (sort === "price_desc") {
-      query = query.order("price", { ascending: false });
-    } else {
-      query = query.order("created_at", { ascending: false });
-    }
-
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, count, error } = await query;
-
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching products:", error);
-      return { products: [], total: 0 };
-    }
-
-    return {
-      products: (data as Product[]) || [],
-      total: count ?? (data?.length || 0),
-    };
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching products:", err);
-    return { products: [], total: 0 };
-  }
-}
-
-/**
- * Fetch a single product by slug from live database
- */
-export async function fetchProductBySlug(slug: string): Promise<Product | null> {
-  if (!isSupabaseConfigured()) {
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("slug", slug)
-      .eq("is_active", true)
+  if (categoryId) {
+    query = query.eq("category_id", categoryId);
+  } else if (subCategoryId) {
+    query = query.eq("category_id", subCategoryId);
+  } else if (categorySlug) {
+    const { data: catData, error: catError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", categorySlug)
       .maybeSingle();
 
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching product by slug:", error);
-      return null;
+    if (catError) {
+      throw new StoreError(catError.message, catError.code, catError);
     }
 
-    return (data as Product) || null;
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching product by slug:", err);
-    return null;
+    if (catData) {
+      query = query.eq("category_id", catData.id);
+    } else {
+      return { products: [], total: 0 };
+    }
   }
+
+  if (typeof isUrbanratBrand === "boolean") {
+    query = query.eq("is_urbanrat_brand", isUrbanratBrand);
+  }
+
+  if (typeof isFeatured === "boolean") {
+    query = query.eq("is_featured", isFeatured);
+  }
+
+  if (inStockOnly) {
+    query = query.gt("stock", 0);
+  }
+
+  if (priceMin !== undefined && priceMin !== null) {
+    query = query.gte("price", priceMin);
+  }
+
+  if (priceMax !== undefined && priceMax !== null) {
+    query = query.lte("price", priceMax);
+  }
+
+  if (search && search.trim()) {
+    query = query.ilike("name", `%${search.trim()}%`);
+  }
+
+  // Sorting based on products.price (starting price) or created_at
+  if (sort === "price_asc" || sort === "price-asc") {
+    query = query.order("price", { ascending: true });
+  } else if (sort === "price_desc" || sort === "price-desc") {
+    query = query.order("price", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  const products = (data || []).map(formatProduct);
+  return {
+    products,
+    total: count || 0,
+  };
 }
 
 /**
- * Fetch related products from same category or brand from live database
+ * Fetch a single product by slug with price tiers
+ */
+export async function fetchProductBySlug(slug: string): Promise<Product | null> {
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return data ? formatProduct(data) : null;
+}
+
+/**
+ * Fetch related products from same category with price tiers
  */
 export async function fetchRelatedProducts(
   productId: string,
   categoryId?: string | null
 ): Promise<Product[]> {
-  if (!isSupabaseConfigured() || !categoryId) {
-    return [];
+  ensureConfigured();
+  if (!categoryId) return [];
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("category_id", categoryId)
+    .eq("is_active", true)
+    .neq("id", productId)
+    .limit(4);
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
 
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("category_id", categoryId)
-      .eq("is_active", true)
-      .neq("id", productId)
-      .limit(4);
-
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching related products:", error);
-      return [];
-    }
-
-    return (data as Product[]) || [];
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching related products:", err);
-    return [];
-  }
+  return (data || []).map(formatProduct);
 }
 
 /**
  * Fetch authenticated customer's orders from live database
  */
 export async function fetchCustomerOrders(): Promise<Order[]> {
-  if (!isSupabaseConfigured()) {
+  ensureConfigured();
+
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError) {
+    throw new StoreError(authError.message, "AUTH_ERROR", authError);
+  }
+  if (!authData.user) {
     return [];
   }
 
-  try {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData.user) {
-      return [];
-    }
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("user_id", authData.user.id)
+    .order("created_at", { ascending: false });
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", authData.user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching customer orders:", error);
-      return [];
-    }
-
-    return (data as Order[]) || [];
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching customer orders:", err);
-    return [];
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
+
+  return (data as Order[]) || [];
 }
 
 /**
- * Fetch a single order by ID via RPC or secure lookup
+ * Fetch a single order by ID via secure RPC
  */
 export async function fetchOrderById(orderId: string): Promise<Order | null> {
-  if (!isSupabaseConfigured() || !orderId) {
-    return null;
+  ensureConfigured();
+  if (!orderId) return null;
+
+  const { data, error } = await supabase.rpc("get_order_by_id", {
+    p_order_id: orderId.trim(),
+  });
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
 
-  try {
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
-      "get_order_by_id",
-      { p_order_id: orderId.trim() }
-    );
-
-    if (!rpcError && rpcData) {
-      return rpcData as Order;
-    }
-
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId.trim())
-      .maybeSingle();
-
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching order by ID:", error);
-      return null;
-    }
-
-    return (data as Order) || null;
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching order by ID:", err);
-    return null;
-  }
-}
-
-/**
- * Generate collision-checked order ID in URT-YYMMDD-XXXX format
- */
-export async function generateUniqueOrderId(): Promise<string> {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    let rand = "";
-    for (let i = 0; i < 4; i++) {
-      rand += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    const candidateId = `URT-${yy}${mm}${dd}-${rand}`;
-
-    if (isSupabaseConfigured()) {
-      try {
-        const { data } = await supabase
-          .from("orders")
-          .select("id")
-          .eq("id", candidateId)
-          .maybeSingle();
-        if (data) continue;
-      } catch {
-        // Continue
-      }
-    }
-
-    return candidateId;
-  }
-
-  return `URT-${yy}${mm}${dd}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+  return (data as Order) || null;
 }
 
 export interface CreateOrderInput {
-  id: string;
-  items: { product_id: string; quantity: number }[];
   customer: CustomerDetails;
+  items: { product_id: string; qty?: number; quantity?: number }[];
   whatsapp_message?: string | null;
 }
 
 /**
- * Create order with server-verified prices via RPC create_verified_order
+ * Create order via RPC create_verified_order sending product_id and qty only
  */
-export async function createVerifiedOrder(input: CreateOrderInput): Promise<Order> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Cannot place order: Supabase connection is not configured.");
-  }
+export async function createOrder(input: CreateOrderInput): Promise<Order> {
+  ensureConfigured();
+
+  const itemsPayload = input.items.map((item) => ({
+    product_id: item.product_id,
+    qty: item.qty ?? item.quantity ?? 1,
+  }));
 
   const { data, error } = await supabase.rpc("create_verified_order", {
-    p_order_id: input.id,
     p_customer: input.customer,
-    p_items: input.items,
+    p_items: itemsPayload,
     p_whatsapp_message: input.whatsapp_message || null,
   });
 
   if (error) {
-    console.error("[Urbanrat Store] create_verified_order RPC failed:", error);
-    throw new Error(error.message || "Failed to create verified order.");
+    throw new StoreError(error.message, error.code, error);
   }
 
   return data as Order;
 }
 
+// Backward-compatible alias for existing cart call
+export const createVerifiedOrder = createOrder;
+
 /**
- * Fetch dynamic store settings (WhatsApp number, popular searches, badges, store info)
+ * Fetch promotional banners from database
  */
-export async function fetchStoreSettings(): Promise<StoreSettings> {
-  const defaultSettings: StoreSettings = {
-    whatsapp_number: "917000947033",
-    popular_searches: [
-      "iPhone 16 Glass",
-      "65W GaN",
-      "100W Cable",
-      "AirBass Pro",
-      "MagSafe Car",
-    ],
-    value_badges: [
-      { icon: "ShieldCheck", text: "100% Quality Inspected" },
-      { icon: "Truck", text: "Pan-India Express Dispatch" },
-      { icon: "Zap", text: "Wholesale Bulk Margin Ready" },
-    ],
-    store_info: {
-      name: "URT Wholesale",
-      tagline: "Factory Direct Wholesale Mobile Gear",
-      currency: "₹",
-    },
-  };
+export async function getBanners(placement?: string): Promise<Banner[]> {
+  ensureConfigured();
 
-  if (!isSupabaseConfigured()) {
-    return defaultSettings;
+  let query = supabase
+    .from("banners")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (placement) {
+    query = query.eq("placement", placement);
   }
 
-  try {
-    const { data, error } = await supabase.from("store_settings").select("key, value");
+  const { data, error } = await query;
 
-    if (error || !data || data.length === 0) {
-      return defaultSettings;
-    }
-
-    const settings: Partial<StoreSettings> = {};
-    for (const row of data) {
-      if (row.key === "whatsapp_number" && typeof row.value === "string") {
-        settings.whatsapp_number = row.value;
-      } else if (row.key === "popular_searches" && Array.isArray(row.value)) {
-        settings.popular_searches = row.value;
-      } else if (row.key === "value_badges" && Array.isArray(row.value)) {
-        settings.value_badges = row.value;
-      } else if (row.key === "store_info" && typeof row.value === "object") {
-        settings.store_info = row.value;
-      }
-    }
-
-    return { ...defaultSettings, ...settings };
-  } catch (err) {
-    console.error("[Urbanrat Store] Error fetching store settings:", err);
-    return defaultSettings;
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
+
+  return (data as Banner[]) || [];
 }
 
-/**
- * Fetch active promotional banners from database
- */
-export async function fetchBanners(
-  placement?: "home_hero" | "home_brand" | "urbanrat_hero"
-): Promise<Banner[]> {
-  if (!isSupabaseConfigured()) {
-    return [];
-  }
+export const fetchBanners = getBanners;
 
-  try {
-    let query = supabase
-      .from("banners")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
-
-    if (placement) {
-      query = query.eq("placement", placement);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching banners:", error);
-      return [];
-    }
-
-    return (data as Banner[]) || [];
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching banners:", err);
-    return [];
-  }
-}
+// In-memory cache for store_settings per app load
+let cachedSettings: StoreSettings | null = null;
+let settingsFetchPromise: Promise<StoreSettings> | null = null;
 
 /**
- * Fetch legal policy / informational pages (About, Terms, Privacy) from database
+ * Fetch dynamic store settings (cached once per app load)
  */
-export async function fetchStorePage(slug: string): Promise<StorePage | null> {
-  if (!isSupabaseConfigured()) {
-    return null;
+export async function getSettings(): Promise<StoreSettings> {
+  if (cachedSettings) {
+    return cachedSettings;
   }
 
-  try {
+  if (settingsFetchPromise) {
+    return settingsFetchPromise;
+  }
+
+  settingsFetchPromise = (async () => {
+    ensureConfigured();
+
     const { data, error } = await supabase
-      .from("store_pages")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle();
+      .from("store_settings")
+      .select("key, value");
 
     if (error) {
-      console.error("[Urbanrat Store] Error fetching store page:", error);
-      return null;
+      settingsFetchPromise = null;
+      throw new StoreError(error.message, error.code, error);
     }
 
-    return (data as StorePage) || null;
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching store page:", err);
-    return null;
+    const defaultSettings: StoreSettings = {
+      whatsapp_number: "",
+      store_name: "URT Wholesale",
+      free_delivery_min: 999,
+      shipping_fee: 49,
+      popular_searches: [
+        "iPhone 16 Glass",
+        "65W GaN",
+        "100W Cable",
+        "AirBass Pro",
+        "MagSafe Car",
+      ],
+      value_badges: [
+        { icon: "ShieldCheck", text: "100% Quality Inspected" },
+        { icon: "Truck", text: "Pan-India Express Dispatch" },
+        { icon: "Zap", text: "Wholesale Bulk Margin Ready" },
+      ],
+      store_info: {
+        name: "URT Wholesale",
+        tagline: "Factory Direct Wholesale Mobile Gear",
+        currency: "₹",
+      },
+    };
+
+    if (data) {
+      data.forEach((row: { key: string; value: any }) => {
+        if (row.key === "whatsapp_number" && typeof row.value === "string") {
+          defaultSettings.whatsapp_number = row.value;
+        } else if (row.key === "store_name" && typeof row.value === "string") {
+          defaultSettings.store_name = row.value;
+          defaultSettings.store_info.name = row.value;
+        } else if (row.key === "free_delivery_min" && typeof row.value === "number") {
+          defaultSettings.free_delivery_min = row.value;
+        } else if (row.key === "shipping_fee" && typeof row.value === "number") {
+          defaultSettings.shipping_fee = row.value;
+        } else if (row.key === "popular_searches" && Array.isArray(row.value)) {
+          defaultSettings.popular_searches = row.value;
+        } else if (row.key === "value_badges" && Array.isArray(row.value)) {
+          defaultSettings.value_badges = row.value;
+        } else if (row.key === "store_info" && typeof row.value === "object" && row.value !== null) {
+          defaultSettings.store_info = {
+            ...defaultSettings.store_info,
+            ...row.value,
+          };
+        }
+      });
+    }
+
+    cachedSettings = defaultSettings;
+    return cachedSettings;
+  })();
+
+  return settingsFetchPromise;
+}
+
+export const fetchStoreSettings = getSettings;
+
+/**
+ * Fetch a single legal/content page by slug
+ */
+export async function getStorePage(slug: string): Promise<StorePage | null> {
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("store_pages")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
+
+  return (data as StorePage) || null;
 }
 
 /**
- * Fetch all legal / informational pages
+ * Fetch all legal / policy pages (used by MenuPage)
  */
 export async function fetchAllStorePages(): Promise<StorePage[]> {
-  if (!isSupabaseConfigured()) {
-    return [];
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("store_pages")
+    .select("*");
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
 
-  try {
-    const { data, error } = await supabase.from("store_pages").select("*");
-    if (error) {
-      console.error("[Urbanrat Store] Error fetching store pages:", error);
-      return [];
-    }
-    return (data as StorePage[]) || [];
-  } catch (err) {
-    console.error("[Urbanrat Store] Exception fetching store pages:", err);
-    return [];
+  return (data as StorePage[]) || [];
+}
+
+/**
+ * Perform server-side search using search_products RPC with pg_trgm
+ */
+export async function searchProducts(
+  query: string,
+  maxRows: number = 8
+): Promise<Product[]> {
+  ensureConfigured();
+  if (!query || !query.trim()) return [];
+
+  const { data, error } = await supabase.rpc("search_products", {
+    q: query.trim(),
+    max_rows: maxRows,
+  });
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
   }
+
+  return (data || []).map(formatProduct);
+}
+
+// ----------------------------------------------------------------------------
+// WISHLIST SERVICES
+// ----------------------------------------------------------------------------
+
+/**
+ * Fetch current authenticated user's wishlist
+ */
+export async function fetchWishlist(): Promise<Product[]> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) return [];
+
+  const { data, error } = await supabase
+    .from("wishlist_items")
+    .select(`product_id, products(${PRODUCT_SELECT})`)
+    .eq("user_id", authData.user.id);
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return (data || [])
+    .map((row: any) => row.products)
+    .filter(Boolean)
+    .map(formatProduct);
+}
+
+/**
+ * Add a product to the authenticated user's wishlist
+ */
+export async function addToWishlist(productId: string): Promise<void> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) {
+    throw new StoreError("User must be logged in to modify wishlist.", "UNAUTHENTICATED");
+  }
+
+  const { error } = await supabase.from("wishlist_items").insert({
+    user_id: authData.user.id,
+    product_id: productId,
+  });
+
+  if (error && error.code !== "23505") { // Ignore unique conflict
+    throw new StoreError(error.message, error.code, error);
+  }
+}
+
+/**
+ * Remove a product from the authenticated user's wishlist
+ */
+export async function removeFromWishlist(productId: string): Promise<void> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) {
+    throw new StoreError("User must be logged in to modify wishlist.", "UNAUTHENTICATED");
+  }
+
+  const { error } = await supabase
+    .from("wishlist_items")
+    .delete()
+    .eq("user_id", authData.user.id)
+    .eq("product_id", productId);
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+}
+
+/**
+ * Check if a product is in the user's wishlist
+ */
+export async function isInWishlist(productId: string): Promise<boolean> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) return false;
+
+  const { data, error } = await supabase
+    .from("wishlist_items")
+    .select("product_id")
+    .eq("user_id", authData.user.id)
+    .eq("product_id", productId)
+    .maybeSingle();
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return Boolean(data);
+}
+
+// ----------------------------------------------------------------------------
+// ADDRESSES SERVICES
+// ----------------------------------------------------------------------------
+
+export async function fetchAddresses(): Promise<Address[]> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) return [];
+
+  const { data, error } = await supabase
+    .from("addresses")
+    .select("*")
+    .eq("user_id", authData.user.id)
+    .order("is_default", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return (data as Address[]) || [];
+}
+
+export async function createAddress(
+  address: Omit<Address, "id" | "user_id" | "created_at" | "updated_at">
+): Promise<Address> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) {
+    throw new StoreError("User must be logged in to create address.", "UNAUTHENTICATED");
+  }
+
+  const { data, error } = await supabase
+    .from("addresses")
+    .insert({
+      ...address,
+      user_id: authData.user.id,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return data as Address;
+}
+
+export async function updateAddress(
+  id: string,
+  updates: Partial<Address>
+): Promise<Address> {
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("addresses")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return data as Address;
+}
+
+export async function deleteAddress(id: string): Promise<void> {
+  ensureConfigured();
+
+  const { error } = await supabase.from("addresses").delete().eq("id", id);
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+}
+
+export async function setDefaultAddress(id: string): Promise<void> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) {
+    throw new StoreError("User must be logged in.", "UNAUTHENTICATED");
+  }
+
+  // Set all to false, then set target to true
+  const { error: resetError } = await supabase
+    .from("addresses")
+    .update({ is_default: false })
+    .eq("user_id", authData.user.id);
+
+  if (resetError) {
+    throw new StoreError(resetError.message, resetError.code, resetError);
+  }
+
+  const { error } = await supabase
+    .from("addresses")
+    .update({ is_default: true })
+    .eq("id", id);
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// REVIEWS SERVICES
+// ----------------------------------------------------------------------------
+
+export async function submitReview(input: {
+  productId: string;
+  rating: number;
+  title?: string;
+  body?: string;
+}): Promise<Review> {
+  ensureConfigured();
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) {
+    throw new StoreError("User must be logged in to submit a review.", "UNAUTHENTICATED");
+  }
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .insert({
+      product_id: input.productId,
+      user_id: authData.user.id,
+      rating: input.rating,
+      title: input.title || null,
+      body: input.body || null,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return data as Review;
+}
+
+export async function getApprovedReviews(productId: string): Promise<Review[]> {
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("product_id", productId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return (data as Review[]) || [];
 }

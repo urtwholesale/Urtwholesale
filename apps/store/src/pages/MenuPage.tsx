@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CustomerAuth } from "../features/auth/CustomerAuth";
 import {
   fetchCustomerOrders,
-  fetchStoreSettings,
   fetchAllStorePages,
 } from "../services/storeService";
-import type { Order, StoreSettings, StorePage } from "@urbanrat/shared";
+import { useSettings } from "../context/SettingsContext";
+import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/ErrorState";
+import type { Order, StorePage } from "@urbanrat/shared";
 import {
   Package,
   MessageCircle,
@@ -19,51 +21,57 @@ import {
 } from "lucide-react";
 
 export function MenuPage() {
+  const { settings, whatsappNumber } = useSettings();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+
   const [pages, setPages] = useState<Record<string, StorePage>>({});
+  const [loadingPages, setLoadingPages] = useState(true);
+  const [pagesError, setPagesError] = useState<string | null>(null);
 
   // Accordion toggles
   const [openAbout, setOpenAbout] = useState(false);
   const [openTerms, setOpenTerms] = useState(false);
   const [openPrivacy, setOpenPrivacy] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadData() {
-      try {
-        const [ordersData, storeSettings, storePages] = await Promise.all([
-          fetchCustomerOrders(),
-          fetchStoreSettings(),
-          fetchAllStorePages(),
-        ]);
-
-        if (isMounted) {
-          setOrders(ordersData);
-          setSettings(storeSettings);
-
-          const pageMap: Record<string, StorePage> = {};
-          for (const p of storePages) {
-            pageMap[p.slug] = p;
-          }
-          setPages(pageMap);
-        }
-      } catch (err) {
-        console.error("Failed to load menu data:", err);
-      } finally {
-        if (isMounted) setLoadingOrders(false);
-      }
+  const loadOrders = useCallback(async () => {
+    setLoadingOrders(true);
+    setOrdersError(null);
+    try {
+      const data = await fetchCustomerOrders();
+      setOrders(data);
+    } catch (err: any) {
+      console.error("Failed to load customer orders:", err);
+      setOrdersError(err?.message || "Failed to load orders. Please retry.");
+    } finally {
+      setLoadingOrders(false);
     }
-
-    loadData();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  const whatsappNum = settings?.whatsapp_number || "917000947033";
+  const loadPages = useCallback(async () => {
+    setLoadingPages(true);
+    setPagesError(null);
+    try {
+      const storePages = await fetchAllStorePages();
+      const pageMap: Record<string, StorePage> = {};
+      for (const p of storePages) {
+        pageMap[p.slug] = p;
+      }
+      setPages(pageMap);
+    } catch (err: any) {
+      console.error("Failed to load store pages:", err);
+      setPagesError(err?.message || "Failed to load policy pages.");
+    } finally {
+      setLoadingPages(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+    loadPages();
+  }, [loadOrders, loadPages]);
 
   const aboutPage = pages["about"];
   const termsPage = pages["terms"];
@@ -110,9 +118,16 @@ export function MenuPage() {
             </div>
 
             {loadingOrders ? (
-              <div className="py-4 space-y-2">
-                <div className="h-14 bg-slate-50 rounded-2xl animate-pulse" />
+              <div className="py-4 space-y-2.5">
+                <div className="h-16 bg-slate-50 rounded-2xl animate-pulse" />
+                <div className="h-16 bg-slate-50 rounded-2xl animate-pulse" />
               </div>
+            ) : ordersError ? (
+              <ErrorState
+                title="Could not load your orders"
+                message={ordersError}
+                onRetry={loadOrders}
+              />
             ) : orders.length > 0 ? (
               <div className="space-y-2.5 pt-1">
                 {orders.map((ord) => (
@@ -149,185 +164,221 @@ export function MenuPage() {
                         <span>{new Date(ord.created_at).toLocaleDateString()}</span>
                       </span>
 
-                      <a
-                        href={`https://wa.me/${whatsappNum}?text=${encodeURIComponent(
-                          `Hi URT Wholesale, checking status for Order #${ord.id}`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#0A82A8] font-bold hover:underline"
-                      >
-                        Track on WhatsApp →
-                      </a>
+                      {whatsappNumber && (
+                        <a
+                          href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+                            `Hi URT Wholesale, checking status for Order #${ord.id}`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0A82A8] font-bold hover:underline"
+                        >
+                          Track on WhatsApp →
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 py-3 text-center">
-                No orders placed yet. Add items to your cart to get started!
-              </p>
+              <EmptyState
+                icon={<Package className="w-7 h-7 text-slate-400" />}
+                title="No orders placed yet"
+                description="Your past wholesale orders and tracking info will be visible here once you checkout."
+              />
             )}
           </section>
         </div>
 
         {/* ── Right Column: Helpdesk & Policies ── */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-6 lg:sticky lg:top-24">
-          {/* ── 3. Contact on WhatsApp ── */}
-          <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 sm:p-6 shadow-md">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1 max-w-sm">
-                <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
-                  <Phone className="w-3 h-3" />
-                  <span>Priority Helpdesk</span>
+          {/* ── 3. Contact on WhatsApp (Only shown if whatsappNumber is configured) ── */}
+          {whatsappNumber && (
+            <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 sm:p-6 shadow-md">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1 max-w-sm">
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
+                    <Phone className="w-3 h-3" />
+                    <span>Priority Helpdesk</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Direct WhatsApp Support
+                  </h3>
+                  <p className="text-xs text-emerald-100 leading-relaxed">
+                    Instant responses from our wholesale fulfillment desk for custom orders, bulk quotes, and dispatch inquiries.
+                  </p>
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-white">
-                  Direct WhatsApp Support
-                </h3>
-                <p className="text-xs text-emerald-100 leading-relaxed">
-                  Instant responses from our wholesale fulfillment desk for custom orders, bulk quotes, and dispatch inquiries.
-                </p>
+
+                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-7 h-7 text-white" />
+                </div>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center shrink-0">
-                <MessageCircle className="w-7 h-7 text-white" />
+              <div className="mt-4 pt-3 border-t border-emerald-500/40 flex items-center justify-between">
+                <span className="text-xs font-semibold text-emerald-100">
+                  Available Mon–Sat: 9 AM – 8 PM
+                </span>
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+                    "Hi URT Wholesale, I need assistance with wholesale orders"
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-white text-emerald-800 font-bold text-xs shadow hover:bg-emerald-50 active:scale-95 transition"
+                >
+                  <span>Chat on WhatsApp</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-emerald-500/40 flex items-center justify-between">
-              <span className="text-xs font-semibold text-emerald-100">
-                Available Mon–Sat: 9 AM – 8 PM
-              </span>
-              <a
-                href={`https://wa.me/${whatsappNum}?text=${encodeURIComponent(
-                  "Hi URT Wholesale, I need assistance with wholesale orders"
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-white text-emerald-800 font-bold text-xs shadow hover:bg-emerald-50 active:scale-95 transition"
-              >
-                <span>Chat on WhatsApp</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* ── 4. About Us, Terms & Privacy Accordions from Database store_pages ── */}
           <section className="bg-white rounded-3xl border border-slate-100 p-2 sm:p-3 shadow-xs space-y-1">
-            {/* About Us */}
-            <div className="rounded-2xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setOpenAbout(!openAbout)}
-                className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-xl bg-cyan-50 text-[#0A82A8] flex items-center justify-center">
-                    <Info className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">
-                      {aboutPage?.title || "About Urbanrat"}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {aboutPage?.summary || "Our factory-direct wholesale story & quality pledge"}
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-slate-400 transition-transform ${
-                    openAbout ? "rotate-180 text-[#0A82A8]" : ""
-                  }`}
-                />
-              </button>
+            {loadingPages ? (
+              <div className="p-4 space-y-3">
+                <div className="h-10 bg-slate-50 rounded-xl animate-pulse" />
+                <div className="h-10 bg-slate-50 rounded-xl animate-pulse" />
+                <div className="h-10 bg-slate-50 rounded-xl animate-pulse" />
+              </div>
+            ) : pagesError ? (
+              <ErrorState
+                title="Could not load policies"
+                message={pagesError}
+                onRetry={loadPages}
+              />
+            ) : (
+              <>
+                {/* About Us */}
+                {aboutPage && (
+                  <div className="rounded-2xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpenAbout(!openAbout)}
+                      className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-xl bg-cyan-50 text-[#0A82A8] flex items-center justify-center">
+                          <Info className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">
+                            {aboutPage.title}
+                          </p>
+                          {aboutPage.summary && (
+                            <p className="text-[10px] text-slate-400">
+                              {aboutPage.summary}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform ${
+                          openAbout ? "rotate-180 text-[#0A82A8]" : ""
+                        }`}
+                      />
+                    </button>
 
-              {openAbout && (
-                <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-2 border-t border-slate-50 whitespace-pre-line leading-relaxed">
-                  {aboutPage?.content ||
-                    "Urbanrat is a single-vendor specialized supplier of high-grade mobile accessories and digital electronics, supplied by URP Wholesale."}
-                </div>
-              )}
-            </div>
-
-            {/* Terms of Service */}
-            <div className="rounded-2xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setOpenTerms(!openTerms)}
-                className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <FileText className="w-4 h-4" />
+                    {openAbout && (
+                      <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-2 border-t border-slate-50 whitespace-pre-line leading-relaxed font-normal">
+                        {aboutPage.content}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">
-                      {termsPage?.title || "Terms of Service & Warranty"}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {termsPage?.summary || "Dead-on-arrival replacements and invoice policy"}
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-slate-400 transition-transform ${
-                    openTerms ? "rotate-180 text-purple-600" : ""
-                  }`}
-                />
-              </button>
+                )}
 
-              {openTerms && (
-                <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-2 border-t border-slate-50 whitespace-pre-line leading-relaxed">
-                  {termsPage?.content ||
-                    "1. Quality Guarantee: Every unit undergoes standard electrical and drop QC checks before boxing."}
-                </div>
-              )}
-            </div>
+                {/* Terms of Service */}
+                {termsPage && (
+                  <div className="rounded-2xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpenTerms(!openTerms)}
+                      className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">
+                            {termsPage.title}
+                          </p>
+                          {termsPage.summary && (
+                            <p className="text-[10px] text-slate-400">
+                              {termsPage.summary}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform ${
+                          openTerms ? "rotate-180 text-purple-600" : ""
+                        }`}
+                      />
+                    </button>
 
-            {/* Privacy Policy */}
-            <div className="rounded-2xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setOpenPrivacy(!openPrivacy)}
-                className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <Shield className="w-4 h-4" />
+                    {openTerms && (
+                      <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-2 border-t border-slate-50 whitespace-pre-line leading-relaxed font-normal">
+                        {termsPage.content}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">
-                      {privacyPage?.title || "Privacy Policy & Security"}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {privacyPage?.summary || "Encrypted authentication and zero data trading"}
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-slate-400 transition-transform ${
-                    openPrivacy ? "rotate-180 text-amber-600" : ""
-                  }`}
-                />
-              </button>
+                )}
 
-              {openPrivacy && (
-                <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-2 border-t border-slate-50 whitespace-pre-line leading-relaxed">
-                  {privacyPage?.content ||
-                    "Your phone numbers, delivery coordinates, and purchase records are secured with row-level security through Supabase."}
-                </div>
-              )}
-            </div>
+                {/* Privacy Policy */}
+                {privacyPage && (
+                  <div className="rounded-2xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpenPrivacy(!openPrivacy)}
+                      className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">
+                            {privacyPage.title}
+                          </p>
+                          {privacyPage.summary && (
+                            <p className="text-[10px] text-slate-400">
+                              {privacyPage.summary}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform ${
+                          openPrivacy ? "rotate-180 text-amber-600" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {openPrivacy && (
+                      <div className="px-4 pb-4 pt-1 text-xs text-slate-600 space-y-2 border-t border-slate-50 whitespace-pre-line leading-relaxed font-normal">
+                        {privacyPage.content}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </section>
         </div>
       </div>
 
       {/* ── Wholesale Footer Credit ── */}
-      <footer className="text-center text-[11px] text-slate-400 py-2 space-y-0.5">
-        <p className="font-semibold text-slate-500">
-          {settings?.store_info?.name || "Urbanrat Store"}
+      <footer className="text-center text-[11px] text-slate-400 py-4 space-y-1 flex flex-col items-center">
+        <img
+          src="/logo.png"
+          alt="Urbanrat"
+          className="w-8 h-8 rounded-full object-cover opacity-80"
+        />
+        <p className="font-semibold text-slate-600">
+          {settings?.store_info?.name || "URT Wholesale"}
         </p>
-        <p>Supplied by URP Wholesale • Pan-India Logistics</p>
+        <p>Supplied by Urbanrat Wholesale • Pan-India Logistics</p>
       </footer>
     </div>
   );

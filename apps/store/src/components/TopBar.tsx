@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Search, ShoppingBag, Zap, ArrowLeft } from "lucide-react";
+import { Search, ShoppingBag, ArrowLeft } from "lucide-react";
 
 interface TopBarProps {
   cartCount?: number;
@@ -124,53 +124,19 @@ export function TopBar({ cartCount = 0, onOpenSearch }: TopBarProps) {
             to="/"
             className="inline-flex items-center space-x-2 sm:space-x-2.5 py-1.5 pl-2 pr-3.5 sm:pr-4 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md transition-all active:scale-95 group"
           >
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-xs"
-              style={{
-                background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
-              }}
-            >
-              <Zap className="w-3.5 h-3.5 fill-white text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Urbanrat"
+              className="w-7 h-7 rounded-full object-cover shadow-xs group-hover:scale-105 transition-transform"
+            />
             <span className="font-black text-sm sm:text-base tracking-tight text-slate-900 whitespace-nowrap">
               URT Wholesale
             </span>
           </Link>
         </div>
 
-        {/* ── Right Corner: Desktop Navigation + Cart Button ── */}
+        {/* ── Right Corner: Cart Button ── */}
         <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0 z-10">
-          {/* Desktop Navigation Bar */}
-          <nav
-            aria-label="Desktop Navigation"
-            className="hidden md:flex items-center space-x-1 bg-white/80 backdrop-blur-md px-2 py-1.5 rounded-full border border-slate-200/70 shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
-          >
-            {DESKTOP_NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  `px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? "text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-                  }`
-                }
-                style={({ isActive }) =>
-                  isActive
-                    ? {
-                        background:
-                          "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
-                      }
-                    : undefined
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
           {/* Circular Cart Button with Badge */}
           <Link
             to="/cart"
@@ -192,6 +158,39 @@ export function TopBar({ cartCount = 0, onOpenSearch }: TopBarProps) {
             )}
           </Link>
         </div>
+      </div>
+
+      {/* ── Sub Topbar: Centered Desktop Navigation Menu Below Logo ── */}
+      <div className="hidden md:flex items-center justify-center pb-2.5 pt-1 border-t border-slate-100/80">
+        <nav
+          aria-label="Desktop Navigation"
+          className="flex items-center space-x-1.5 bg-slate-50/90 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-slate-200/70 shadow-[0_2px_10px_rgba(0,0,0,0.02)]"
+        >
+          {DESKTOP_NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/"}
+              className={({ isActive }) =>
+                `px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? "text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                }`
+              }
+              style={({ isActive }) =>
+                isActive
+                  ? {
+                      background:
+                        "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                    }
+                  : undefined
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
       </div>
     </header>
   );

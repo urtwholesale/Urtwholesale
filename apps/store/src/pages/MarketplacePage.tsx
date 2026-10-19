@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeletons";
 import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/ErrorState";
 import { fetchCategories, fetchProducts } from "../services/storeService";
 import type { Product, Category } from "@urbanrat/shared";
 import {
@@ -50,15 +51,20 @@ export function MarketplacePage({
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 12;
 
   // Load categories
   useEffect(() => {
     async function loadCats() {
-      const cats = await fetchCategories();
-      // Show main parent categories in top sticky chip bar
-      setCategories(cats.filter((c) => c.parent_id === null));
+      try {
+        const cats = await fetchCategories();
+        // Show main parent categories in top sticky chip bar
+        setCategories(cats.filter((c) => c.parent_id === null));
+      } catch (e) {
+        console.error("Failed to load categories:", e);
+      }
     }
     loadCats();
   }, []);
@@ -71,41 +77,36 @@ export function MarketplacePage({
     }
   }, [searchParams]);
 
+  const loadInitialProducts = async () => {
+    setLoading(true);
+    setError(null);
+    setPage(1);
+    try {
+      const bracket = PRICE_BRACKETS[priceBracketIndex];
+      const res = await fetchProducts({
+        categorySlug: selectedCategory === "all" ? undefined : selectedCategory,
+        isUrbanratBrand: brandOnly ? true : undefined,
+        search: searchQuery,
+        sort: sortOption,
+        priceMin: bracket?.min,
+        priceMax: bracket?.max,
+        limit: PAGE_SIZE,
+        offset: 0,
+      });
+
+      setProducts(res.products);
+      setTotalCount(res.total);
+    } catch (err: any) {
+      console.error("Failed to load products:", err);
+      setError(err?.message || "Failed to load products. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load products whenever filters change
   useEffect(() => {
-    let isMounted = true;
-    setPage(1);
-
-    async function loadInitialProducts() {
-      setLoading(true);
-      try {
-        const bracket = PRICE_BRACKETS[priceBracketIndex];
-        const res = await fetchProducts({
-          categorySlug: selectedCategory === "all" ? undefined : selectedCategory,
-          isUrbanratBrand: brandOnly ? true : undefined,
-          search: searchQuery,
-          sort: sortOption,
-          priceMin: bracket?.min,
-          priceMax: bracket?.max,
-          limit: PAGE_SIZE,
-          offset: 0,
-        });
-
-        if (isMounted) {
-          setProducts(res.products);
-          setTotalCount(res.total);
-        }
-      } catch (err) {
-        console.error("Failed to load products:", err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
     loadInitialProducts();
-    return () => {
-      isMounted = false;
-    };
   }, [selectedCategory, searchQuery, sortOption, priceBracketIndex, brandOnly]);
 
   // Load more (pagination / infinite scroll button)
@@ -337,6 +338,12 @@ export function MarketplacePage({
       {/* ── 2-Column Mobile, 3-4 Tablet, 5-6 Desktop Grid ── */}
       {loading ? (
         <ProductGridSkeleton count={8} />
+      ) : error ? (
+        <ErrorState
+          title="Failed to load products"
+          message={error}
+          onRetry={loadInitialProducts}
+        />
       ) : products.length > 0 ? (
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
