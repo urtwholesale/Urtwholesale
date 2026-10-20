@@ -94,7 +94,8 @@ urbanrat-store/
 │   │   ├── 002_orders.sql             # Custom order schema (URT-YYMMDD-XXXX) & public order view
 │   │   ├── 003_pricing_and_content.sql# Volume tiers, store settings, banners, pages, reviews, audit logs
 │   │   ├── 004_pricing_functions.sql  # Real-time analytics, daily sales, RPC order metrics & stock adjust
-│   │   └── 005_create_verified_order.sql # Atomic verified order creation RPC with stock locking
+│   │   ├── 005_create_verified_order.sql # Atomic verified order creation RPC with stock locking
+│   │   └── 007_policies_and_dealers.sql # Store policies, dealer applications, audit events & RPCs
 │   └── seed.sql                       # 12 categories, 18 subcategories, products & volume tiers
 │
 ├── .env.example                       # Template for Supabase credentials
