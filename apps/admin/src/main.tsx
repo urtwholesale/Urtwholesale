@@ -41,7 +41,7 @@ class AdminErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryStat
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs bg-[#0A82A8] hover:bg-[#086b8b] transition cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl text-white font-bold text-xs bg-brand-dark hover:bg-[#086b8b] transition cursor-pointer"
             >
               Reload Admin Portal
             </button>

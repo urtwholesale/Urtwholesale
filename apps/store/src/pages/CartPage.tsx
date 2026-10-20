@@ -227,7 +227,7 @@ export function CartPage({
     return (
       <div className="py-8">
         <EmptyState
-          icon={<ShoppingBag className="w-8 h-8 text-[#0A82A8]" />}
+          icon={<ShoppingBag className="w-8 h-8 text-brand-dark" />}
           title="Your Cart is Empty"
           description="Explore our wholesale catalog of tempered glass, chargers, and premium mobile cables."
           actionText="Start Shopping"
@@ -301,7 +301,7 @@ export function CartPage({
                     <div className="flex-1 min-w-0 pr-2">
                       <Link
                         to={`/product/${product.slug}`}
-                        className="block font-bold text-xs sm:text-sm text-slate-800 hover:text-[#0A82A8] transition truncate"
+                        className="block font-bold text-xs sm:text-sm text-slate-800 hover:text-brand-dark transition truncate"
                       >
                         {product.name}
                       </Link>
@@ -378,7 +378,7 @@ export function CartPage({
           {/* Customer Delivery Details Form */}
           <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-4">
             <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-sky-50 text-[#0A82A8] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-sky-50 text-brand-dark flex items-center justify-center">
                 <MapPin className="w-4 h-4" />
               </div>
               <div>
@@ -401,7 +401,7 @@ export function CartPage({
                   className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
                     errors.name
                       ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-[#0A82A8] focus-within:bg-white"
+                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
                   }`}
                 >
                   <User className="w-4 h-4 text-slate-400 shrink-0" />
@@ -430,7 +430,7 @@ export function CartPage({
                   className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
                     errors.phone
                       ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-[#0A82A8] focus-within:bg-white"
+                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
                   }`}
                 >
                   <Phone className="w-4 h-4 text-slate-400 shrink-0" />
@@ -463,7 +463,7 @@ export function CartPage({
                   className={`flex items-start space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
                     errors.address
                       ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-[#0A82A8] focus-within:bg-white"
+                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
                   }`}
                 >
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
@@ -492,7 +492,7 @@ export function CartPage({
                   className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
                     errors.pincode
                       ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-[#0A82A8] focus-within:bg-white"
+                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
                   }`}
                 >
                   <Hash className="w-4 h-4 text-slate-400 shrink-0" />

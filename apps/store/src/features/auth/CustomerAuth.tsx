@@ -177,7 +177,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
     return (
       <div className="w-full max-w-md mx-auto p-6 bg-white rounded-2xl shadow-sm border border-slate-100">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#5ADBE5] to-[#0A82A8] flex items-center justify-center text-white font-bold text-lg">
+          <div className="w-12 h-12 rounded-full bg-linear-to-b from-brand-light to-brand-dark flex items-center justify-center text-white font-bold text-lg">
             {(profile?.full_name || user.email || user.phone || "U")[0]?.toUpperCase()}
           </div>
           <div>
@@ -328,7 +328,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Rahul Sharma"
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
               />
             </div>
           )}
@@ -343,7 +343,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
             />
           </div>
 
@@ -358,7 +358,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
             />
           </div>
 
@@ -380,7 +380,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
                 setIsSignUp(!isSignUp);
                 setMessage(null);
               }}
-              className="text-xs text-[#0A82A8] hover:underline font-medium"
+              className="text-xs text-brand-dark hover:underline font-medium"
             >
               {isSignUp ? "Already have an account? Sign In" : "New to Urbanrat? Create account"}
             </button>
@@ -408,7 +408,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="9876543210"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-r-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-r-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
@@ -440,7 +440,7 @@ export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="123456"
-                  className="w-full px-3 py-2 text-sm text-center tracking-widest font-mono bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+                  className="w-full px-3 py-2 text-sm text-center tracking-widest font-mono bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
                 />
               </div>
 

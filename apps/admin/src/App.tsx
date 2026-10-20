@@ -192,7 +192,7 @@ export default function App() {
             title="Open Customer Storefront"
             className="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-700 hover:text-brand-dark hover:shadow-md active:scale-95 transition-all cursor-pointer"
           >
-            <ExternalLink className="w-4 h-4 stroke-[2]" />
+            <ExternalLink className="w-4 h-4 stroke-2" />
           </a>
 
           {/* Quick Hub & Profile Menu Toggle */}
@@ -227,7 +227,7 @@ export default function App() {
           />
 
           <div
-            className="relative z-10 w-full bg-white rounded-t-[32px] shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 border border-slate-100"
+            className="relative z-10 w-full bg-white rounded-t-4xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 border border-slate-100"
             role="dialog"
             aria-modal="true"
             aria-label="Admin Quick Menu"

@@ -200,7 +200,7 @@ export function DealerApplicationPage() {
                 title="Copy Application Number"
               >
                 {copiedAppNo ? (
-                  <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                  <Check className="w-4 h-4 text-emerald-600 stroke-3" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
@@ -291,7 +291,7 @@ export function DealerApplicationPage() {
 
       {/* ── Page Hero Card ── */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-brand-light/20 to-brand-dark/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-linear-to-br from-brand-light/20 to-brand-dark/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
         <div className="relative space-y-3 max-w-2xl">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-light/15 text-brand-dark border border-brand-light/30">
@@ -562,7 +562,7 @@ export function DealerApplicationPage() {
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  {selected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  {selected && <Check className="w-3.5 h-3.5 stroke-3" />}
                   <span>{cat}</span>
                 </button>
               );

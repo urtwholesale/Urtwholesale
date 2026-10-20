@@ -69,7 +69,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Brand Tag (Top Left) */}
         {product.is_urbanrat_brand && (
-          <div className="absolute top-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-[#0A82A8] border border-white/60 shadow-xs">
+          <div className="absolute top-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/95 backdrop-blur-md text-brand-dark border border-white/60 shadow-xs">
             <img
               src="/logo.png"
               alt="Urbanrat"
@@ -81,8 +81,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Bulk Deals Badge (Bottom Left overlay) */}
         {hasBulkDeals && (
-          <div className="absolute bottom-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-900/85 backdrop-blur-md text-[#5ADBE5] border border-cyan-500/30 shadow-xs">
-            <Layers className="w-2.5 h-2.5 text-[#5ADBE5]" />
+          <div className="absolute bottom-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-900/85 backdrop-blur-md text-brand-light border border-cyan-500/30 shadow-xs">
+            <Layers className="w-2.5 h-2.5 text-brand-light" />
             <span>Bulk Deals</span>
           </div>
         )}
@@ -90,8 +90,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
       {/* Info & Price */}
       <div className="flex flex-col flex-1 justify-between">
-        <Link to={`/product/${product.slug}`} className="block group-hover:text-[#0A82A8] transition-colors">
-          <h3 className="font-semibold text-slate-800 text-xs sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2rem]">
+        <Link to={`/product/${product.slug}`} className="block group-hover:text-brand-dark transition-colors">
+          <h3 className="font-semibold text-slate-800 text-xs sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-8">
             {product.name}
           </h3>
         </Link>
@@ -119,7 +119,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                 Free Shipping
               </span>
               {hasBulkDeals && (
-                <span className="text-[9px] font-bold text-[#0A82A8] bg-cyan-50 px-1.5 py-0.2 rounded">
+                <span className="text-[9px] font-bold text-brand-dark bg-cyan-50 px-1.5 py-0.2 rounded">
                   {tiers.length} Tiers
                 </span>
               )}
@@ -144,7 +144,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           >
             {isAdded ? (
               <span className="flex items-center justify-center animate-in zoom-in-75 duration-200">
-                <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3] text-white" />
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-3 text-white" />
               </span>
             ) : (
               <Plus className="w-4 h-4 sm:w-4.5 sm:h-4.5 group-hover:rotate-90 transition-transform duration-300" />

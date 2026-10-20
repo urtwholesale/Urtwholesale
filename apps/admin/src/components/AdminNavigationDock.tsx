@@ -32,7 +32,7 @@ export function AdminNavigationDock({
   }
 
   return (
-    <div className="md:hidden fixed z-40 dock-bottom-offset left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[360px] transition-all duration-300">
+    <div className="md:hidden fixed z-40 dock-bottom-offset left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-90 transition-all duration-300">
       <nav
         aria-label="Admin Navigation Dock"
         className="glass-dock rounded-full px-2 py-1.5 flex items-center justify-between"
@@ -59,7 +59,7 @@ export function AdminNavigationDock({
             className={`w-5 h-5 transition-transform duration-200 ${
               activeTab === "dashboard" && !isMenuOpen
                 ? "text-white stroke-[2.4]"
-                : "text-slate-600 stroke-[2] group-hover:scale-110 group-hover:text-slate-900"
+                : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
             }`}
           />
         </button>
@@ -86,7 +86,7 @@ export function AdminNavigationDock({
             className={`w-5 h-5 transition-transform duration-200 ${
               activeTab === "products" && !isMenuOpen
                 ? "text-white stroke-[2.4]"
-                : "text-slate-600 stroke-[2] group-hover:scale-110 group-hover:text-slate-900"
+                : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
             }`}
           />
           {counts.products > 0 && (
@@ -94,7 +94,7 @@ export function AdminNavigationDock({
               className={`absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-black shadow-xs ${
                 activeTab === "products" && !isMenuOpen
                   ? "bg-slate-900 text-white"
-                  : "bg-[#0A82A8] text-white"
+                  : "bg-brand-dark text-white"
               }`}
             >
               {counts.products}
@@ -124,7 +124,7 @@ export function AdminNavigationDock({
             className={`w-5 h-5 transition-transform duration-200 ${
               activeTab === "orders" && !isMenuOpen
                 ? "text-white stroke-[2.4]"
-                : "text-slate-600 stroke-[2] group-hover:scale-110 group-hover:text-slate-900"
+                : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
             }`}
           />
           {counts.pendingOrders > 0 && (
@@ -156,7 +156,7 @@ export function AdminNavigationDock({
             className={`w-5 h-5 transition-transform duration-200 ${
               activeTab === "content" && !isMenuOpen
                 ? "text-white stroke-[2.4]"
-                : "text-slate-600 stroke-[2] group-hover:scale-110 group-hover:text-slate-900"
+                : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
             }`}
           />
         </button>
@@ -187,7 +187,7 @@ export function AdminNavigationDock({
           ) : activeTab === "settings" ? (
             <Settings className="w-5 h-5 text-white stroke-[2.4]" />
           ) : (
-            <Menu className="w-5 h-5 text-slate-600 stroke-[2] group-hover:scale-110 group-hover:text-slate-900" />
+            <Menu className="w-5 h-5 text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900" />
           )}
         </button>
       </nav>

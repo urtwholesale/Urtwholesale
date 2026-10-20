@@ -143,7 +143,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
             value={usernameOrEmail}
             onChange={(e) => setUsernameOrEmail(e.target.value)}
             placeholder="Sjainthelegend"
-            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
           />
         </div>
 
@@ -158,7 +158,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••••••"
-            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
           />
         </div>
 

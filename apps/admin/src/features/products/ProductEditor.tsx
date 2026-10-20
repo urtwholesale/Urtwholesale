@@ -337,7 +337,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="e.g. Urbanrat 65W GaN III Dual USB-C Fast Charger"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
 
@@ -351,7 +351,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="urbanrat-65w-gan-charger"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
 
@@ -362,7 +362,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
                   placeholder="UR-GAN-65W"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
 
@@ -371,7 +371,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none bg-white"
                 >
                   <option value="">Select Category...</option>
                   {categories.map((c) => (
@@ -392,7 +392,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={mrp}
                   onChange={(e) => setMrp(e.target.value ? Number(e.target.value) : "")}
                   placeholder="e.g. 1499"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
 
@@ -406,7 +406,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={warrantyMonths}
                   onChange={(e) => setWarrantyMonths(Number(e.target.value))}
                   placeholder="e.g. 12"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
 
@@ -419,7 +419,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={shortDesc}
                   onChange={(e) => setShortDesc(e.target.value)}
                   placeholder="e.g. Ultra-compact high-speed wholesale wall adapter"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
 
@@ -432,7 +432,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   placeholder="Full technical wholesale product details..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
             </div>
@@ -458,7 +458,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 </p>
               </div>
 
-              <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-[#0A82A8] text-xs font-bold hover:bg-sky-100 transition cursor-pointer shrink-0">
+              <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-brand-dark text-xs font-bold hover:bg-sky-100 transition cursor-pointer shrink-0">
                 <Upload className="w-3.5 h-3.5" />
                 <span>{uploadingImage ? "Compressing & Uploading..." : "Upload & Auto-Compress"}</span>
                 <input
@@ -477,13 +477,13 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   <div
                     key={idx}
                     className={`relative rounded-2xl border p-2 bg-slate-50 flex flex-col justify-between ${
-                      idx === 0 ? "border-[#0A82A8] ring-2 ring-[#5ADBE5]/40" : "border-slate-200"
+                      idx === 0 ? "border-brand-dark ring-2 ring-brand-light/40" : "border-slate-200"
                     }`}
                   >
                     <div className="aspect-square rounded-xl overflow-hidden bg-white mb-2 relative">
                       <img src={img} alt={`prod-${idx}`} className="w-full h-full object-cover" />
                       {idx === 0 && (
-                        <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-[#0A82A8] text-white shadow-xs">
+                        <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-brand-dark text-white shadow-xs">
                           Primary
                         </span>
                       )}
@@ -806,7 +806,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   type="checkbox"
                   checked={isUrbanrat}
                   onChange={(e) => setIsUrbanrat(e.target.checked)}
-                  className="rounded text-[#0A82A8] focus:ring-[#5ADBE5]"
+                  className="rounded text-brand-dark focus:ring-brand-light"
                 />
                 <span className="font-bold text-slate-800">Urbanrat Brand</span>
               </label>
@@ -816,7 +816,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="rounded text-[#0A82A8] focus:ring-[#5ADBE5]"
+                  className="rounded text-brand-dark focus:ring-brand-light"
                 />
                 <span className="font-bold text-slate-800">Featured</span>
               </label>
@@ -826,7 +826,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   type="checkbox"
                   checked={isTrending}
                   onChange={(e) => setIsTrending(e.target.checked)}
-                  className="rounded text-[#0A82A8] focus:ring-[#5ADBE5]"
+                  className="rounded text-brand-dark focus:ring-brand-light"
                 />
                 <span className="font-bold text-slate-800">Trending</span>
               </label>
@@ -836,7 +836,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   type="checkbox"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="rounded text-[#0A82A8] focus:ring-[#5ADBE5]"
+                  className="rounded text-brand-dark focus:ring-brand-light"
                 />
                 <span className="font-bold text-slate-800">Active</span>
               </label>

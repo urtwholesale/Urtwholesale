@@ -278,7 +278,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
       {/* ── Hero Header Card ── */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs relative overflow-hidden">
         {/* Subtle decorative gradient aura */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand-light/10 to-brand-dark/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-br from-brand-light/10 to-brand-dark/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
@@ -302,7 +302,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
           </div>
 
           <div className="shrink-0 self-start sm:self-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-light/20 to-brand-dark/15 border border-brand-light/30 flex items-center justify-center text-brand-dark shadow-2xs">
+            <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-brand-light/20 to-brand-dark/15 border border-brand-light/30 flex items-center justify-center text-brand-dark shadow-2xs">
               <IconComponent className="w-7 h-7" />
             </div>
           </div>
@@ -393,7 +393,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
         )}
 
         {/* WhatsApp Help CTA inside the document */}
-        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/60">
+        <div className="mt-8 pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/70 p-4 rounded-2xl">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <MessageCircle className="w-5 h-5" />

@@ -265,7 +265,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             )}
 
             {product.is_urbanrat_brand && (
-              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-[#0A82A8] border border-slate-200/60 shadow-xs flex items-center space-x-1.5">
+              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-brand-dark border border-slate-200/60 shadow-xs flex items-center space-x-1.5">
                 <img
                   src="/logo.png"
                   alt="Urbanrat"
@@ -321,7 +321,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   onClick={() => setActiveImageIndex(idx)}
                   className={`w-14 h-14 rounded-2xl overflow-hidden border-2 bg-white transition cursor-pointer shrink-0 ${
                     activeImageIndex === idx
-                      ? "border-[#0A82A8] shadow-xs ring-2 ring-[#5ADBE5]/40"
+                      ? "border-brand-dark shadow-xs ring-2 ring-brand-light/40"
                       : "border-slate-200/80 opacity-70 hover:opacity-100"
                   }`}
                 >
@@ -400,7 +400,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-[#0A82A8]" />
+                  <Layers className="w-4 h-4 text-brand-dark" />
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
                     Tiered Volume Pricing
                   </h3>
@@ -431,7 +431,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                       key={idx}
                       className={`relative rounded-2xl p-3 border transition-all ${
                         isActive
-                          ? "bg-sky-50/80 border-[#0A82A8] ring-2 ring-[#5ADBE5]/40 shadow-xs"
+                          ? "bg-sky-50/80 border-brand-dark ring-2 ring-brand-light/40 shadow-xs"
                           : "bg-slate-50/60 border-slate-100 hover:border-slate-200"
                       }`}
                     >
@@ -445,7 +445,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                           </span>
                         )}
                         {isActive && savingsVsFirst === 0 && (
-                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-[#0A82A8] text-white">
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand-dark text-white">
                             Active
                           </span>
                         )}
@@ -628,15 +628,15 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           {/* Guarantees */}
           <div className="grid grid-cols-3 gap-2 pt-2 text-center text-slate-600 text-[11px]">
             <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
-              <Truck className="w-4 h-4 text-[#0A82A8] mx-auto mb-1" />
+              <Truck className="w-4 h-4 text-brand-dark mx-auto mb-1" />
               <span className="font-semibold">Fast Shipping</span>
             </div>
             <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-[#0A82A8] mx-auto mb-1" />
+              <ShieldCheck className="w-4 h-4 text-brand-dark mx-auto mb-1" />
               <span className="font-semibold">QA Tested</span>
             </div>
             <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
-              <RotateCcw className="w-4 h-4 text-[#0A82A8] mx-auto mb-1" />
+              <RotateCcw className="w-4 h-4 text-brand-dark mx-auto mb-1" />
               <span className="font-semibold">DOA Guarantee</span>
             </div>
           </div>
@@ -757,7 +757,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     value={reviewTitle}
                     onChange={(e) => setReviewTitle(e.target.value)}
                     placeholder="Review headline (optional)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                   />
                 </div>
 
@@ -767,7 +767,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     onChange={(e) => setReviewBody(e.target.value)}
                     rows={3}
                     placeholder="Share your experience regarding build quality, margins, or packaging..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#5ADBE5] focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                   />
                 </div>
 
@@ -789,7 +789,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           ) : (
             <p className="text-xs text-slate-500">
               Please{" "}
-              <Link to="/menu" className="font-bold text-[#0A82A8] underline">
+              <Link to="/menu" className="font-bold text-brand-dark underline">
                 sign in to your customer account
               </Link>{" "}
               to write a review.
@@ -807,7 +807,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             </h2>
             <Link
               to="/marketplace"
-              className="text-xs font-bold text-[#0A82A8] hover:underline"
+              className="text-xs font-bold text-brand-dark hover:underline"
             >
               View All →
             </Link>

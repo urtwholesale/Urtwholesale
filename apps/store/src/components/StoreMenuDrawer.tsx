@@ -120,7 +120,7 @@ export function StoreMenuDrawer({
 
       {/* ── Slide-Up Menu Sheet ── */}
       <div
-        className="relative z-10 w-full sm:max-w-md bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 border border-slate-100"
+        className="relative z-10 w-full sm:max-w-md bg-white rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 border border-slate-100"
         role="dialog"
         aria-modal="true"
         aria-label="Navigation Menu"
@@ -136,7 +136,7 @@ export function StoreMenuDrawer({
             <button
               type="button"
               onClick={() => setShowAuthForm(false)}
-              className="flex items-center space-x-2 text-xs font-bold text-[#0A82A8] hover:underline cursor-pointer"
+              className="flex items-center space-x-2 text-xs font-bold text-brand-dark hover:underline cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Menu</span>
@@ -260,7 +260,7 @@ export function StoreMenuDrawer({
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-xl bg-cyan-50 text-[#0A82A8] flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-50 text-brand-dark flex items-center justify-center">
                         <ShoppingBag className="w-4 h-4" />
                       </div>
                       <div>
@@ -291,7 +291,7 @@ export function StoreMenuDrawer({
                         <span className="text-xs font-bold text-slate-800 block">
                           Urbanrat Original
                         </span>
-                        <span className="text-[10px] text-[#0A82A8] font-semibold">
+                        <span className="text-[10px] text-brand-dark font-semibold">
                           Flagship private-label collection
                         </span>
                       </div>
@@ -332,7 +332,7 @@ export function StoreMenuDrawer({
                     </div>
                     <div className="flex items-center space-x-2">
                       {cartCount > 0 && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#0A82A8] text-white">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-brand-dark text-white">
                           {cartCount} items
                         </span>
                       )}
@@ -401,7 +401,7 @@ export function StoreMenuDrawer({
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer group"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-xl bg-cyan-50 text-[#0A82A8] flex items-center justify-center group-hover:bg-[#0A82A8] group-hover:text-white transition">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-50 text-brand-dark flex items-center justify-center group-hover:bg-brand-dark group-hover:text-white transition">
                         <ShieldCheck className="w-4 h-4" />
                       </div>
                       <div>
@@ -409,7 +409,7 @@ export function StoreMenuDrawer({
                           <span className="text-xs font-bold text-slate-800">
                             Authorized Dealer Network
                           </span>
-                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-100 text-[#0A82A8]">
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-100 text-brand-dark">
                             Apply
                           </span>
                         </div>
@@ -508,7 +508,7 @@ export function StoreMenuDrawer({
                       key={item.to}
                       type="button"
                       onClick={() => handleNavigate(item.to)}
-                      className="text-[10px] font-semibold text-slate-400 hover:text-[#0A82A8] px-2.5 py-1 rounded-full bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/60 transition cursor-pointer"
+                      className="text-[10px] font-semibold text-slate-400 hover:text-brand-dark px-2.5 py-1 rounded-full bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/60 transition cursor-pointer"
                     >
                       {item.label}
                     </button>

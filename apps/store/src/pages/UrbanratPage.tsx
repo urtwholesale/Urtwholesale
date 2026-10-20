@@ -78,7 +78,7 @@ export function UrbanratPage({ onAddToCart, cartCount = 0 }: UrbanratPageProps) 
                   alt="Urbanrat"
                   className="w-4 h-4 rounded-full object-cover"
                 />
-                <span className="text-[#5ADBE5]">{banner.badge_text}</span>
+                <span className="text-brand-light">{banner.badge_text}</span>
               </div>
             )}
 
@@ -100,13 +100,13 @@ export function UrbanratPage({ onAddToCart, cartCount = 0 }: UrbanratPageProps) 
                     className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 shadow-xs"
                   >
                     {b.icon === "Flame" ? (
-                      <Flame className="w-5 h-5 text-[#5ADBE5] mx-auto mb-1" />
+                      <Flame className="w-5 h-5 text-brand-light mx-auto mb-1" />
                     ) : b.icon === "Award" ? (
-                      <Award className="w-5 h-5 text-[#5ADBE5] mx-auto mb-1" />
+                      <Award className="w-5 h-5 text-brand-light mx-auto mb-1" />
                     ) : b.icon === "Star" ? (
-                      <Star className="w-5 h-5 text-[#5ADBE5] mx-auto mb-1" />
+                      <Star className="w-5 h-5 text-brand-light mx-auto mb-1" />
                     ) : (
-                      <ShieldCheck className="w-5 h-5 text-[#5ADBE5] mx-auto mb-1" />
+                      <ShieldCheck className="w-5 h-5 text-brand-light mx-auto mb-1" />
                     )}
                     {b.label && (
                       <p className="text-[10px] text-slate-400 font-medium">{b.label}</p>

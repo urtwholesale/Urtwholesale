@@ -354,7 +354,7 @@ export function MyOrdersPage() {
                           className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition cursor-pointer"
                         >
                           {copiedOrderId === order.id ? (
-                            <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                            <Check className="w-3 h-3 text-emerald-600 stroke-3" />
                           ) : (
                             <Copy className="w-3 h-3" />
                           )}

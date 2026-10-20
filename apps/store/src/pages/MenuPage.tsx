@@ -100,7 +100,7 @@ export function MenuPage() {
           <section className="bg-white rounded-3xl border border-slate-100 p-5 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-sky-50 text-[#0A82A8] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-sky-50 text-brand-dark flex items-center justify-center">
                   <Package className="w-4 h-4" />
                 </div>
                 <div>
@@ -171,7 +171,7 @@ export function MenuPage() {
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#0A82A8] font-bold hover:underline"
+                          className="text-brand-dark font-bold hover:underline"
                         >
                           Track on WhatsApp →
                         </a>
@@ -194,7 +194,7 @@ export function MenuPage() {
         <div className="lg:col-span-5 xl:col-span-5 space-y-6 lg:sticky lg:top-24">
           {/* ── 3. Contact on WhatsApp (Only shown if whatsappNumber is configured) ── */}
           {whatsappNumber && (
-            <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 sm:p-6 shadow-md">
+            <section className="overflow-hidden rounded-3xl bg-linear-to-br from-emerald-600 to-teal-700 text-white p-5 sm:p-6 shadow-md">
               <div className="flex items-start justify-between">
                 <div className="space-y-1 max-w-sm">
                   <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
@@ -258,7 +258,7 @@ export function MenuPage() {
                       className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left cursor-pointer"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-xl bg-cyan-50 text-[#0A82A8] flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-xl bg-cyan-50 text-brand-dark flex items-center justify-center">
                           <Info className="w-4 h-4" />
                         </div>
                         <div>
@@ -274,7 +274,7 @@ export function MenuPage() {
                       </div>
                       <ChevronDown
                         className={`w-4 h-4 text-slate-400 transition-transform ${
-                          openAbout ? "rotate-180 text-[#0A82A8]" : ""
+                          openAbout ? "rotate-180 text-brand-dark" : ""
                         }`}
                       />
                     </button>

@@ -193,7 +193,7 @@ export function SettingsEditor() {
   if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center">
-        <Loader2 className="w-6 h-6 text-[#0A82A8] animate-spin mx-auto mb-2" />
+        <Loader2 className="w-6 h-6 text-brand-dark animate-spin mx-auto mb-2" />
         <p className="text-xs text-slate-400">Loading store settings...</p>
       </div>
     );
@@ -227,7 +227,7 @@ export function SettingsEditor() {
         {/* WhatsApp Phone */}
         <div>
           <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Phone className="w-3.5 h-3.5 text-[#0A82A8]" />
+            <Phone className="w-3.5 h-3.5 text-brand-dark" />
             <span>WhatsApp Dispatch &amp; Support Phone Number</span>
           </label>
           <input
@@ -236,7 +236,7 @@ export function SettingsEditor() {
             value={whatsappNumber}
             onChange={(e) => setWhatsappNumber(e.target.value)}
             placeholder="919876543210"
-            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
           />
           <p className="text-[11px] text-slate-400 mt-1">
             Include country code without '+' or spaces (e.g. 919876543210). Used for all customer WhatsApp order dispatches.
@@ -246,7 +246,7 @@ export function SettingsEditor() {
         {/* Popular Searches */}
         <div>
           <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
-            <Search className="w-3.5 h-3.5 text-[#0A82A8]" />
+            <Search className="w-3.5 h-3.5 text-brand-dark" />
             <span>Popular Search Keywords (comma-separated)</span>
           </label>
           <input
@@ -254,7 +254,7 @@ export function SettingsEditor() {
             value={popularSearches}
             onChange={(e) => setPopularSearches(e.target.value)}
             placeholder="iPhone 16 Glass, 65W GaN, 100W Cable, AirBass Pro, MagSafe Car"
-            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
           />
           <p className="text-[11px] text-slate-400 mt-1">
             Keywords displayed as one-tap chips inside the customer mobile search drawer.
@@ -265,7 +265,7 @@ export function SettingsEditor() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
-              <Store className="w-3.5 h-3.5 text-[#0A82A8]" />
+              <Store className="w-3.5 h-3.5 text-brand-dark" />
               <span>Store Name</span>
             </label>
             <input
@@ -274,7 +274,7 @@ export function SettingsEditor() {
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="URT Wholesale"
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
             />
           </div>
           <div>
@@ -286,7 +286,7 @@ export function SettingsEditor() {
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="Factory Direct Wholesale Mobile Gear"
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
             />
           </div>
         </div>
@@ -321,7 +321,7 @@ export function SettingsEditor() {
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div>
             <div className="flex items-center space-x-2">
-              <ShieldCheck className="w-5 h-5 text-[#0A82A8]" />
+              <ShieldCheck className="w-5 h-5 text-brand-dark" />
               <h2 className="text-lg font-bold text-slate-900">
                 Admin Credentials & Master Password
               </h2>
@@ -348,7 +348,7 @@ export function SettingsEditor() {
         <form onSubmit={handleUpdateCredentials} className="space-y-4">
           <div>
             <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
-              <User className="w-3.5 h-3.5 text-[#0A82A8]" />
+              <User className="w-3.5 h-3.5 text-brand-dark" />
               <span>Fixed Admin Username</span>
             </label>
             <input
@@ -357,7 +357,7 @@ export function SettingsEditor() {
               value={adminUsername}
               onChange={(e) => setAdminUsername(e.target.value)}
               placeholder="Sjainthelegend"
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               The login username for the Admin Portal.
@@ -367,7 +367,7 @@ export function SettingsEditor() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
               <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
-                <KeyRound className="w-3.5 h-3.5 text-[#0A82A8]" />
+                <KeyRound className="w-3.5 h-3.5 text-brand-dark" />
                 <span>New Master Password</span>
               </label>
               <input
@@ -376,7 +376,7 @@ export function SettingsEditor() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Leave blank to keep current"
                 minLength={6}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
               />
             </div>
             <div>
@@ -389,7 +389,7 @@ export function SettingsEditor() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repeat new password"
                 minLength={6}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
               />
             </div>
           </div>

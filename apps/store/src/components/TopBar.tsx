@@ -107,7 +107,7 @@ export function TopBar({
               type="button"
               onClick={handleBack}
               aria-label="Go back"
-              className="w-10 h-10 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-800 hover:text-[#0A82A8] hover:shadow-md active:scale-95 transition-all cursor-pointer"
+              className="w-10 h-10 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-800 hover:text-brand-dark hover:shadow-md active:scale-95 transition-all cursor-pointer"
             >
               <ArrowLeft className="w-4.5 h-4.5 stroke-[2.2]" />
             </button>
@@ -117,7 +117,7 @@ export function TopBar({
             type="button"
             onClick={onOpenSearch}
             aria-label="Search accessories"
-            className="w-10 h-10 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-800 hover:text-[#0A82A8] hover:shadow-md active:scale-95 transition-all cursor-pointer"
+            className="w-10 h-10 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-800 hover:text-brand-dark hover:shadow-md active:scale-95 transition-all cursor-pointer"
           >
             <Search className="w-4.5 h-4.5 stroke-[2.2]" />
           </button>
@@ -146,14 +146,14 @@ export function TopBar({
           <Link
             to="/cart"
             aria-label={`View cart with ${cartCount} items`}
-            className="relative w-10 h-10 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-800 hover:text-[#0A82A8] hover:shadow-md active:scale-95 transition-all group"
+            className="relative w-10 h-10 rounded-full bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-800 hover:text-brand-dark hover:shadow-md active:scale-95 transition-all group"
           >
             <ShoppingBag className="w-4.5 h-4.5 stroke-[2.2] group-hover:scale-105 transition-transform" />
 
             {/* Item Count Badge */}
             {cartCount > 0 && (
               <span
-                className="absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow-xs animate-in zoom-in-50"
+                className="absolute -top-1 -right-1 min-w-4.75 h-4.75 px-1 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow-xs animate-in zoom-in-50"
                 style={{
                   background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
                 }}

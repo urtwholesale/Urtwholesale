@@ -223,7 +223,7 @@ export function ContentEditor() {
             onClick={() => setSubTab("banners")}
             className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
               subTab === "banners"
-                ? "bg-[#0A82A8] text-white shadow-xs"
+                ? "bg-brand-dark text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -236,7 +236,7 @@ export function ContentEditor() {
             onClick={() => setSubTab("pages")}
             className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
               subTab === "pages"
-                ? "bg-[#0A82A8] text-white shadow-xs"
+                ? "bg-brand-dark text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -249,7 +249,7 @@ export function ContentEditor() {
             onClick={() => setSubTab("searches")}
             className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
               subTab === "searches"
-                ? "bg-[#0A82A8] text-white shadow-xs"
+                ? "bg-brand-dark text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -262,7 +262,7 @@ export function ContentEditor() {
             onClick={() => setSubTab("compressor")}
             className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
               subTab === "compressor"
-                ? "bg-[#0A82A8] text-white shadow-xs"
+                ? "bg-brand-dark text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -280,7 +280,7 @@ export function ContentEditor() {
 
       {loading ? (
         <div className="bg-white p-12 rounded-3xl border border-slate-100 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
-          <Loader2 className="w-5 h-5 animate-spin text-[#0A82A8]" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-dark" />
           <span>Loading content configuration from Supabase...</span>
         </div>
       ) : (
@@ -301,7 +301,7 @@ export function ContentEditor() {
                       onClick={() => setBannerPlacement(pl)}
                       className={`px-3 py-1 rounded-xl transition cursor-pointer ${
                         bannerPlacement === pl
-                          ? "bg-[#0A82A8] text-white font-bold"
+                          ? "bg-brand-dark text-white font-bold"
                           : "text-slate-600 hover:bg-slate-100"
                       }`}
                     >
@@ -326,7 +326,7 @@ export function ContentEditor() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
                       <div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-50 text-[#0A82A8] border border-cyan-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-50 text-brand-dark border border-cyan-200">
                           {b.placement}
                         </span>
                         <h3 className="text-sm font-black text-slate-900 mt-1">
@@ -342,7 +342,7 @@ export function ContentEditor() {
                             onChange={(e) =>
                               handleBannerChange(b.id, "is_active", e.target.checked)
                             }
-                            className="rounded text-[#0A82A8] focus:ring-[#5ADBE5]"
+                            className="rounded text-brand-dark focus:ring-brand-light"
                           />
                           <span>Active</span>
                         </label>
@@ -375,7 +375,7 @@ export function ContentEditor() {
                           onChange={(e) =>
                             handleBannerChange(b.id, "title", e.target.value)
                           }
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light"
                         />
                       </div>
 
@@ -388,14 +388,14 @@ export function ContentEditor() {
                             handleBannerChange(b.id, "badge_text", e.target.value)
                           }
                           placeholder="e.g. Urbanrat In-House Labs"
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light"
                         />
                       </div>
 
                       <div className="space-y-2 sm:col-span-2 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
                         <div className="flex items-center justify-between">
                           <label className="font-bold text-slate-800 flex items-center space-x-1.5">
-                            <ImageIcon className="w-4 h-4 text-[#0A82A8]" />
+                            <ImageIcon className="w-4 h-4 text-brand-dark" />
                             <span>Hero / Promotional Banner Image</span>
                           </label>
                           {b.image_url && (
@@ -412,7 +412,7 @@ export function ContentEditor() {
 
                         {b.image_url ? (
                           <div className="flex flex-col sm:flex-row gap-4 items-start">
-                            <div className={`relative rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs group shrink-0 w-full sm:w-60 ${b.placement === "home_hero" ? "aspect-[5/4]" : "aspect-video"}`}>
+                            <div className={`relative rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs group shrink-0 w-full sm:w-60 ${b.placement === "home_hero" ? "aspect-5/4" : "aspect-video"}`}>
                               <img
                                 src={b.image_url}
                                 alt={b.title || "Banner preview"}
@@ -443,9 +443,9 @@ export function ContentEditor() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-2xs cursor-pointer transition">
                                   {uploadingBannerId === b.id ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0A82A8]" />
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-dark" />
                                   ) : (
-                                    <Upload className="w-3.5 h-3.5 text-[#0A82A8]" />
+                                    <Upload className="w-3.5 h-3.5 text-brand-dark" />
                                   )}
                                   <span>{uploadingBannerId === b.id ? "Uploading..." : "Replace / Upload New Image"}</span>
                                   <input
@@ -470,7 +470,7 @@ export function ContentEditor() {
                                     handleBannerChange(b.id, "image_url", e.target.value)
                                   }
                                   placeholder="https://..."
-                                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#5ADBE5] bg-white"
+                                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-light bg-white"
                                 />
                               </div>
                             </div>
@@ -478,7 +478,7 @@ export function ContentEditor() {
                         ) : (
                           <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
                             <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 rounded-xl bg-[#5ADBE5]/10 flex items-center justify-center text-[#0A82A8]">
+                              <div className="w-10 h-10 rounded-xl bg-brand-light/10 flex items-center justify-center text-brand-dark">
                                 <ImageIcon className="w-5 h-5" />
                               </div>
                               <div>
@@ -522,7 +522,7 @@ export function ContentEditor() {
                           onChange={(e) =>
                             handleBannerChange(b.id, "subtitle", e.target.value)
                           }
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light"
                         />
                       </div>
 
@@ -535,7 +535,7 @@ export function ContentEditor() {
                             handleBannerChange(b.id, "cta_text", e.target.value)
                           }
                           placeholder="Shop Wholesale"
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light"
                         />
                       </div>
 
@@ -548,7 +548,7 @@ export function ContentEditor() {
                             handleBannerChange(b.id, "cta_link", e.target.value)
                           }
                           placeholder="/marketplace"
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light"
                         />
                       </div>
                     </div>
@@ -572,7 +572,7 @@ export function ContentEditor() {
                     onClick={() => setSelectedPageSlug(p.slug)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                       selectedPageSlug === p.slug
-                        ? "bg-[#0A82A8] text-white shadow-xs"
+                        ? "bg-brand-dark text-white shadow-xs"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
@@ -589,7 +589,7 @@ export function ContentEditor() {
                       type="text"
                       value={activePage.title}
                       onChange={(e) => handleActivePageChange("title", e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-light"
                     />
                   </div>
 
@@ -601,7 +601,7 @@ export function ContentEditor() {
                       type="text"
                       value={activePage.summary || ""}
                       onChange={(e) => handleActivePageChange("summary", e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-light"
                     />
                   </div>
 
@@ -613,7 +613,7 @@ export function ContentEditor() {
                       rows={10}
                       value={activePage.content}
                       onChange={(e) => handleActivePageChange("content", e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-normal leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-normal leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-light"
                     />
                   </div>
 
@@ -674,7 +674,7 @@ export function ContentEditor() {
                     }
                   }}
                   placeholder="e.g. 65W GaN Charger or iPhone 16 Glass..."
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-light"
                 />
                 <button
                   type="button"

@@ -263,7 +263,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-[#5ADBE5]/30">
+    <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-brand-light/30">
       <ScrollToTop />
 
       {/* ── Fixed Glassmorphism Top Navigation Bar ── */}
@@ -341,7 +341,7 @@ export default function App() {
 
       {/* ── Toast Notification ── */}
       {toastMessage && (
-        <div className="fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg animate-in fade-in slide-in-from-top-2 bg-[#0A82A8]">
+        <div className="fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg animate-in fade-in slide-in-from-top-2 bg-brand-dark">
           {toastMessage}
         </div>
       )}
@@ -361,7 +361,7 @@ export default function App() {
                   placeholder="Search products, chargers, cables..."
                   className="w-full text-xs sm:text-sm bg-transparent outline-none placeholder:text-slate-400 font-medium"
                 />
-                {searching && <Loader2 className="w-3.5 h-3.5 text-[#0A82A8] animate-spin shrink-0" />}
+                {searching && <Loader2 className="w-3.5 h-3.5 text-brand-dark animate-spin shrink-0" />}
               </div>
 
               <button

@@ -88,7 +88,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       {loading ? (
         <div className="h-64 sm:h-80 rounded-3xl bg-slate-100 animate-pulse border border-slate-200/60" />
       ) : heroBanner ? (
-        <section className="relative overflow-hidden rounded-3xl p-5 sm:p-8 md:p-10 lg:p-12 bg-gradient-to-br from-[#5ADBE5]/15 via-white to-[#0A82A8]/10 border border-[#5ADBE5]/30 shadow-xs">
+        <section className="relative overflow-hidden rounded-3xl p-5 sm:p-8 md:p-10 lg:p-12 bg-linear-to-br from-brand-light/15 via-white to-brand-dark/10 border border-brand-light/30 shadow-xs">
           {/* Ambient radial glow */}
           <div
             className="absolute -top-24 -right-24 w-96 h-96 rounded-full blur-3xl opacity-30 pointer-events-none"
@@ -101,16 +101,16 @@ export function HomePage({ onAddToCart }: HomePageProps) {
             {/* Column: Hero Wholesale Product Image Showcase (renders above text on mobile, right column on desktop) */}
             {heroBanner.image_url && (
               <div className="order-1 lg:order-2 lg:col-span-5 xl:col-span-5 relative">
-                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300 aspect-[5/4]">
+                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300 aspect-5/4">
                   <img
                     src={heroBanner.image_url}
                     alt={heroBanner.title}
-                    className="w-full h-full object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[5/4]"
+                    className="w-full h-full object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-5/4"
                     loading="eager"
                     decoding="async"
                     fetchPriority="high"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                 </div>
               </div>
             )}
@@ -124,8 +124,8 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               }
             >
               {heroBanner.badge_text && (
-                <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#0A82A8] bg-white shadow-xs border border-[#5ADBE5]/30">
-                  <Sparkles className="w-3.5 h-3.5 text-[#5ADBE5]" />
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-brand-dark bg-white shadow-xs border border-brand-light/30">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-light" />
                   <span>{heroBanner.badge_text}</span>
                 </div>
               )}
@@ -175,11 +175,11 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                   }`}
                 >
                   {badge.icon === "Truck" ? (
-                    <Truck className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                    <Truck className="w-4 h-4 text-brand-dark shrink-0" />
                   ) : badge.icon === "Zap" ? (
-                    <Zap className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                    <Zap className="w-4 h-4 text-brand-dark shrink-0" />
                   ) : (
-                    <ShieldCheck className="w-4 h-4 text-[#0A82A8] shrink-0" />
+                    <ShieldCheck className="w-4 h-4 text-brand-dark shrink-0" />
                   )}
                   <span className="font-semibold">{badge.text}</span>
                 </div>
@@ -197,7 +197,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           </h2>
           <Link
             to="/categories"
-            className="text-xs font-bold text-[#0A82A8] hover:underline flex items-center space-x-1"
+            className="text-xs font-bold text-brand-dark hover:underline flex items-center space-x-1"
           >
             <span>All Categories</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -221,7 +221,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               <Link
                 key={cat.id}
                 to={`/marketplace?category=${cat.slug}`}
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-bold bg-white border border-slate-200/90 text-slate-800 hover:border-[#5ADBE5] hover:text-[#0A82A8] shrink-0 shadow-xs transition"
+                className="inline-flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-bold bg-white border border-slate-200/90 text-slate-800 hover:border-brand-light hover:text-brand-dark shrink-0 shadow-xs transition"
               >
                 {cat.image_url && (
                   <img
@@ -256,7 +256,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
           <Link
             to="/marketplace?sort=newest"
-            className="text-xs font-bold text-[#0A82A8] hover:underline"
+            className="text-xs font-bold text-brand-dark hover:underline"
           >
             See All
           </Link>
@@ -284,11 +284,11 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 4. Brand Highlight Section from Live Database Banners ── */}
       {brandBanner && (
-        <section className="relative overflow-hidden rounded-3xl p-5 sm:p-8 bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950 text-white shadow-md">
+        <section className="relative overflow-hidden rounded-3xl p-5 sm:p-8 bg-linear-to-r from-slate-950 via-slate-900 to-cyan-950 text-white shadow-md">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-lg">
               {brandBanner.badge_text && (
-                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/10 text-[#5ADBE5] border border-white/10 shadow-xs">
+                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/10 text-brand-light border border-white/10 shadow-xs">
                   <img
                     src="/logo.png"
                     alt="Urbanrat"
@@ -310,7 +310,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
             <div className="shrink-0">
               <Link
                 to={brandBanner.cta_link || brandBanner.link_url || "/urbanrat"}
-                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl text-slate-950 font-black text-xs sm:text-sm bg-gradient-to-r from-[#5ADBE5] to-[#1EAFC7] hover:opacity-95 shadow-lg active:scale-95 transition"
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl text-slate-950 font-black text-xs sm:text-sm bg-linear-to-r from-brand-light to-brand hover:opacity-95 shadow-lg active:scale-95 transition"
               >
                 <span>{brandBanner.cta_text || "Explore Collection"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -339,7 +339,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
           <Link
             to="/marketplace?sort=newest"
-            className="text-xs font-bold text-[#0A82A8] hover:underline"
+            className="text-xs font-bold text-brand-dark hover:underline"
           >
             See All
           </Link>
