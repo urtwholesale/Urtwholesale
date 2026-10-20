@@ -101,11 +101,11 @@ export function HomePage({ onAddToCart }: HomePageProps) {
             {/* Column: Hero Wholesale Product Image Showcase (renders above text on mobile, right column on desktop) */}
             {heroBanner.image_url && (
               <div className="order-1 lg:order-2 lg:col-span-5 xl:col-span-5 relative">
-                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300">
+                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300 aspect-[5/4]">
                   <img
                     src={heroBanner.image_url}
                     alt={heroBanner.title}
-                    className="w-full h-auto object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[4/3]"
+                    className="w-full h-full object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[5/4]"
                     loading="eager"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />

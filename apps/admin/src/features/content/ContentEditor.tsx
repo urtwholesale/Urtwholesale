@@ -392,7 +392,7 @@ export function ContentEditor() {
 
                         {b.image_url ? (
                           <div className="flex flex-col sm:flex-row gap-4 items-start">
-                            <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs group shrink-0 w-full sm:w-60 aspect-video">
+                            <div className={`relative rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs group shrink-0 w-full sm:w-60 ${b.placement === "home_hero" ? "aspect-[5/4]" : "aspect-video"}`}>
                               <img
                                 src={b.image_url}
                                 alt={b.title || "Banner preview"}
