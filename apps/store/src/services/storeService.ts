@@ -1,4 +1,8 @@
-import { supabase } from "../lib/supabase";
+import {
+  supabase,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_ANON_KEY,
+} from "../lib/supabase";
 import type {
   Category,
   Product,
@@ -69,8 +73,8 @@ export function formatProduct(raw: any): Product {
  * Check if Supabase client has valid project configuration
  */
 export function isSupabaseConfigured(): boolean {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const url = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
   return Boolean(
     url &&
       key &&
