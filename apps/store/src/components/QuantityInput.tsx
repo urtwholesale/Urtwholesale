@@ -138,7 +138,7 @@ export function QuantityInput({
 
   return (
     <div
-      className={`inline-flex items-center border border-slate-200/90 rounded-xl bg-slate-50 shadow-2xs transition-all focus-within:border-[#0A82A8]/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0A82A8]/15 ${
+      className={`inline-flex items-center border border-slate-200/90 rounded-xl bg-slate-50 shadow-2xs transition-all focus-within:border-brand-dark/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-dark/15 ${
         disabled ? "opacity-50 pointer-events-none" : ""
       } ${className}`}
     >
@@ -172,7 +172,7 @@ export function QuantityInput({
           isSm
             ? "w-11 sm:w-12 text-xs py-0.5"
             : "w-13 sm:w-16 text-xs sm:text-sm py-1"
-        } text-center font-black text-slate-800 bg-transparent focus:bg-white focus:outline-none rounded-md transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none selection:bg-[#0A82A8]/20 selection:text-slate-900`}
+        } text-center font-black text-slate-800 bg-transparent focus:bg-white focus:outline-none rounded-md transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none selection:bg-brand-dark/20 selection:text-slate-900`}
       />
 
       {/* Increment Button */}

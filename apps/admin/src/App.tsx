@@ -220,7 +220,7 @@ export default function App() {
           {/* ── Warehouse / Hub Switcher Dropdown Card (Like Harborline in reference) ── */}
           <div className="bg-slate-50 hover:bg-slate-100/90 border border-slate-200/70 p-2.5 rounded-2xl flex items-center justify-between cursor-pointer transition group">
             <div className="flex items-center space-x-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-[#0A82A8] shadow-2xs shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-brand-dark shadow-2xs shrink-0">
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="truncate">
@@ -251,7 +251,7 @@ export default function App() {
                 <div className="flex items-center space-x-3">
                   <LayoutDashboard
                     className={`w-4 h-4 ${
-                      activeTab === "dashboard" ? "text-[#5ADBE5]" : "text-slate-500"
+                      activeTab === "dashboard" ? "text-brand-light" : "text-slate-500"
                     }`}
                   />
                   <span>Dashboard</span>
@@ -278,7 +278,7 @@ export default function App() {
                 <div className="flex items-center space-x-3">
                   <Package
                     className={`w-4 h-4 ${
-                      activeTab === "products" ? "text-[#5ADBE5]" : "text-slate-500"
+                      activeTab === "products" ? "text-brand-light" : "text-slate-500"
                     }`}
                   />
                   <span>Products</span>
@@ -286,7 +286,7 @@ export default function App() {
                 <span
                   className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                     activeTab === "products"
-                      ? "bg-[#5ADBE5]/20 text-[#5ADBE5] border border-[#5ADBE5]/30"
+                      ? "bg-brand-light/20 text-brand-light border border-brand-light/30"
                       : "bg-slate-100 text-slate-600"
                   }`}
                 >
@@ -307,7 +307,7 @@ export default function App() {
                 <div className="flex items-center space-x-3">
                   <ShoppingBag
                     className={`w-4 h-4 ${
-                      activeTab === "orders" ? "text-[#5ADBE5]" : "text-slate-500"
+                      activeTab === "orders" ? "text-brand-light" : "text-slate-500"
                     }`}
                   />
                   <span>Orders</span>
@@ -326,7 +326,7 @@ export default function App() {
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       activeTab === "orders"
-                        ? "bg-[#5ADBE5]/20 text-[#5ADBE5]"
+                        ? "bg-brand-light/20 text-brand-light"
                         : "bg-slate-100 text-slate-500"
                     }`}
                   >
@@ -355,7 +355,7 @@ export default function App() {
                 <div className="flex items-center space-x-3">
                   <Layers
                     className={`w-4 h-4 ${
-                      activeTab === "content" ? "text-[#5ADBE5]" : "text-slate-500"
+                      activeTab === "content" ? "text-brand-light" : "text-slate-500"
                     }`}
                   />
                   <span>Content</span>
@@ -363,7 +363,7 @@ export default function App() {
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     activeTab === "content"
-                      ? "bg-[#5ADBE5]/20 text-[#5ADBE5]"
+                      ? "bg-brand-light/20 text-brand-light"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -384,7 +384,7 @@ export default function App() {
                 <div className="flex items-center space-x-3">
                   <Settings
                     className={`w-4 h-4 ${
-                      activeTab === "settings" ? "text-[#5ADBE5]" : "text-slate-500"
+                      activeTab === "settings" ? "text-brand-light" : "text-slate-500"
                     }`}
                   />
                   <span>Store Settings</span>
@@ -409,7 +409,7 @@ export default function App() {
             <div className="flex items-center space-x-2.5">
               <div
                 className={`w-7 h-7 rounded-xl flex items-center justify-center text-white shadow-2xs ${
-                  liveSyncEnabled ? "bg-[#0A82A8]" : "bg-slate-400"
+                  liveSyncEnabled ? "bg-brand-dark" : "bg-slate-400"
                 }`}
               >
                 <Radio className="w-3.5 h-3.5 animate-pulse" />
@@ -428,7 +428,7 @@ export default function App() {
               type="button"
               onClick={() => setLiveSyncEnabled(!liveSyncEnabled)}
               className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                liveSyncEnabled ? "bg-[#0A82A8]" : "bg-slate-300"
+                liveSyncEnabled ? "bg-brand-dark" : "bg-slate-300"
               }`}
               aria-label="Toggle live sync status"
             >
@@ -493,13 +493,13 @@ export default function App() {
               <input
                 type="text"
                 placeholder="Global admin lookup..."
-                className="pl-8 pr-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs w-44 sm:w-52 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5] focus:bg-white transition"
+                className="pl-8 pr-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs w-44 sm:w-52 focus:outline-none focus:ring-2 focus:ring-brand-light focus:bg-white transition"
               />
             </div>
 
             {/* Hub Pill */}
             <div className="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700">
-              <Building2 className="w-3.5 h-3.5 text-[#0A82A8]" />
+              <Building2 className="w-3.5 h-3.5 text-brand-dark" />
               <span>All Depots</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </div>
@@ -511,7 +511,7 @@ export default function App() {
               rel="noreferrer"
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-2xs transition"
             >
-              <ExternalLink className="w-3 h-3 text-[#0A82A8]" />
+              <ExternalLink className="w-3 h-3 text-brand-dark" />
               <span className="hidden sm:inline">View Store</span>
             </a>
           </div>
