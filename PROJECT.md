@@ -337,6 +337,7 @@ Deploy each application as an independent Vercel project:
 
 ## 9. Recent Changelog
 
+- **Direct Quantity Numeric Input & Steppers**: Implemented a responsive `QuantityInput.tsx` component used across product detail views (`ProductDetailPage.tsx`) and the shopping cart (`CartPage.tsx`). B2B buyers can directly type bulk volume numbers (e.g. 50, 100, 250) or use `+` / `-` buttons, with real-time recalculation of volume pricing tiers, line subtotals, and cart totals.
 - **Interactive Store Menu Drawer & Auth Action**: Implemented a slide-up bottom sheet / desktop modal (`StoreMenuDrawer.tsx`) triggered from the navigation dock and sub-topbar. Includes structured storefront links, category quick-jump, WhatsApp wholesale desk, company policies, and a prominent **Login** (guest toggle into `CustomerAuth`) or **Logout** button (`supabase.auth.signOut()`) at the very bottom.
 - **Enlarged Centerpiece Logo Navigation Dock**: Scaled up the center Urbanrat logo button in `NavigationDock.tsx` to `w-14 h-14` / `w-15 h-15` with an elevated centerpiece ring and glow shadow, establishing a bold focal hierarchy over the standard navigation icons.
 - **Admin Sidebar Redesign**: Replaced the top horizontal tab row with a modern left sidebar inspired by LeaseFlow (hub switcher, active pill treatment, grouped sections, live sync toggle, and admin user card).

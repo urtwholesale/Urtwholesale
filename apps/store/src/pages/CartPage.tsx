@@ -4,8 +4,6 @@ import type { Product, CustomerDetails } from "@urbanrat/shared";
 import { getUnitPrice, getNextTier } from "@urbanrat/shared";
 import {
   Trash2,
-  Plus,
-  Minus,
   ShoppingBag,
   MessageCircle,
   User,
@@ -15,6 +13,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { QuantityInput } from "../components/QuantityInput";
 import { buildWhatsAppMessage } from "../utils/buildWhatsAppMessage";
 import { createVerifiedOrder } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
@@ -329,38 +328,16 @@ export function CartPage({
 
                       {/* Quantity Stepper respecting min_order_qty & order_qty_step */}
                       <div className="mt-2.5 flex items-center space-x-3">
-                        <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (quantity - step < minQty) {
-                                onRemoveItem(product.id);
-                              } else {
-                                onUpdateQuantity(product.id, quantity - step);
-                              }
-                            }}
-                            aria-label="Decrease quantity"
-                            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-8 text-center font-black text-xs text-slate-800">
-                            {quantity}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={
-                              product.stock > 0 && quantity + step > product.stock
-                            }
-                            onClick={() =>
-                              onUpdateQuantity(product.id, quantity + step)
-                            }
-                            aria-label="Increase quantity"
-                            className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
+                        <QuantityInput
+                          value={quantity}
+                          onChange={(newQty) => onUpdateQuantity(product.id, newQty)}
+                          onBelowMin={() => onRemoveItem(product.id)}
+                          min={minQty}
+                          max={product.stock > 0 ? product.stock : undefined}
+                          step={step}
+                          size="sm"
+                          ariaLabel={`Quantity for ${product.name}`}
+                        />
 
                         <span className="text-xs font-black text-slate-900">
                           = ₹{lineTotal.toLocaleString("en-IN")}

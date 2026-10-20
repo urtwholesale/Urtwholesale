@@ -24,8 +24,6 @@ import {
   ShieldCheck,
   Truck,
   RotateCcw,
-  Plus,
-  Minus,
   MessageCircle,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +32,7 @@ import {
   Send,
   Layers,
 } from "lucide-react";
+import { QuantityInput } from "../components/QuantityInput";
 import { triggerHaptic } from "../utils/haptics";
 
 interface ProductDetailPageProps {
@@ -135,19 +134,6 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const minQty = product.min_order_qty || 1;
   const step = product.order_qty_step || 1;
   const stock = product.stock;
-
-  // Quantity stepper math
-  function handleDecrement() {
-    setQuantity((prev) => Math.max(minQty, prev - step));
-  }
-
-  function handleIncrement() {
-    setQuantity((prev) => {
-      const next = prev + step;
-      if (stock > 0 && next > stock) return prev;
-      return next;
-    });
-  }
 
   // Tier pricing calculations
   const unitPrice = getUnitPrice(tiers, quantity);
@@ -521,29 +507,16 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   {step > 1 ? `, Step: ${step}` : ""})
                 </span>
 
-                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={handleDecrement}
-                    disabled={quantity <= minQty}
-                    aria-label="Decrease quantity"
-                    className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="w-12 text-center font-black text-xs text-slate-800">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleIncrement}
-                    disabled={stock > 0 && quantity + step > stock}
-                    aria-label="Increase quantity"
-                    className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <QuantityInput
+                  value={quantity}
+                  onChange={setQuantity}
+                  min={minQty}
+                  max={stock > 0 ? stock : undefined}
+                  step={step}
+                  size="md"
+                  disabled={stock === 0}
+                  ariaLabel="Order quantity"
+                />
               </div>
 
               {/* Live Line Total Math (clearly labeled as an estimate) */}
