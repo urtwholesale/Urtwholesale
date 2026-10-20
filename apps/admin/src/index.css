@@ -40,8 +40,37 @@
   }
 
   body {
-    background-color: #f8f9fb;
+    background-color: #ECEEED;
     color: #1a1a1a;
     min-height: 100dvh;
+    overflow-x: hidden;
   }
+}
+
+/* ── Floating Light Frosted Blur Dock (Matching Store Customer Navigation Dock) ── */
+.glass-dock {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.dock-bottom-offset {
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Universal Tactile Feedback on Click / Tap ── */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+a:active,
+[role="button"]:active {
+  transform: scale(0.96);
+  transition: transform 70ms cubic-bezier(0.2, 0, 0, 1);
 }
