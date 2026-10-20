@@ -97,9 +97,30 @@ export function HomePage({ onAddToCart }: HomePageProps) {
             }}
           />
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left Column: Headlines & CTA */}
-            <div className={heroBanner.image_url ? "lg:col-span-7 xl:col-span-7 text-left space-y-4" : "col-span-12 text-left space-y-4 max-w-2xl"}>
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
+            {/* Column: Hero Wholesale Product Image Showcase (renders above text on mobile, right column on desktop) */}
+            {heroBanner.image_url && (
+              <div className="order-1 lg:order-2 lg:col-span-5 xl:col-span-5 relative">
+                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300">
+                  <img
+                    src={heroBanner.image_url}
+                    alt={heroBanner.title}
+                    className="w-full h-auto object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[4/3]"
+                    loading="eager"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                </div>
+              </div>
+            )}
+
+            {/* Column: Headlines, Description & CTA (renders below image on mobile, left column on desktop) */}
+            <div
+              className={
+                heroBanner.image_url
+                  ? "order-2 lg:order-1 lg:col-span-7 xl:col-span-7 text-left space-y-4"
+                  : "col-span-12 text-left space-y-4 max-w-2xl"
+              }
+            >
               {heroBanner.badge_text && (
                 <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#0A82A8] bg-white shadow-xs border border-[#5ADBE5]/30">
                   <Sparkles className="w-3.5 h-3.5 text-[#5ADBE5]" />
@@ -139,21 +160,6 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                 )}
               </div>
             </div>
-
-            {/* Right Column: Hero Wholesale Product Image Showcase (only if image_url exists) */}
-            {heroBanner.image_url && (
-              <div className="lg:col-span-5 xl:col-span-5 relative">
-                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-xl border border-white/80 bg-white/60 backdrop-blur-md group hover:shadow-2xl transition-all duration-300">
-                  <img
-                    src={heroBanner.image_url}
-                    alt={heroBanner.title}
-                    className="w-full h-auto object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[4/3]"
-                    loading="eager"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Value Badges from Database store_settings */}
