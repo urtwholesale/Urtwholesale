@@ -101,7 +101,7 @@ export function ProductList() {
             aria-label="Refresh catalog"
             className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-[#0A82A8]" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-brand-dark" : ""}`} />
           </button>
 
           <button
@@ -128,7 +128,7 @@ export function ProductList() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or SKU..."
-            className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5]"
+            className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light"
           />
         </div>
 
@@ -137,7 +137,7 @@ export function ProductList() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5ADBE5] bg-white"
+            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light bg-white"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -155,7 +155,7 @@ export function ProductList() {
               type="checkbox"
               checked={urbanratOnly}
               onChange={(e) => setUrbanratOnly(e.target.checked)}
-              className="rounded text-[#0A82A8] focus:ring-[#5ADBE5]"
+              className="rounded text-brand-dark focus:ring-brand-light"
             />
             <span>Urbanrat Brand Only</span>
           </label>
@@ -190,7 +190,7 @@ export function ProductList() {
       <div className="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden">
         {loading && products.length === 0 ? (
           <div className="p-12 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
-            <Loader2 className="w-5 h-5 animate-spin text-[#0A82A8]" />
+            <Loader2 className="w-5 h-5 animate-spin text-brand-dark" />
             <span>Loading live catalog products...</span>
           </div>
         ) : products.length > 0 ? (
@@ -234,7 +234,7 @@ export function ProductList() {
                             </p>
                             <div className="flex items-center space-x-1.5 mt-0.5">
                               {p.is_urbanrat_brand && (
-                                <span className="inline-flex items-center space-x-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-cyan-50 text-[#0A82A8] border border-cyan-200">
+                                <span className="inline-flex items-center space-x-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-cyan-50 text-brand-dark border border-cyan-200">
                                   <Zap className="w-2.5 h-2.5" />
                                   <span>Urbanrat</span>
                                 </span>
@@ -278,7 +278,7 @@ export function ProductList() {
                       {/* Price Tiers */}
                       <td className="py-3 px-3">
                         <span className="inline-flex items-center space-x-1 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                          <Layers className="w-3 h-3 text-[#0A82A8]" />
+                          <Layers className="w-3 h-3 text-brand-dark" />
                           <span>{tiers.length} {tiers.length === 1 ? "Tier" : "Tiers"}</span>
                         </span>
                       </td>

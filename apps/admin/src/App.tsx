@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase";
 import { AdminLogin } from "./features/auth/AdminLogin";
 import { DashboardOverview } from "./features/dashboard/DashboardOverview";
-import { ProductList } from "./features/products/ProductList";
+import { ProductList } from "./features/products";
 import { OrderList } from "./features/orders/OrderList";
 import { ContentEditor } from "./features/content/ContentEditor";
 import { SettingsEditor } from "./features/settings/SettingsEditor";
