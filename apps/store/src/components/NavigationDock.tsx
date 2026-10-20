@@ -83,24 +83,38 @@ export function NavigationDock({
           )}
         </NavLink>
 
-        {/* 3. Center Logo Button — Prominently Sized & Elevated Centerpiece */}
+        {/* 3. Center Urbanrat Logo Button — Unified with Dock Buttons */}
         <NavLink
           to="/urbanrat"
           aria-label="Urbanrat Flagship Collection"
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
-            `group relative w-14 h-14 sm:w-15 sm:h-15 -my-3 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${
+            `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "bg-white ring-3 ring-[#0A82A8] shadow-[0_6px_24px_rgba(10,130,168,0.45)] scale-110"
-                : "bg-white ring-2 ring-slate-100/90 shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:scale-105 active:scale-95"
+                ? "text-white shadow-[0_4px_16px_rgba(10,130,168,0.4)] scale-105"
+                : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
             }`
           }
+          style={({ isActive }) =>
+            isActive && !isMenuOpen
+              ? {
+                  background:
+                    "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                }
+              : undefined
+          }
         >
-          <img
-            src="/logo.png"
-            alt="Urbanrat"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover transition-transform duration-200 group-hover:scale-105"
-          />
+          {({ isActive }) => (
+            <img
+              src="/logo.png"
+              alt="Urbanrat"
+              className={`rounded-full object-cover transition-transform duration-200 ${
+                isActive && !isMenuOpen
+                  ? "w-7 h-7 sm:w-7.5 sm:h-7.5 scale-105 drop-shadow-sm"
+                  : "w-6.5 h-6.5 sm:w-7 sm:h-7 group-hover:scale-110"
+              }`}
+            />
+          )}
         </NavLink>
 
         {/* 4. Categories */}
