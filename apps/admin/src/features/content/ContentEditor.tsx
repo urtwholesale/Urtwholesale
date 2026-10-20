@@ -20,10 +20,12 @@ import {
   Loader2,
   Upload,
   ExternalLink,
+  Zap,
 } from "lucide-react";
+import { ImageCompressorTool } from "./ImageCompressorTool";
 
 export function ContentEditor() {
-  const [subTab, setSubTab] = useState<"banners" | "pages" | "searches">("banners");
+  const [subTab, setSubTab] = useState<"banners" | "pages" | "searches" | "compressor">("banners");
 
   // 1. Banners state
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -86,9 +88,14 @@ export function ContentEditor() {
     setUploadingBannerId(bannerId);
     setError(null);
     try {
-      const publicUrl = await uploadBannerImage(file);
+      let statsMsg = "Banner image uploaded & optimized successfully!";
+      const publicUrl = await uploadBannerImage(file, (stats) => {
+        if (stats.savingsPercent > 0) {
+          statsMsg = `⚡ Compressed ${stats.formattedOriginalSize} → ${stats.formattedCompressedSize} (${stats.savingsPercent}% smaller)!`;
+        }
+      });
       handleBannerChange(bannerId, "image_url", publicUrl);
-      showToast("Banner image uploaded successfully!");
+      showToast(statsMsg);
     } catch (err: any) {
       console.error("Banner image upload error:", err);
       setError(err?.message || "Failed to upload banner image to Supabase storage.");
@@ -248,6 +255,19 @@ export function ContentEditor() {
           >
             <Search className="w-3.5 h-3.5" />
             <span>Popular Searches ({popularSearches.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab("compressor")}
+            className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              subTab === "compressor"
+                ? "bg-[#0A82A8] text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Image Compressor Tool</span>
           </button>
         </div>
       </div>
@@ -715,6 +735,11 @@ export function ContentEditor() {
               </div>
             </div>
           )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              SUB-TAB 4: IMAGE COMPRESSOR & OPTIMIZER TOOL
+             ══════════════════════════════════════════════════════════════════ */}
+          {subTab === "compressor" && <ImageCompressorTool />}
         </>
       )}
     </div>

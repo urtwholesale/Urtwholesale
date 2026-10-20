@@ -18,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
   Image as ImageIcon,
+  Zap,
 } from "lucide-react";
 
 interface ProductEditorProps {
@@ -53,6 +54,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   // Images text[] (first image is primary)
   const [images, setImages] = useState<string[]>(product?.images || []);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadStats, setUploadStats] = useState<string | null>(null);
 
   // Initial stock for new product
   const [initialStock, setInitialStock] = useState<number>(product?.stock || 0);
@@ -110,7 +112,12 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
     setUploadingImage(true);
     setError(null);
     try {
-      const publicUrl = await uploadProductImage(file);
+      const publicUrl = await uploadProductImage(file, (stats) => {
+        if (stats.savingsPercent > 0) {
+          setUploadStats(`⚡ Auto-compressed: ${stats.formattedOriginalSize} → ${stats.formattedCompressedSize} (${stats.savingsPercent}% smaller)!`);
+          setTimeout(() => setUploadStats(null), 6000);
+        }
+      });
       setImages((prev) => [...prev, publicUrl]);
     } catch (err: any) {
       console.error("Image upload error:", err);
@@ -433,19 +440,27 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
 
           {/* ── 2. Product Images (text[] with drag-reorder & product-images bucket) ── */}
           <div className="space-y-3 pt-4 border-t border-slate-100">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
-                  Product Images ({images.length})
-                </h4>
+                <div className="flex items-center space-x-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    Product Images ({images.length})
+                  </h4>
+                  {uploadStats && (
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 animate-in fade-in">
+                      <Zap className="w-3 h-3 fill-current text-emerald-600" />
+                      <span>{uploadStats}</span>
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-slate-400">
-                  First image is always primary. Reorder with arrow buttons.
+                  First image is always primary. Images are auto-compressed to WebP for instant storefront loading.
                 </p>
               </div>
 
-              <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-[#0A82A8] text-xs font-bold hover:bg-sky-100 transition cursor-pointer">
+              <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-[#0A82A8] text-xs font-bold hover:bg-sky-100 transition cursor-pointer shrink-0">
                 <Upload className="w-3.5 h-3.5" />
-                <span>{uploadingImage ? "Uploading..." : "Upload Image"}</span>
+                <span>{uploadingImage ? "Compressing & Uploading..." : "Upload & Auto-Compress"}</span>
                 <input
                   type="file"
                   accept="image/*"

@@ -107,6 +107,8 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                     alt={heroBanner.title}
                     className="w-full h-full object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500 aspect-[5/4]"
                     loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                 </div>

@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { Product, Order, PriceTier, StorePage, Banner, StoreSettings } from "@urbanrat/shared";
+import { compressImage, type CompressionResult } from "../utils/imageCompressor";
 
 export interface DashboardStats {
   current: {
@@ -278,16 +279,30 @@ export async function adminSaveProductTiers(
 }
 
 /**
- * Uploads image directly to 'product-images' storage bucket
+ * Compresses and uploads image directly to 'product-images' storage bucket.
+ * Automatically resizes & converts to high-performance WebP for fast mobile storefront loading.
  */
-export async function uploadProductImage(file: File): Promise<string> {
-  const ext = file.name.split(".").pop() || "jpg";
+export async function uploadProductImage(
+  file: File,
+  onCompressed?: (result: CompressionResult) => void
+): Promise<string> {
+  const compResult = await compressImage(file, {
+    maxWidth: 1200,
+    maxHeight: 1200,
+    quality: 0.84,
+  });
+
+  onCompressed?.(compResult);
+
+  const fileToUpload = compResult.file;
+  const ext = fileToUpload.name.split(".").pop() || "webp";
   const uniqueName = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from("product-images")
-    .upload(uniqueName, file, {
-      cacheControl: "3600",
+    .upload(uniqueName, fileToUpload, {
+      cacheControl: "31536000",
+      contentType: fileToUpload.type || "image/webp",
       upsert: false,
     });
 
@@ -301,17 +316,31 @@ export async function uploadProductImage(file: File): Promise<string> {
 }
 
 /**
- * Uploads banner image directly to 'banners' (or 'product-images') storage bucket
+ * Compresses and uploads banner image directly to 'banners' (or 'product-images') storage bucket.
+ * Automatically resizes & converts to high-performance WebP for instant hero rendering.
  */
-export async function uploadBannerImage(file: File): Promise<string> {
-  const ext = file.name.split(".").pop() || "jpg";
+export async function uploadBannerImage(
+  file: File,
+  onCompressed?: (result: CompressionResult) => void
+): Promise<string> {
+  const compResult = await compressImage(file, {
+    maxWidth: 1920,
+    maxHeight: 1600,
+    quality: 0.84,
+  });
+
+  onCompressed?.(compResult);
+
+  const fileToUpload = compResult.file;
+  const ext = fileToUpload.name.split(".").pop() || "webp";
   const uniqueName = `banner_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${ext}`;
 
   // Try banners bucket first
   const { error: uploadError } = await supabase.storage
     .from("banners")
-    .upload(uniqueName, file, {
-      cacheControl: "3600",
+    .upload(uniqueName, fileToUpload, {
+      cacheControl: "31536000",
+      contentType: fileToUpload.type || "image/webp",
       upsert: false,
     });
 
@@ -320,8 +349,9 @@ export async function uploadBannerImage(file: File): Promise<string> {
     console.warn("Upload to banners failed, trying product-images bucket:", uploadError);
     const { error: fallbackError } = await supabase.storage
       .from("product-images")
-      .upload(uniqueName, file, {
-        cacheControl: "3600",
+      .upload(uniqueName, fileToUpload, {
+        cacheControl: "31536000",
+        contentType: fileToUpload.type || "image/webp",
         upsert: false,
       });
     if (fallbackError) throw uploadError;

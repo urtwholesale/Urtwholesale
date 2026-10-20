@@ -51,6 +51,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           src={product.images[0] || "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=500"}
           alt={product.name}
           loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
         />
 
