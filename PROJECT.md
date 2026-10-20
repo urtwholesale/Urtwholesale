@@ -1,18 +1,18 @@
 # Urbanrat Store — Comprehensive Project Documentation
 
-A modern, mobile-first, single-vendor e-commerce web platform for premium mobile accessories and electronics, supplied by **URP / URT Wholesale**.
+A modern, mobile-first, B2B & single-vendor wholesale e-commerce web platform for premium mobile accessories and electronics, supplied by **URP / URT Wholesale**.
 
 ---
 
 ## 1. Executive Summary
 
-**Urbanrat Store** is designed to provide a premium, app-like mobile shopping experience for consumer electronics, chargers, cables, audio gear, and protective accessories. 
+**Urbanrat Store** is designed to provide a premium, app-like mobile and desktop shopping experience for wholesale mobile accessories, chargers, cables, audio gear, and protective accessories. 
 
 The platform features:
-- **Customer Storefront (`apps/store`)**: High-performance mobile-first web app with lightning-fast catalog navigation, real-time search, cart management, and seamless WhatsApp order dispatch.
-- **Admin Management Panel (`apps/admin`)**: Separately isolated back-office dashboard for inventory control, category management, order monitoring, and image uploads.
-- **Shared Architecture (`packages/shared`)**: Shared TypeScript domain types ensuring 100% type safety across both frontend applications and backend data models.
-- **Supabase Cloud Backend (`supabase/`)**: PostgreSQL database with Row Level Security (RLS), Supabase Auth, Storage buckets, and Edge Functions.
+- **Customer Storefront (`apps/store`)**: High-performance mobile-first web app with lightning-fast catalog navigation, real-time search, B2B wholesale volume price tiers, persistent cart management, verified server-side orders, and seamless WhatsApp order dispatch.
+- **Admin Management Panel (`apps/admin`)**: Separately isolated back-office dashboard featuring an ultra-modern left sidebar layout (inspired by LeaseFlow), executive RPC analytics, catalog/inventory control, order pipeline with GST invoicing, interactive hero banner media management, and self-service admin credentials.
+- **Shared Architecture (`packages/shared`)**: Shared TypeScript domain models, volume tier calculation engine, and schemas ensuring 100% type safety across both frontend applications and Postgres database models.
+- **Supabase Cloud Backend (`supabase/`)**: PostgreSQL database with Row Level Security (RLS), Supabase Auth, Storage buckets (`product-images`, `banners`, `avatars`), atomic verified order creation RPCs (`create_verified_order`), and real-time analytical functions.
 
 ---
 
@@ -23,30 +23,43 @@ The project is structured as an **npm workspace** monorepo:
 ```
 urbanrat-store/
 ├── apps/
-│   ├── store/                     # Customer-facing Storefront (Vite + React 19)
-│   │   ├── public/                # Static assets (favicons, banners)
+│   ├── store/                         # Customer-facing Storefront (Vite + React 19)
+│   │   ├── public/                    # Static assets (official logo.png, favicons, hero banners)
+│   │   │   ├── favicon.ico
+│   │   │   ├── favicon.png
+│   │   │   ├── logo.png               # Official Urbanrat bunny logo
+│   │   │   └── hero-accessories.jpg
 │   │   ├── src/
-│   │   │   ├── components/        # Reusable UI (TopBar, NavigationDock, ProductCard, ErrorState, etc.)
-│   │   │   ├── context/           # Global application contexts (SettingsContext for store_settings)
-│   │   │   ├── features/auth/     # Customer authentication & profile modal
-│   │   │   ├── lib/               # Supabase client instantiation
-│   │   │   ├── pages/             # Route views (Home, Marketplace, Cart, Order, Menu, etc.)
-│   │   │   ├── services/          # Pure live Supabase data service layer (no mock fallbacks)
-│   │   │   ├── utils/             # WhatsApp message generator, currency & haptic helpers
-│   │   │   ├── App.tsx            # Main application layout, routing & cart state
-│   │   │   ├── index.css          # Tailwind CSS v4 design tokens & theme classes
-│   │   │   └── main.tsx           # React DOM root
-│   │   ├── index.html
+│   │   │   ├── components/            # Reusable UI (Two-tier TopBar, NavigationDock, ProductCard, ErrorState, etc.)
+│   │   │   ├── context/               # Global contexts (SettingsContext for store_settings)
+│   │   │   ├── features/auth/         # Customer authentication & profile modal (CustomerAuth)
+│   │   │   ├── lib/                   # Supabase client instantiation
+│   │   │   ├── pages/                 # Route views (Home, Marketplace, Categories, Urbanrat, Cart, Order, Menu, ProductDetail)
+│   │   │   ├── services/              # Pure live Supabase data service layer (no mock fallbacks)
+│   │   │   ├── utils/                 # WhatsApp message generator, currency & haptic helpers
+│   │   │   ├── App.tsx                # Main application layout, two-tier header clearance & cart state
+│   │   │   ├── index.css              # Tailwind CSS v4 design tokens & theme classes
+│   │   │   └── main.tsx               # React DOM root
+│   │   ├── index.html                 # Configured with favicon.ico, logo.png & apple-touch-icon
 │   │   ├── package.json
 │   │   ├── tsconfig.json
-│   │   └── vite.config.ts         # Includes social crawler Open Graph tag injector
+│   │   └── vite.config.ts             # Includes social crawler Open Graph tag injector
 │   │
-│   └── admin/                     # Protected Merchant Admin Panel (Vite + React 19)
+│   └── admin/                         # Protected Merchant Admin Panel (Vite + React 19)
+│       ├── public/                    # Admin assets (logo.png, favicon.ico, favicon.png)
 │       ├── src/
-│       │   ├── features/auth/     # Admin login with role verification
-│       │   ├── lib/               # Admin Supabase client
-│       │   ├── App.tsx            # Admin dashboard, metric overviews, and controls
-│       │   ├── index.css          # Design system matching store theme
+│       │   ├── features/
+│       │   │   ├── auth/              # Admin login with username mapping (Sjainthelegend) & role check
+│       │   │   ├── dashboard/         # Executive Analytics & RPC KPI cards (DashboardOverview)
+│       │   │   ├── products/          # Catalog & inventory management (ProductList, ProductEditor)
+│       │   │   ├── orders/            # Order pipeline & GST invoice generation (OrderList, OrderDetailModal)
+│       │   │   ├── content/           # Interactive banner uploader, policy pages & search keywords (ContentEditor)
+│       │   │   └── settings/          # Store settings & admin password self-service (SettingsEditor)
+│       │   ├── lib/
+│       │   │   ├── adminService.ts    # Admin database operations, storage uploads & analytics RPC callers
+│       │   │   └── supabase.ts        # Admin Supabase client
+│       │   ├── App.tsx                # Left sidebar navigation layout (LeaseFlow inspired UI)
+│       │   ├── index.css              # Design tokens and custom scrollbars
 │       │   └── main.tsx
 │       ├── index.html
 │       ├── package.json
@@ -54,30 +67,40 @@ urbanrat-store/
 │       └── vite.config.ts
 │
 ├── packages/
-│   └── shared/                    # Shared Domain Package
+│   └── shared/                        # Shared Domain Package
 │       ├── src/
 │       │   ├── types/
-│       │   │   ├── cart.ts        # CartItem & CartSummary definitions
-│       │   │   ├── category.ts    # Category hierarchy models
-│       │   │   ├── order.ts       # Order status, line items, and customer schema
-│       │   │   ├── product.ts     # Product, pricing, and stock models
-│       │   │   └── profile.ts     # User & Admin profile types
-│       │   └── index.ts           # Barrel export
+│       │   │   ├── address.ts         # Customer delivery address schema
+│       │   │   ├── cart.ts            # CartItem & CartSummary definitions
+│       │   │   ├── category.ts        # Category hierarchy models
+│       │   │   ├── order.ts           # Order status, line items, and customer schema
+│       │   │   ├── pricing.ts         # Volume price tiers & price breakdown models
+│       │   │   ├── product.ts         # Product, pricing, specs, and stock models
+│       │   │   ├── profile.ts         # User & Admin profile types
+│       │   │   ├── review.ts          # Product review and rating models
+│       │   │   ├── stockMovement.ts   # Stock audit trail models
+│       │   │   └── storeSettings.ts   # B2B settings, banners, and policy pages
+│       │   ├── pricing.ts             # B2B volume pricing calculator & tier matching
+│       │   ├── pricing.test.ts        # Unit test suite for pricing engine
+│       │   └── index.ts               # Barrel export
 │       ├── package.json
 │       └── tsconfig.json
 │
 ├── supabase/
 │   ├── functions/
-│   │   └── order-og/              # Deno Edge Function for dynamic WhatsApp link previews
+│   │   └── order-og/                  # Deno Edge Function for dynamic WhatsApp link previews
 │   ├── migrations/
-│   │   ├── 001_init.sql           # Core tables, RLS, functions, triggers, and storage
-│   │   └── 002_orders.sql         # Custom order schema (URT-YYMMDD-XXXX) & public order view
-│   └── seed.sql                   # Initial catalog: 6 categories, 18 subcategories, products
+│   │   ├── 001_init.sql               # Core tables, RLS, functions, triggers, and storage
+│   │   ├── 002_orders.sql             # Custom order schema (URT-YYMMDD-XXXX) & public order view
+│   │   ├── 003_pricing_and_content.sql# Volume tiers, store settings, banners, pages, reviews, audit logs
+│   │   ├── 004_pricing_functions.sql  # Real-time analytics, daily sales, RPC order metrics & stock adjust
+│   │   └── 005_create_verified_order.sql # Atomic verified order creation RPC with stock locking
+│   └── seed.sql                       # 12 categories, 18 subcategories, products & volume tiers
 │
-├── .env.example                   # Template for Supabase credentials
-├── AGENT_RULES.md                 # Core UI/UX and architectural constraints
-├── package.json                   # Monorepo root scripts & dev dependencies
-└── tsconfig.json                  # Root TypeScript configuration
+├── .env.example                       # Template for Supabase credentials
+├── AGENT_RULES.md                     # Core UI/UX and architectural constraints
+├── package.json                       # Monorepo root scripts & dev dependencies
+└── tsconfig.json                      # Root TypeScript configuration
 ```
 
 ---
@@ -93,7 +116,7 @@ The application strictly follows the guidelines codified in [`AGENT_RULES.md`](.
   - **Desktop**: `1280 px` (`lg:`) and `1536 px+` (`2xl:`)
 
 ### 2. Light Theme Only
-- Crisp, clean, high-contrast light theme with `#F8F9FB` background.
+- Crisp, clean, high-contrast light theme with `#F8F9FB` canvas (and `#ECEEED` soft slate backdrop for the admin panel).
 - Dark mode toggles and dark styles are deliberately excluded to preserve brand identity.
 
 ### 3. Brand Signature Gradient
@@ -104,103 +127,144 @@ Runs vertically **Top → Bottom**:
 | `--color-brand` | `#1EAFC7` | Intermediate accent, focus rings |
 | `--color-brand-dark` | `#0A82A8` | Gradient end, primary CTA buttons, badges |
 
-### 4. Glassmorphism Chrome
-Fixed navigation bars incorporate modern backdrop blurs:
-```css
-background: rgba(255, 255, 255, 0.72);
-backdrop-filter: blur(16px);
-border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
-```
+### 4. Official Brand Logo
+- Icon: Cyan circular badge with stylized black bunny/rat mark with 'x' and 'o' eyes.
+- Uniformly deployed as:
+  - Web Favicons (`favicon.ico`, `favicon.png`, `apple-touch-icon`).
+  - Store Topbar logo capsule & Mobile Bottom Capsule Navigation.
+  - Admin Left Sidebar header & Admin Portal Login.
+  - "Urbanrat Original" product collection badges.
 
 ---
 
 ## 4. Key Features & Workflows
 
-### Storefront Application (`apps/store`)
+### Customer Storefront (`apps/store`)
 
-1. **Floating Navigation Dock**:
-   - Fixed bottom dock on mobile devices with quick access to:
-     - 🏠 **Home**: Hero banners, category shortcuts, trending items.
-     - 🛍️ **Marketplace**: Complete catalog with live filters and sorting.
-     - 📂 **Categories**: Nested view of primary and subcategories.
-     - ⚡ **Urbanrat**: Curated showcase of private-label flagship gear.
-     - ☰ **Menu**: Customer account, policies, support, and order lookup.
+1. **Two-Tiered Desktop Topbar**:
+   - **Primary Bar**: Left-aligned search/back navigation, centered official Urbanrat logo & brand capsule (`URT Wholesale`), and right-aligned circular Cart button with animated quantity badge.
+   - **Centered Sub-Topbar**: Positioned directly beneath the logo with a clean divider, containing desktop navigation pills (**Home**, **Marketplace**, **Urbanrat**, **Categories**, **Menu**).
+   - **Mobile View**: Automatically collapses to a sleek top row while delegating navigation to the floating bottom capsule dock.
 
-2. **Real-Time Instant Search**:
+2. **Floating Bottom Capsule Dock (Mobile)**:
+   - Fixed capsule dock with glassmorphism blur and smooth haptic feedback:
+     - 🏠 **Home**: Hero banners, category shortcuts, new arrivals.
+     - 🛍️ **Marketplace**: Complete wholesale catalog with live filters and sorting.
+     - ⚡ **Urbanrat**: Flagship private-label collection with embedded official logo.
+     - 📂 **Categories**: Hierarchical category browser.
+     - ☰ **Menu**: Profile, order lookup, policies, and WhatsApp direct support.
+
+3. **B2B Wholesale Volume Pricing**:
+   - Volume tier discounts configured per product (e.g. 10–49 units, 50–99 units, 100+ units).
+   - Interactive tiered savings preview directly on product pages and in the cart.
+   - Server-side verification via Supabase Postgres RPC prevents client-side price tampering.
+
+4. **Real-Time Instant Search**:
    - Debounced search modal with live query against Supabase PostgreSQL.
-   - Popular search suggestions (e.g., *"iPhone 16 Glass"*, *"65W GaN"*, *"100W Cable"*).
+   - Popular search suggestions managed dynamically from the admin panel.
    - Instant search dropdown displaying product thumbnail, price, and brand badge.
 
-3. **Dynamic Filtering & Sorting**:
-   - Filter by parent category, subcategory, Urbanrat brand, and price brackets.
-   - Sort by Newest, Price: Low to High, and Price: High to Low.
+5. **Cart & Atomic Order Verification**:
+   - Persistent reactive cart with real-time tier recalculation.
+   - Verified via `create_verified_order` RPC:
+     - Atomically locks and checks stock availability.
+     - Re-verifies tier pricing directly against database records.
+     - Decrements inventory and creates an audit entry in `stock_movements`.
+     - Generates standard alphanumeric order code (`URT-YYMMDD-XXXX`).
+   - One-click WhatsApp message generation pre-formatted with order details, lines, and delivery address.
 
-4. **Product Detail View (`/product/:slug`)**:
-   - Image gallery with thumbnail selection.
-   - Live stock indicator (*"In Stock"* / *"Low Stock"* / *"Out of Stock"*).
-   - MRP and instant savings calculation (e.g., *"Save ₹500 (45% OFF)"*).
-   - Technical specifications grid and warranty information.
-
-5. **Cart & WhatsApp Order Dispatch**:
-   - Persistent reactive cart with item counters and badges.
-   - Customer checkout details: Name, Mobile, Shipping Address, Pincode.
-   - **One-Click WhatsApp Dispatch**: Formats a WhatsApp message containing line items, totals, delivery address, and order ID, and launches `https://wa.me/...` directly to the business owner.
-   - Simultaneously creates an order record in the Supabase `orders` table.
-
-6. **Order Confirmation & Social Sharing (`/order/:orderId`)**:
-   - Unique alphanumeric order codes (`URT-YYMMDD-XXXX`).
-   - Order timeline tracker (*Pending → Confirmed → Shipped → Delivered*).
-   - Built-in social crawler Open Graph support for rich WhatsApp link previews with image and price summary.
+6. **Order Tracking & Social Sharing (`/order/:orderId`)**:
+   - Real-time order timeline (*Pending → Confirmed → Processing → Shipped → Delivered*).
+   - Edge Function `order-og` provides rich link preview cards when sharing orders on WhatsApp.
 
 ---
 
 ### Admin Panel (`apps/admin`)
 
-- **Strict Separation**: Admin app is deployed separately and completely isolated from customers.
-- **Admin Authentication**: Verified via Supabase Auth + `profiles.role = 'admin'` database check.
-- **Security Guard Triggers**: Database trigger `prevent_role_tampering` prevents unauthorized escalation to admin.
-- **Inventory & Order Management**: Real-time monitoring of customer orders, product catalog status, and storage buckets.
+1. **Redesigned Sidebar Layout (LeaseFlow Inspired UI)**:
+   - **Rounded Sidebar Card**: High-contrast white card container with rounded aesthetics (`rounded-3xl`) set against a soft slate `#ECEEED` backdrop.
+   - **Brand Squircle Header**: Displays official Urbanrat logo with brand typography.
+   - **Hub Selector Card**: "Main Wholesale Hub • Pan-India Central" depot switcher.
+   - **Grouped Navigation**:
+     - **Dashboard**: Layout grid icon with high-contrast dark active pill styling.
+     - **Commerce & Sales**: *Products* (with live product count badge) & *Orders* (with new pending order count badge).
+     - **Storefront & Workspace**: *Content* (media & pages) & *Store Settings*.
+   - **Live Cloud Sync Card**: "Urbanrat Cloud • Supabase Live" with pulsing indicator and interactive toggle.
+   - **Admin Profile Card**: Displays admin avatar (`SJ`), username (`Sjainthelegend`), role badge (`Super Admin`), and 1-click **Sign Out**.
+
+2. **Executive Analytics Dashboard (`DashboardOverview.tsx`)**:
+   - Real-time analytical KPI cards (Revenue, Orders, Average Order Value, Pending Orders, Low Stock Alert, New Customers).
+   - Analytical timeframes (7 days, 30 days, 90 days).
+   - Daily sales trend chart, order status distribution breakdown, and top 5 revenue-generating products computed via PostgreSQL RPCs.
+
+3. **Product Catalog & Volume Tier Editor (`ProductList.tsx` & `ProductEditor.tsx`)**:
+   - Full search, category filter, Urbanrat brand filter, and low-stock filter.
+   - Product Editor modal:
+     - General product information (Title, SKU, URL Slug, Category).
+     - Multi-image manager uploading to Supabase Storage (`product-images`).
+     - Volume Price Tiers manager via `admin_save_product_tiers`.
+     - Direct stock adjustment via `admin_adjust_stock` with audit notes.
+
+4. **Order Pipeline & Invoicing (`OrderList.tsx` & `OrderDetailModal.tsx`)**:
+   - Filter orders by status (*All, Pending, Confirmed, Processing, Shipped, Delivered, Cancelled, Refunded*).
+   - Strict status transition controls logged to `order_events`.
+   - Browser-native **Print / Download GST Tax Invoice** formatted with customer shipping details, itemized tax rates, and wholesale totals.
+
+5. **Promotional Banners & Content Management (`ContentEditor.tsx`)**:
+   - **Interactive Banner Image Uploader**: Direct upload to Supabase storage (`banners` bucket with automatic fallback to `product-images`).
+   - Live banner preview thumbnails with instant **Replace / Upload New** and **Remove Image** controls.
+   - Support for multiple banner placements (`home_hero`, `home_brand`, `urbanrat_hero`).
+   - Policy pages editor (About Us, Terms & Conditions, Privacy Policy).
+   - Trending search keyword manager.
+
+6. **Admin Credentials & Store Settings (`SettingsEditor.tsx`)**:
+   - **Self-Service Admin Credentials**: Change Master Password and Full Name directly from the settings panel.
+   - Store metadata (Business Name, WhatsApp support number, support email, warehouse address).
+   - Wholesale Minimum Order Quantity (MOQ) and Free Shipping thresholds.
+   - GST tax percentage configuration.
 
 ---
 
 ## 5. Database Schema & Security (Supabase)
 
-### Core Tables
+### Migrations
 
-| Table | Description | Security / RLS |
+| Migration | Purpose | Key Components |
 | :--- | :--- | :--- |
-| `profiles` | Extended user profiles linked to `auth.users(id)` with `role` (`customer` \| `admin`). | Customers can read/update own profile; admins read all. Role change protected by trigger. |
-| `categories` | Product hierarchy supporting `parent_id` foreign keys, slugs, and sort orders. | Public read-only; admin write. |
-| `products` | Catalog items with price, MRP, SKU, inventory count, and image array. | Public read for active items; admin full CRUD. |
-| `orders` | Customer orders with custom ID (`URT-YYMMDD-XXXX`), JSONB customer info, items, and status. | Anyone can insert orders; customers can view own orders; admins can view/update all. |
-| `cart_items` | Database-backed cart persistence for authenticated users. | Users can manage only their own cart items. |
+| `001_init.sql` | Core schema & auth | `profiles`, `categories`, `products`, `cart_items`, RLS policies, role protection trigger. |
+| `002_orders.sql` | Custom order format | `orders`, `order_items`, order number generator (`URT-YYMMDD-XXXX`), public view. |
+| `003_pricing_and_content.sql` | B2B & content expansion | `price_tiers`, `store_settings`, `banners`, `store_pages`, `product_reviews`, `stock_movements`, `customer_addresses`, storage buckets (`banners`, `avatars`). |
+| `004_pricing_functions.sql` | Analytics & Admin RPCs | `get_cart_pricing`, `admin_dashboard_stats`, `admin_sales_by_day`, `admin_orders_by_status`, `admin_top_selling_products`, `admin_adjust_stock`, `admin_save_product_tiers`. |
+| `005_create_verified_order.sql` | Atomic order verification | `create_verified_order` transactional function verifying stock and volume tier pricing. |
 
-### Storage Bucket
-- **`product-images`**: Public bucket for high-resolution product photography.
-  - Public read access for all visitors.
-  - Upload/Delete restricted to users with `role = 'admin'`.
+### Storage Buckets
 
-### Live Supabase Data Layer
-All mock data and fallback constants have been eliminated across the monorepo:
-- **Pure Live Data**: Queries live PostgreSQL tables and RPCs with volume price tiers, inventory locking, and admin settings.
-- **Resilient UI States**: Every data-driven view provides distinct Skeleton loading, EmptyState, and ErrorState with Retry mechanisms.
+1. **`product-images`** (Public: `true`): High-resolution product photography.
+2. **`banners`** (Public: `true`): Hero banners and promotional media.
+3. **`avatars`** (Public: `true`): Customer and administrator profile pictures.
+
+### Default Admin Credentials
+
+- **Username**: `Sjainthelegend`
+- **Default Auth Email**: `sjainthelegend@urtwholesale.com`
+- **Initial Master Password**: `URTshubham@1`
+- *Note*: Credentials can be updated at any time by navigating to **Store Settings → Admin Credentials & Master Password**.
 
 ---
 
 ## 6. Technology Stack
 
-| Layer | Technology | Version |
-| :--- | :--- | :--- |
-| **Language** | TypeScript | ~5.8 |
-| **UI Framework** | React | 19.3 |
-| **Bundler & Dev Server** | Vite | 6.3 |
-| **Styling** | Tailwind CSS | 4.1 |
-| **Routing** | React Router | 7.5 |
-| **Icons** | Lucide React | 1.16 |
-| **Database & Auth** | Supabase JS | 2.106 |
-| **Monorepo Manager** | npm workspaces | 10+ / 11+ |
-| **Dev Concurrency** | Concurrently | 10.0 |
+| Layer | Technology | Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Language** | TypeScript | ~5.8 | Strict type safety across apps and shared models |
+| **UI Framework** | React | 19.3 | Modern component-driven reactive architecture |
+| **Bundler & Server** | Vite | 6.3 | Ultra-fast HMR and optimized production bundling |
+| **Styling** | Tailwind CSS | 4.1 | Utility-first styling with custom design tokens |
+| **Routing** | React Router | 7.5 | Client-side routing with deep link support |
+| **Icons** | Lucide React | 1.16 | Cohesive modern icon system |
+| **Backend & DB** | Supabase JS | 2.106 | Realtime PostgreSQL, RLS security, and storage |
+| **Monorepo Manager** | npm workspaces | 10+ / 11+ | Clean multi-package dependency management |
+| **Testing** | Vitest | 3.0 | Unit tests for volume pricing calculation engine |
 
 ---
 
@@ -220,10 +284,11 @@ Copy `.env.example` to `.env` in the project root:
 ```bash
 cp .env.example .env
 ```
-Fill in your Supabase project parameters:
+
+Ensure `.env` contains your active Supabase parameters:
 ```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_SUPABASE_URL=https://mmuuqzgclrdhcvrcavgi.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ### 3. Launch Development Servers
@@ -238,47 +303,43 @@ npm run dev:admin  # Admin dashboard on http://localhost:5174
 
 ### 4. Build for Production
 ```bash
-# Builds both applications and checks TypeScript types
+# Builds store and admin applications and checks TypeScript types
 npm run build
+
+# Or build individually
+npm run build:store
+npm run build:admin
 ```
 
 ---
 
 ## 8. Deployment Guide (Vercel)
 
-Because this is a multi-app monorepo, each application should be deployed as its own Vercel project:
+Deploy each application as an independent Vercel project:
 
-### Deploying the Storefront (Customer App)
+### Deploying the Storefront (`apps/store`)
 1. **Import Git Repository**: Select `urtwholesale/Urtwholesale`.
 2. **Framework Preset**: Select **`Vite`**.
-3. **Root Directory**: Click *Edit* and select **`apps/store`**.
-4. **Build & Output Settings**:
-   - Build Command: `tsc -b && vite build` (or leave default).
-   - Output Directory: `dist`.
-5. **Environment Variables**:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-6. Click **Deploy**.
+3. **Root Directory**: Select **`apps/store`**.
+4. **Build Command**: `tsc -p tsconfig.json && vite build` (or `npm run build:store`).
+5. **Output Directory**: `dist`.
+6. **Environment Variables**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
-### Deploying the Admin Panel
-1. **Import Git Repository** again into a new Vercel project (e.g. `urbanrat-admin`).
+### Deploying the Admin Panel (`apps/admin`)
+1. **Import Git Repository**: Import `urtwholesale/Urtwholesale` as a second project (e.g., `urbanrat-admin`).
 2. **Framework Preset**: Select **`Vite`**.
 3. **Root Directory**: Select **`apps/admin`**.
-4. **Environment Variables**: Add Supabase credentials.
-5. Click **Deploy**.
+4. **Build Command**: `tsc -p tsconfig.json && vite build` (or `npm run build:admin`).
+5. **Output Directory**: `dist`.
+6. **Environment Variables**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
 ---
 
-## 9. Supabase Database Initialization
+## 9. Recent Changelog
 
-To set up a fresh Supabase project:
-1. Open the **SQL Editor** in your Supabase dashboard.
-2. Execute `supabase/migrations/001_init.sql` (Creates profiles, categories, products, RLS, storage).
-3. Execute `supabase/migrations/002_orders.sql` (Creates order schema and policies).
-4. Execute `supabase/seed.sql` (Populates parent categories, subcategories, and sample inventory).
-5. To designate your first administrator user, update the profile role:
-   ```sql
-   update public.profiles 
-   set role = 'admin' 
-   where id = '<your-user-uuid>';
-   ```
+- **Admin Sidebar Redesign**: Replaced the top horizontal tab row with a modern left sidebar inspired by LeaseFlow (hub switcher, active pill treatment, grouped sections, live sync toggle, and admin user card).
+- **Banner Image Uploader**: Added direct file uploader, live thumbnail preview, and image removal buttons in `ContentEditor.tsx` connected to the `banners` bucket.
+- **Official Brand Logo & Favicons**: Integrated the official Urbanrat logo across favicons, app headers, docks, product cards, login portals, and footers.
+- **Centered Sub-Topbar**: Relocated desktop storefront navigation into a centered sub-topbar directly beneath the logo capsule.
+- **Admin Authentication & Self-Service**: Added username login mapping (`Sjainthelegend`) and in-app master password management.
+- **Atomic Verified Orders**: Implemented `create_verified_order` RPC with transactional stock locking and volume tier verification.
