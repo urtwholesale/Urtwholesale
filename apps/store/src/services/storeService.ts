@@ -755,3 +755,24 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
 
   return (data as Review[]) || [];
 }
+
+/**
+ * Submit authorized dealer application via secure RPC
+ */
+export async function submitDealerApplication(formData: Record<string, any>): Promise<{
+  application_no: string;
+  created_at: string;
+}> {
+  ensureConfigured();
+
+  const { data, error } = await supabase.rpc("submit_dealer_application", {
+    p_data: formData,
+  });
+
+  if (error) {
+    throw new StoreError(error.message, error.code, error);
+  }
+
+  return data as { application_no: string; created_at: string };
+}
+

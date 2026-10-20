@@ -36,6 +36,10 @@ export interface StorePage {
   title: string;
   summary: string;
   content: string;
+  is_published?: boolean;
+  sort_order?: number;
+  show_in_footer?: boolean;
+  meta_description?: string;
   created_at: string;
   updated_at: string;
 }

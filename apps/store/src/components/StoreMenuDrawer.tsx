@@ -343,7 +343,7 @@ export function StoreMenuDrawer({
                   {/* My Orders */}
                   <button
                     type="button"
-                    onClick={() => handleNavigate("/menu")}
+                    onClick={() => handleNavigate("/orders")}
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
@@ -394,10 +394,37 @@ export function StoreMenuDrawer({
                     <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
                   </a>
 
+                  {/* Authorized Dealer Network */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate("/dealers")}
+                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-50 text-[#0A82A8] flex items-center justify-center group-hover:bg-[#0A82A8] group-hover:text-white transition">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-bold text-slate-800">
+                            Authorized Dealer Network
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-100 text-[#0A82A8]">
+                            Apply
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          Wholesale tier application &amp; credit terms
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition" />
+                  </button>
+
                   {/* About Us */}
                   <button
                     type="button"
-                    onClick={() => handleNavigate("/menu")}
+                    onClick={() => handleNavigate("/about")}
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
@@ -414,7 +441,7 @@ export function StoreMenuDrawer({
                   {/* Terms & Conditions */}
                   <button
                     type="button"
-                    onClick={() => handleNavigate("/menu")}
+                    onClick={() => handleNavigate("/terms")}
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
@@ -431,7 +458,7 @@ export function StoreMenuDrawer({
                   {/* Privacy Policy */}
                   <button
                     type="button"
-                    onClick={() => handleNavigate("/menu")}
+                    onClick={() => handleNavigate("/privacy")}
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
@@ -467,6 +494,25 @@ export function StoreMenuDrawer({
                     </div>
                     <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
                   </a>
+                </div>
+
+                {/* ── Quick Store Policies Strip ── */}
+                <div className="pt-2 px-1 flex flex-wrap gap-1.5 justify-center">
+                  {[
+                    { label: "Shipping Policy", to: "/shipping" },
+                    { label: "Returns & DOA", to: "/returns" },
+                    { label: "1-Yr Warranty", to: "/warranty" },
+                    { label: "Contact Us", to: "/contact" },
+                  ].map((item) => (
+                    <button
+                      key={item.to}
+                      type="button"
+                      onClick={() => handleNavigate(item.to)}
+                      className="text-[10px] font-semibold text-slate-400 hover:text-[#0A82A8] px-2.5 py-1 rounded-full bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/60 transition cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

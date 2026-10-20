@@ -21,6 +21,9 @@ import { MenuPage } from "./pages/MenuPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { CartPage } from "./pages/CartPage";
 import { OrderPage } from "./pages/OrderPage";
+import { PolicyPage } from "./pages/PolicyPage";
+import { MyOrdersPage } from "./pages/MyOrdersPage";
+import { DealerApplicationPage } from "./pages/DealerApplicationPage";
 import { Search, X, Loader2, ArrowRight } from "lucide-react";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
 
@@ -297,6 +300,26 @@ export default function App() {
             }
           />
           <Route path="/menu" element={<MenuPage />} />
+
+          {/* ── Independent Customer Order Tracking & Invoices ── */}
+          <Route path="/orders" element={<MyOrdersPage />} />
+          <Route path="/my-orders" element={<MyOrdersPage />} />
+
+          {/* ── Independent Authorized Dealer Program ── */}
+          <Route path="/dealers" element={<DealerApplicationPage />} />
+          <Route path="/become-a-dealer" element={<DealerApplicationPage />} />
+
+          {/* ── Independent Policy & Information Pages ── */}
+          <Route path="/about" element={<PolicyPage initialSlug="about" />} />
+          <Route path="/terms" element={<PolicyPage initialSlug="terms" />} />
+          <Route path="/privacy" element={<PolicyPage initialSlug="privacy" />} />
+          <Route path="/shipping" element={<PolicyPage initialSlug="shipping" />} />
+          <Route path="/returns" element={<PolicyPage initialSlug="returns" />} />
+          <Route path="/warranty" element={<PolicyPage initialSlug="warranty" />} />
+          <Route path="/wholesale-terms" element={<PolicyPage initialSlug="wholesale-terms" />} />
+          <Route path="/contact" element={<PolicyPage initialSlug="contact" />} />
+          <Route path="/page/:slug" element={<PolicyPage />} />
+
           <Route
             path="/product/:slug"
             element={<ProductDetailPage onAddToCart={handleAddToCart} />}

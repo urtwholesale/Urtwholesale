@@ -178,6 +178,24 @@ Runs vertically **Top → Bottom**:
    - Real-time order timeline (*Pending → Confirmed → Processing → Shipped → Delivered*).
    - Edge Function `order-og` provides rich link preview cards when sharing orders on WhatsApp.
 
+7. **Dedicated Orders & Invoices Portal (`/orders`, `/my-orders`)**:
+   - Independent customer management page listing authenticated wholesale orders.
+   - Status filters (*All*, *In Progress*, *Delivered*, *Cancelled*).
+   - One-click copy for Order IDs (`URT-YYMMDD-XXXX`), line-item breakdowns with savings highlights.
+   - Guest quick tracking search with instant jump to `/order/:orderId`.
+   - Direct depot WhatsApp escalation button.
+
+8. **Authorized Dealer Network Application (`/dealers`, `/become-a-dealer`)**:
+   - B2B distributor/retailer partnership portal.
+   - Multi-step validated application (Business name, owner name, 10-digit mobile, GSTIN validation regex, address, pincode, estimated monthly wholesale volume, product category interest chips).
+   - Submits directly to `submit_dealer_application` RPC and generates a persistent tracking code (`DLR-YYMMDD-XXXX`).
+   - Fast-track WhatsApp verification link.
+
+9. **Independent Legal & Store Policy Pages (`/about`, `/terms`, `/privacy`, `/shipping`, `/returns`, `/warranty`, `/wholesale-terms`, `/contact`, `/page/:slug`)**:
+   - High-performance, SEO-friendly policy viewer with markdown formatting.
+   - Resilient multi-tier fallback copy ensuring 100% uptime even if database rows are being edited.
+   - Cross-policy quick navigation matrix and direct WhatsApp inquiry CTA.
+
 ---
 
 ### Admin Panel (`apps/admin`)
@@ -237,6 +255,8 @@ Runs vertically **Top → Bottom**:
 | `003_pricing_and_content.sql` | B2B & content expansion | `price_tiers`, `store_settings`, `banners`, `store_pages`, `product_reviews`, `stock_movements`, `customer_addresses`, storage buckets (`banners`, `avatars`). |
 | `004_pricing_functions.sql` | Analytics & Admin RPCs | `get_cart_pricing`, `admin_dashboard_stats`, `admin_sales_by_day`, `admin_orders_by_status`, `admin_top_selling_products`, `admin_adjust_stock`, `admin_save_product_tiers`. |
 | `005_create_verified_order.sql` | Atomic order verification | `create_verified_order` transactional function verifying stock and volume tier pricing. |
+| `006_custom_order_id.sql` | Alphanumeric order sequencing | Standardizes `URT-YYMMDD-XXXX` sequential format and public order lookup policy. |
+| `007_policies_and_dealers.sql` | Policy metadata & Dealer B2B portal | `store_pages` publishing columns (`is_published`, `sort_order`, `show_in_footer`, `meta_description`), `dealer_applications` table, and `submit_dealer_application` RPC. |
 
 ### Storage Buckets
 
