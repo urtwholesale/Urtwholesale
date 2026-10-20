@@ -474,7 +474,7 @@ export function StoreMenuDrawer({
 
                   {/* Merchant Admin Portal */}
                   <a
-                    href="http://localhost:5174"
+                    href={import.meta.env.PROD ? "/admin" : "http://localhost:5174"}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
