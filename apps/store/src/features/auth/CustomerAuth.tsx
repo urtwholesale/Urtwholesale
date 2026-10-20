@@ -5,7 +5,12 @@ import type { Profile } from "@urbanrat/shared";
 
 type AuthTab = "email" | "phone";
 
-export function CustomerAuth() {
+export interface CustomerAuthProps {
+  onAuthSuccess?: () => void;
+  onSignOut?: () => void;
+}
+
+export function CustomerAuth({ onAuthSuccess, onSignOut }: CustomerAuthProps = {}) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -102,6 +107,7 @@ export function CustomerAuth() {
         });
         if (error) throw error;
         setMessage({ type: "success", text: "Signed in successfully!" });
+        onAuthSuccess?.();
       }
     } catch (err: unknown) {
       const e = err as Error;
@@ -147,6 +153,7 @@ export function CustomerAuth() {
       if (error) throw error;
       setMessage({ type: "success", text: "Phone verified successfully!" });
       setOtpSent(false);
+      onAuthSuccess?.();
     } catch (err: unknown) {
       const e = err as Error;
       setMessage({ type: "error", text: e.message || "Invalid OTP" });
@@ -162,6 +169,7 @@ export function CustomerAuth() {
     setProfile(null);
     setMessage(null);
     setLoading(false);
+    onSignOut?.();
   }
 
   // Logged-in state

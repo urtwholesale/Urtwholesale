@@ -5,6 +5,7 @@ import { Search, ShoppingBag, ArrowLeft } from "lucide-react";
 interface TopBarProps {
   cartCount?: number;
   onOpenSearch?: () => void;
+  onOpenMenu?: () => void;
 }
 
 const DESKTOP_NAV_ITEMS = [
@@ -12,7 +13,7 @@ const DESKTOP_NAV_ITEMS = [
   { label: "Marketplace", to: "/marketplace" },
   { label: "Urbanrat", to: "/urbanrat" },
   { label: "Categories", to: "/categories" },
-  { label: "Menu", to: "/menu" },
+  { label: "Menu", to: "/menu", isMenuAction: true },
 ];
 
 /**
@@ -74,7 +75,11 @@ function useScrollDirection() {
   return isVisible;
 }
 
-export function TopBar({ cartCount = 0, onOpenSearch }: TopBarProps) {
+export function TopBar({
+  cartCount = 0,
+  onOpenSearch,
+  onOpenMenu,
+}: TopBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
@@ -127,7 +132,7 @@ export function TopBar({ cartCount = 0, onOpenSearch }: TopBarProps) {
             <img
               src="/logo.png"
               alt="Urbanrat"
-              className="w-7 h-7 rounded-full object-cover shadow-xs group-hover:scale-105 transition-transform"
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full object-cover shadow-xs group-hover:scale-105 transition-transform"
             />
             <span className="font-black text-sm sm:text-base tracking-tight text-slate-900 whitespace-nowrap">
               URT Wholesale
@@ -166,30 +171,41 @@ export function TopBar({ cartCount = 0, onOpenSearch }: TopBarProps) {
           aria-label="Desktop Navigation"
           className="flex items-center space-x-1.5 bg-slate-50/90 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-slate-200/70 shadow-[0_2px_10px_rgba(0,0,0,0.02)]"
         >
-          {DESKTOP_NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                `px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+          {DESKTOP_NAV_ITEMS.map((item) =>
+            item.isMenuAction ? (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => onOpenMenu?.()}
+                className="px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+              >
+                {item.label}
+              </button>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                  }`
+                }
+                style={({ isActive }) =>
                   isActive
-                    ? "text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                }`
-              }
-              style={({ isActive }) =>
-                isActive
-                  ? {
-                      background:
-                        "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
-                    }
-                  : undefined
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+                    ? {
+                        background:
+                          "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                      }
+                    : undefined
+                }
+              >
+                {item.label}
+              </NavLink>
+            )
+          )}
         </nav>
       </div>
     </header>

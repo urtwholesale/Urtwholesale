@@ -12,6 +12,7 @@ import { useSettings } from "./context/SettingsContext";
 import { StoreNotConfigured } from "./components/StoreNotConfigured";
 import { TopBar } from "./components/TopBar";
 import { NavigationDock } from "./components/NavigationDock";
+import { StoreMenuDrawer } from "./components/StoreMenuDrawer";
 import { HomePage } from "./pages/HomePage";
 import { MarketplacePage } from "./pages/MarketplacePage";
 import { CategoriesPage } from "./pages/CategoriesPage";
@@ -173,6 +174,7 @@ export default function App() {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searching, setSearching] = useState(false);
@@ -265,6 +267,7 @@ export default function App() {
       <TopBar
         cartCount={totalCartCount}
         onOpenSearch={() => setSearchOpen(true)}
+        onOpenMenu={() => setMenuDrawerOpen(true)}
       />
 
       {/* ── Main Routed Page Content ── */}
@@ -416,7 +419,17 @@ export default function App() {
       )}
 
       {/* ── Fixed Glassmorphism Bottom Navigation Dock ── */}
-      <NavigationDock />
+      <NavigationDock
+        onOpenMenu={() => setMenuDrawerOpen((prev) => !prev)}
+        isMenuOpen={menuDrawerOpen}
+      />
+
+      {/* ── Actual Navigation Menu Drawer with Auth Actions ── */}
+      <StoreMenuDrawer
+        isOpen={menuDrawerOpen}
+        onClose={() => setMenuDrawerOpen(false)}
+        cartCount={totalCartCount}
+      />
     </div>
   );
 }

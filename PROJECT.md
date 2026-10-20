@@ -337,6 +337,8 @@ Deploy each application as an independent Vercel project:
 
 ## 9. Recent Changelog
 
+- **Interactive Store Menu Drawer & Auth Action**: Implemented a slide-up bottom sheet / desktop modal (`StoreMenuDrawer.tsx`) triggered from the navigation dock and sub-topbar. Includes structured storefront links, category quick-jump, WhatsApp wholesale desk, company policies, and a prominent **Login** (guest toggle into `CustomerAuth`) or **Logout** button (`supabase.auth.signOut()`) at the very bottom.
+- **Enlarged Centerpiece Logo Navigation Dock**: Scaled up the center Urbanrat logo button in `NavigationDock.tsx` to `w-14 h-14` / `w-15 h-15` with an elevated centerpiece ring and glow shadow, establishing a bold focal hierarchy over the standard navigation icons.
 - **Admin Sidebar Redesign**: Replaced the top horizontal tab row with a modern left sidebar inspired by LeaseFlow (hub switcher, active pill treatment, grouped sections, live sync toggle, and admin user card).
 - **Banner Image Uploader**: Added direct file uploader, live thumbnail preview, and image removal buttons in `ContentEditor.tsx` connected to the `banners` bucket.
 - **Official Brand Logo & Favicons**: Integrated the official Urbanrat logo across favicons, app headers, docks, product cards, login portals, and footers.
