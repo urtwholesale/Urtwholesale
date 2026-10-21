@@ -204,6 +204,8 @@ export async function fetchAdminCategories(): Promise<{ id: string; name: string
  * Creates or updates non-stock, non-tier product metadata.
  * Price, stock, and tiers are synced through RPCs/triggers.
  */
+let _supportsKeywordsColumn: boolean | null = null;
+
 export async function saveProductMetadata(
   productData: Partial<Product> & { id?: string }
 ): Promise<Product> {
@@ -228,31 +230,68 @@ export async function saveProductMetadata(
     low_stock_threshold: productData.low_stock_threshold || 5,
     min_order_qty: productData.min_order_qty || 1,
     order_qty_step: productData.order_qty_step || 1,
-    keywords: productData.keywords || [],
     updated_at: new Date().toISOString(),
   };
+
+  // Only attach keywords if the schema supports it or hasn't been tested yet
+  if (_supportsKeywordsColumn !== false) {
+    payload.keywords = productData.keywords || [];
+  }
 
   if (isNew) {
     // When creating product, provide initial price and stock
     payload.price = productData.price || 0;
     payload.stock = productData.stock || 0;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("products")
       .insert(payload)
       .select()
       .single();
 
+    // If keywords column is not yet migrated in Supabase, retry without keywords
+    if (error && (error.message?.includes("'keywords'") || (error as any).details?.includes("keywords"))) {
+      _supportsKeywordsColumn = false;
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.keywords;
+      const retry = await supabase
+        .from("products")
+        .insert(fallbackPayload)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    } else if (!error) {
+      _supportsKeywordsColumn = true;
+    }
+
     if (error) throw error;
     return data as Product;
   } else {
     // Update existing product metadata (stock and tiers updated via RPCs)
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("products")
       .update(payload)
       .eq("id", productData.id!)
       .select()
       .single();
+
+    // If keywords column is not yet migrated in Supabase, retry without keywords
+    if (error && (error.message?.includes("'keywords'") || (error as any).details?.includes("keywords"))) {
+      _supportsKeywordsColumn = false;
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.keywords;
+      const retry = await supabase
+        .from("products")
+        .update(fallbackPayload)
+        .eq("id", productData.id!)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    } else if (!error) {
+      _supportsKeywordsColumn = true;
+    }
 
     if (error) throw error;
     return data as Product;
