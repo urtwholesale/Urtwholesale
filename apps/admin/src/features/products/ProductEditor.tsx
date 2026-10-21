@@ -41,7 +41,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [slug, setSlug] = useState(product?.slug || "");
   const [sku, setSku] = useState(product?.sku || "");
   const [categoryId, setCategoryId] = useState(product?.category_id || "");
-  const [mrp, setMrp] = useState<number | "">(product?.mrp || "");
+  const [mrp, setMrp] = useState<number | string>(product?.mrp ?? "");
   const [shortDesc, setShortDesc] = useState(product?.short_description || "");
   const [desc, setDesc] = useState(product?.description || "");
   const [minOrderQty, setMinOrderQty] = useState<number>(product?.min_order_qty || 1);
@@ -308,7 +308,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
       }
     }
 
-    if (mrp && sortedTiers[0]!.unit_price > Number(mrp)) {
+    if (mrp !== "" && sortedTiers[0]!.unit_price > Number(mrp)) {
       setError(`Unit price cannot exceed MRP (₹${mrp}).`);
       return;
     }
@@ -332,7 +332,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
         sku: sku.trim() || undefined,
         category_id: categoryId || undefined,
         price: sortedTiers[0]!.unit_price,
-        mrp: mrp ? Number(mrp) : undefined,
+        mrp: mrp !== "" ? Number(mrp) : undefined,
         stock: isNew ? initialStock : undefined,
         images,
         short_description: shortDesc.trim(),
@@ -565,9 +565,10 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   value={mrp}
-                  onChange={(e) => setMrp(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="e.g. 1499"
+                  onChange={(e) => setMrp(e.target.value)}
+                  placeholder="e.g. 1499.00"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>
