@@ -7,6 +7,7 @@ import {
   uploadProductImage,
   fetchAdminCategories,
 } from "../../lib/adminService";
+import { KeywordsInput } from "../catalog/components/KeywordsInput";
 import {
   X,
   Upload,
@@ -50,6 +51,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [isFeatured, setIsFeatured] = useState<boolean>(product?.is_featured ?? false);
   const [isTrending, setIsTrending] = useState<boolean>(product?.is_trending ?? false);
   const [isActive, setIsActive] = useState<boolean>(product?.is_active ?? true);
+  const [keywords, setKeywords] = useState<string[]>(product?.keywords || []);
 
   // Images text[] (first image is primary)
   const [images, setImages] = useState<string[]>(product?.images || []);
@@ -266,6 +268,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
         images,
         short_description: shortDesc.trim(),
         description: desc.trim(),
+        keywords,
         specs: specsObject,
         warranty_months: warrantyMonths,
         min_order_qty: minOrderQty,
@@ -794,7 +797,17 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
             </div>
           </div>
 
-          {/* ── 6. Toggles & Visibility ── */}
+          {/* ── 6. Search Keywords ── */}
+          <div className="pt-4 border-t border-slate-100">
+            <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+              <KeywordsInput
+                value={keywords}
+                onChange={setKeywords}
+              />
+            </div>
+          </div>
+
+          {/* ── 7. Toggles & Visibility ── */}
           <div className="pt-4 border-t border-slate-100 space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
               Flags &amp; Brand Toggles

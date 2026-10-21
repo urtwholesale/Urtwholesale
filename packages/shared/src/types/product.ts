@@ -18,6 +18,7 @@ export interface Product {
   specs?: Record<string, string | number | boolean>;
   warranty_months?: number | null;
   tags?: string[];
+  keywords?: string[];
   min_order_qty?: number;
   order_qty_step?: number;
   rating_avg?: number;

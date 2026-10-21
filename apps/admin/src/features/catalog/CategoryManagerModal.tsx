@@ -234,7 +234,7 @@ export function CategoryManagerModal({
               <span className="text-[11px] text-slate-400">Max Depth: 4 Levels</span>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 max-h-[460px] overflow-y-auto space-y-1">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 max-h-115 overflow-y-auto space-y-1">
               {tree.length === 0 ? (
                 <div className="text-center py-8 text-slate-400 text-xs">
                   No categories found. Click "New Category" to create your first root department.

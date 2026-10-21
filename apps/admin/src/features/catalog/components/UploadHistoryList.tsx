@@ -68,7 +68,8 @@ export function UploadHistoryList({
         const matchesId = u.id.toLowerCase().includes(q);
         const matchesFile = (u.file_name || "").toLowerCase().includes(q);
         const matchesPath = (u.category_path || "").toLowerCase().includes(q);
-        if (!matchesId && !matchesFile && !matchesPath) return false;
+        const matchesNotes = (u.notes || "").toLowerCase().includes(q);
+        if (!matchesId && !matchesFile && !matchesPath && !matchesNotes) return false;
       }
 
       return true;

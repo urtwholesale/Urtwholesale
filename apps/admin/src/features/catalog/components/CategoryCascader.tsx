@@ -188,9 +188,9 @@ export function CategoryCascader({
       </div>
 
       {/* ── Multi-Column Cascader Container (1–4 Levels) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80 min-h-[320px]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80 min-h-80">
         {/* Column 1: Root Categories */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[280px] sm:h-[320px] shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-70 sm:h-80 shadow-2xs">
           <div className="px-3 py-2 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
               1. Main Department
@@ -235,7 +235,7 @@ export function CategoryCascader({
         </div>
 
         {/* Column 2: Level 2 Categories */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[280px] sm:h-[320px] shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-70 sm:h-80 shadow-2xs">
           <div className="px-3 py-2 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
               2. Subcategory
@@ -293,7 +293,7 @@ export function CategoryCascader({
         </div>
 
         {/* Column 3: Level 3 Categories */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[280px] sm:h-[320px] shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-70 sm:h-80 shadow-2xs">
           <div className="px-3 py-2 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
               3. Product Group
@@ -351,7 +351,7 @@ export function CategoryCascader({
         </div>
 
         {/* Column 4: Level 4 Categories (Terminal Leaf) */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[280px] sm:h-[320px] shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-70 sm:h-80 shadow-2xs">
           <div className="px-3 py-2 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
               4. Item Type (Leaf)

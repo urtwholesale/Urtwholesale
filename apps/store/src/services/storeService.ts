@@ -230,7 +230,8 @@ export async function fetchProducts(
   }
 
   if (search && search.trim()) {
-    query = query.ilike("name", `%${search.trim()}%`);
+    const s = search.trim();
+    query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,keywords.cs.{${s.toLowerCase()}}`);
   }
 
   // Sorting based on products.price (starting price) or created_at
@@ -303,7 +304,7 @@ export async function fetchRelatedProducts(
 }
 
 /**
- * Fetch authenticated customer's orders from live database
+ * Fetch authenticated customer's orders from live database with timeline events
  */
 export async function fetchCustomerOrders(): Promise<Order[]> {
   ensureConfigured();
@@ -318,7 +319,7 @@ export async function fetchCustomerOrders(): Promise<Order[]> {
 
   const { data, error } = await supabase
     .from("orders")
-    .select("*")
+    .select("*, order_events(*)")
     .eq("user_id", authData.user.id)
     .order("created_at", { ascending: false });
 
@@ -326,11 +327,22 @@ export async function fetchCustomerOrders(): Promise<Order[]> {
     throw new StoreError(error.message, error.code, error);
   }
 
-  return (data as Order[]) || [];
+  return ((data || []) as Order[]).map((order) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawEvents = (order as any).order_events || order.events || [];
+    const sortedEvents = [...rawEvents].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    return {
+      ...order,
+      events: sortedEvents,
+      order_events: sortedEvents,
+    };
+  });
 }
 
 /**
- * Fetch a single order by ID via secure RPC
+ * Fetch a single order by ID via secure RPC with timeline events
  */
 export async function fetchOrderById(orderId: string): Promise<Order | null> {
   ensureConfigured();
@@ -344,7 +356,20 @@ export async function fetchOrderById(orderId: string): Promise<Order | null> {
     throw new StoreError(error.message, error.code, error);
   }
 
-  return (data as Order) || null;
+  if (!data) return null;
+
+  const order = data as Order;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawEvents = order.events || (order as any).order_events || [];
+  const sortedEvents = [...rawEvents].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+
+  return {
+    ...order,
+    events: sortedEvents,
+    order_events: sortedEvents,
+  };
 }
 
 export interface CreateOrderInput {

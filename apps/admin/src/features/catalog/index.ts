@@ -5,5 +5,8 @@ export { SingleCatalogWizard } from "./components/SingleCatalogWizard";
 export { BulkCatalogModal } from "./components/BulkCatalogModal";
 export { UploadHistoryList } from "./components/UploadHistoryList";
 export { UploadDetailModal } from "./components/UploadDetailModal";
+export { KeywordsInput } from "./components/KeywordsInput";
 export { CategoryManager } from "./categories";
+export { ImagePickerModal } from "./images/ImagePickerModal";
+export { ImageBulkUploadPage } from "./images/ImageBulkUploadPage";
 export * from "./types";

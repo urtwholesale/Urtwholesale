@@ -73,7 +73,7 @@ export function CategoryDeleteModal({
             </div>
             <div>
               <h2 className="text-sm font-black text-slate-900">Delete Category</h2>
-              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[220px]">
+              <p className="text-[11px] text-slate-400 font-medium truncate max-w-55">
                 {category.name}
               </p>
             </div>

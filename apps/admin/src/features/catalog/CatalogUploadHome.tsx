@@ -127,7 +127,7 @@ export function CatalogUploadHome() {
       </div>
 
       {/* ── Announcement Banner (Matching Screenshot 1) ── */}
-      <div className="rounded-3xl p-4 sm:p-5 border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/80 shadow-2xs flex items-center space-x-4 animate-fade-in">
+      <div className="rounded-3xl p-4 sm:p-5 border border-amber-200/90 bg-linear-to-r from-amber-50/90 via-orange-50/50 to-amber-50/80 shadow-2xs flex items-center space-x-4 animate-fade-in">
         <div className="w-12 h-12 rounded-2xl bg-amber-100/90 border border-amber-300/80 flex items-center justify-center text-amber-700 shrink-0 shadow-2xs">
           <Sparkles className="w-6 h-6 text-amber-600" />
         </div>

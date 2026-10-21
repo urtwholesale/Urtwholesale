@@ -12,14 +12,16 @@
     "dev": "concurrently -n \"store,admin\" -c \"blue,green\" \"npm run dev:store\" \"npm run dev:admin\"",
     "build:store": "tsc -p apps/store/tsconfig.json && vite build apps/store",
     "build:admin": "tsc -p apps/admin/tsconfig.json && vite build apps/admin",
-    "build": "npm run build:store && npm run build:admin && node -e \"const fs = require('fs'); fs.cpSync('apps/store/dist', 'dist', { recursive: true }); fs.cpSync('apps/admin/dist', 'dist/admin', { recursive: true });\""
+    "build": "npm run build:store && npm run build:admin && node -e \"const fs = require('fs'); fs.cpSync('apps/store/dist', 'dist', { recursive: true }); fs.cpSync('apps/admin/dist', 'dist/admin', { recursive: true });\"",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
     "lucide-react": "^1.16.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-router": "^7.5.0"
+    "react-router": "^7.5.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",

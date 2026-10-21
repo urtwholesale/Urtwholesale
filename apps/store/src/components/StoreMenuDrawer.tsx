@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import type { User } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
 import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/AuthContext";
 import { CustomerAuth } from "../features/auth/CustomerAuth";
-import type { Profile } from "@urbanrat/shared";
 import {
   X,
   Home,
@@ -22,6 +20,9 @@ import {
   LogIn,
   ShieldCheck,
   ArrowLeft,
+  User,
+  MapPin,
+  RotateCcw,
 } from "lucide-react";
 
 interface StoreMenuDrawerProps {
@@ -37,56 +38,15 @@ export function StoreMenuDrawer({
 }: StoreMenuDrawerProps) {
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
+  const { user, profile, signOut } = useAuth();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-
-  // Sync session state
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function fetchProfile(userId: string) {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-      if (data) {
-        setProfile(data as Profile);
-      }
-    } catch {
-      // Ignored
-    }
-  }
 
   async function handleSignOut() {
     setSigningOut(true);
     try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setProfile(null);
+      await signOut();
       setShowAuthForm(false);
     } catch (err) {
       console.error("Sign out error:", err);
@@ -185,7 +145,14 @@ export function StoreMenuDrawer({
             <>
               {/* User Account Banner */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                <div className="flex items-center space-x-3 min-w-0">
+                <div
+                  onClick={() => {
+                    if (user) handleNavigate("/account");
+                  }}
+                  className={`flex items-center space-x-3 min-w-0 ${
+                    user ? "cursor-pointer hover:opacity-90" : ""
+                  }`}
+                >
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 shadow-xs"
                     style={{
@@ -215,7 +182,15 @@ export function StoreMenuDrawer({
                   </div>
                 </div>
 
-                {!user && (
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate("/account")}
+                    className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-brand-dark bg-sky-50 hover:bg-sky-100 transition cursor-pointer shrink-0 border border-sky-100"
+                  >
+                    Account
+                  </button>
+                ) : (
                   <button
                     type="button"
                     onClick={() => setShowAuthForm(true)}
@@ -236,6 +211,74 @@ export function StoreMenuDrawer({
                 </p>
 
                 <div className="bg-white rounded-2xl border border-slate-100 divide-y divide-slate-100 overflow-hidden shadow-2xs">
+                  {/* Account link for logged-in users */}
+                  {user && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate("/account")}
+                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-xl bg-sky-50 text-brand-dark flex items-center justify-center">
+                            <User className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                              My Account
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Profile, business info &amp; security
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate("/addresses")}
+                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-xl bg-cyan-50 text-brand-dark flex items-center justify-center">
+                            <MapPin className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                              Saved Addresses
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Manage shops &amp; warehouse addresses
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate("/returns")}
+                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <RotateCcw className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                              Returns &amp; Replacements
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Track claims, warranty &amp; refunds
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      </button>
+                    </>
+                  )}
+
                   {/* Home */}
                   <button
                     type="button"
@@ -500,7 +543,7 @@ export function StoreMenuDrawer({
                 <div className="pt-2 px-1 flex flex-wrap gap-1.5 justify-center">
                   {[
                     { label: "Shipping Policy", to: "/shipping" },
-                    { label: "Returns & DOA", to: "/returns" },
+                    { label: "Returns Policy", to: "/returns-policy" },
                     { label: "1-Yr Warranty", to: "/warranty" },
                     { label: "Contact Us", to: "/contact" },
                   ].map((item) => (

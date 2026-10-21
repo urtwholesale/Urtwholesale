@@ -24,6 +24,12 @@ import { OrderPage } from "./pages/OrderPage";
 import { PolicyPage } from "./pages/PolicyPage";
 import { MyOrdersPage } from "./pages/MyOrdersPage";
 import { DealerApplicationPage } from "./pages/DealerApplicationPage";
+import { LoginPage } from "./pages/LoginPage";
+import { AccountPage } from "./pages/AccountPage";
+import { AddressesPage } from "./pages/AddressesPage";
+import { ReturnsPage } from "./pages/ReturnsPage";
+import { ReturnDetailPage } from "./pages/ReturnDetailPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Search, X, Loader2, ArrowRight } from "lucide-react";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
 
@@ -94,6 +100,20 @@ export default function App() {
 
         // If user is authenticated, check for items saved in public.cart_items
         if (auth?.user) {
+          // If guest had local items, merge them into public.cart_items
+          if (cartItems.length > 0) {
+            for (const item of cartItems) {
+              await supabase.from("cart_items").upsert(
+                {
+                  user_id: auth.user.id,
+                  product_id: item.product.id,
+                  quantity: item.quantity,
+                },
+                { onConflict: "user_id,product_id" }
+              );
+            }
+          }
+
           const { data: dbCart, error: dbError } = await supabase
             .from("cart_items")
             .select(`quantity, products(${PRODUCT_SELECT})`)
@@ -214,17 +234,21 @@ export default function App() {
     triggerHaptic("success");
     setCartItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id);
+      let newQty = quantity;
       if (existingIndex > -1) {
         const updated = [...prev];
         const existing = updated[existingIndex]!;
-        const newQty = existing.quantity + quantity;
+        newQty = existing.quantity + quantity;
+        const clampedQty = product.stock ? Math.min(newQty, product.stock) : newQty;
         updated[existingIndex] = {
           ...existing,
-          quantity: product.stock ? Math.min(newQty, product.stock) : newQty,
+          quantity: clampedQty,
         };
+        syncDbCart(product.id, clampedQty);
         return updated;
       }
-      return [...prev, { product, quantity }];
+      syncDbCart(product.id, newQty);
+      return [...prev, { product, quantity: newQty }];
     });
 
     setToastMessage(`Added ${product.name} to cart`);
@@ -233,11 +257,33 @@ export default function App() {
     }, 2400);
   }
 
+  function syncDbCart(productId: string, quantity: number) {
+    supabase.auth.getUser().then(({ data: auth }) => {
+      if (!auth?.user) return;
+      if (quantity <= 0) {
+        supabase
+          .from("cart_items")
+          .delete()
+          .match({ user_id: auth.user.id, product_id: productId })
+          .then(() => {});
+      } else {
+        supabase
+          .from("cart_items")
+          .upsert(
+            { user_id: auth.user.id, product_id: productId, quantity },
+            { onConflict: "user_id,product_id" }
+          )
+          .then(() => {});
+      }
+    }).catch(() => {});
+  }
+
   function handleUpdateQuantity(productId: string, quantity: number) {
     if (quantity <= 0) {
       handleRemoveItem(productId);
       return;
     }
+    syncDbCart(productId, quantity);
     setCartItems((prev) =>
       prev.map((item) =>
         item.product.id === productId ? { ...item, quantity } : item
@@ -246,6 +292,7 @@ export default function App() {
   }
 
   function handleRemoveItem(productId: string) {
+    syncDbCart(productId, 0);
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
   }
 
@@ -256,6 +303,10 @@ export default function App() {
     } catch {
       // Ignore
     }
+    supabase.auth.getUser().then(({ data: auth }) => {
+      if (!auth?.user) return;
+      supabase.from("cart_items").delete().eq("user_id", auth.user.id).then(() => {});
+    }).catch(() => {});
   }
 
   if (!configured) {
@@ -301,9 +352,60 @@ export default function App() {
           />
           <Route path="/menu" element={<MenuPage />} />
 
+          {/* ── Customer Auth, Account & Saved Addresses ── */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <AccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/addresses"
+            element={
+              <ProtectedRoute>
+                <AddressesPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ── Independent Customer Order Tracking & Invoices ── */}
-          <Route path="/orders" element={<MyOrdersPage />} />
-          <Route path="/my-orders" element={<MyOrdersPage />} />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <MyOrdersPage onAddToCart={handleAddToCart} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-orders"
+            element={
+              <ProtectedRoute>
+                <MyOrdersPage onAddToCart={handleAddToCart} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ── Wholesale Returns & Replacements (Customer Portal) ── */}
+          <Route
+            path="/returns"
+            element={
+              <ProtectedRoute>
+                <ReturnsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/returns/:returnId"
+            element={
+              <ProtectedRoute>
+                <ReturnDetailPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* ── Independent Authorized Dealer Program ── */}
           <Route path="/dealers" element={<DealerApplicationPage />} />
@@ -314,7 +416,7 @@ export default function App() {
           <Route path="/terms" element={<PolicyPage initialSlug="terms" />} />
           <Route path="/privacy" element={<PolicyPage initialSlug="privacy" />} />
           <Route path="/shipping" element={<PolicyPage initialSlug="shipping" />} />
-          <Route path="/returns" element={<PolicyPage initialSlug="returns" />} />
+          <Route path="/returns-policy" element={<PolicyPage initialSlug="returns" />} />
           <Route path="/warranty" element={<PolicyPage initialSlug="warranty" />} />
           <Route path="/wholesale-terms" element={<PolicyPage initialSlug="wholesale-terms" />} />
           <Route path="/contact" element={<PolicyPage initialSlug="contact" />} />
@@ -335,7 +437,8 @@ export default function App() {
               />
             }
           />
-          <Route path="/order/:orderId" element={<OrderPage />} />
+          <Route path="/order/:orderId" element={<OrderPage onAddToCart={handleAddToCart} />} />
+          <Route path="/order" element={<OrderPage onAddToCart={handleAddToCart} />} />
         </Routes>
       </main>
 

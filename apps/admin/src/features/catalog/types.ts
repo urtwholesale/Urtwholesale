@@ -60,6 +60,7 @@ export interface SingleCatalogFormData {
   shortDescription: string;
   specs: { key: string; val: string }[];
   images: string[];
+  keywords?: string[];
   isUrbanrat: boolean;
   isFeatured: boolean;
   isTrending: boolean;
@@ -76,6 +77,7 @@ export interface BulkCatalogParsedRow {
   stock: number;
   minOrderQty: number;
   description?: string;
+  keywords?: string[];
   specs?: Record<string, any>;
   images: string[];
   tiers: { min_qty: number; unit_price: number }[];

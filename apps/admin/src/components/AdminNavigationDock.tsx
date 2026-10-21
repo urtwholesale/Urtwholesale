@@ -13,15 +13,17 @@ export type NavTab =
   | "dashboard"
   | "categories"
   | "catalog"
+  | "image_bulk_upload"
   | "products"
   | "orders"
+  | "returns"
   | "content"
   | "settings";
 
 interface AdminNavigationDockProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
-  counts: { products: number; pendingOrders: number };
+  counts: { products: number; pendingOrders: number; pendingReturns?: number };
   onOpenMenu: () => void;
   isMenuOpen: boolean;
 }
@@ -195,6 +197,12 @@ export function AdminNavigationDock({
             <Settings className="w-5 h-5 text-white stroke-[2.4]" />
           ) : (
             <Menu className="w-5 h-5 text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900" />
+          )}
+          {!!counts.pendingReturns && counts.pendingReturns > 0 && !isMenuOpen && (
+            <span
+              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse"
+              title={`${counts.pendingReturns} pending returns`}
+            />
           )}
         </button>
       </nav>

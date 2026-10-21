@@ -176,6 +176,25 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     touchStartX.current = null;
   }
 
+  function handleSelectTier(tierMinQty: number) {
+    if (stock <= 0) return;
+    let target = Math.max(tierMinQty, minQty);
+
+    if (step > 1) {
+      const remainder = (target - minQty) % step;
+      if (remainder !== 0) {
+        target = target + (step - remainder);
+      }
+    }
+
+    if (stock > 0 && target > stock) {
+      target = stock;
+    }
+
+    triggerHaptic("selection");
+    setQuantity(target);
+  }
+
   function handleAddToCart() {
     if (!product) return;
     triggerHaptic("success");
@@ -426,38 +445,53 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     quantity >= tier.min_qty &&
                     (idx === tiers.length - 1 || quantity < tiers[idx + 1]!.min_qty);
 
+                  const isUnavailable = stock > 0 && tier.min_qty > stock;
+
                   return (
-                    <div
+                    <button
                       key={idx}
-                      className={`relative rounded-2xl p-3 border transition-all ${
+                      type="button"
+                      onClick={() => handleSelectTier(tier.min_qty)}
+                      disabled={isUnavailable || stock <= 0}
+                      aria-pressed={isActive}
+                      aria-label={`Select ${rangeStr} pieces tier at ₹${tier.unit_price} each`}
+                      className={`relative rounded-2xl p-3 border transition-all text-left w-full cursor-pointer select-none group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark/50 disabled:opacity-50 disabled:cursor-not-allowed ${
                         isActive
                           ? "bg-sky-50/80 border-brand-dark ring-2 ring-brand-light/40 shadow-xs"
-                          : "bg-slate-50/60 border-slate-100 hover:border-slate-200"
+                          : "bg-slate-50/60 border-slate-100 hover:bg-sky-50/40 hover:border-brand-light/60 active:scale-[0.98]"
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-extrabold text-slate-600">
+                      <div className="flex items-center justify-between mb-1 gap-1">
+                        <span
+                          className={`text-[11px] font-extrabold ${
+                            isActive
+                              ? "text-brand-dark font-black"
+                              : "text-slate-600 group-hover:text-slate-900"
+                          }`}
+                        >
                           {rangeStr} pcs
                         </span>
-                        {savingsVsFirst > 0 && (
-                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800">
-                            Save {savingsVsFirst}%
-                          </span>
-                        )}
-                        {isActive && savingsVsFirst === 0 && (
-                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand-dark text-white">
-                            Active
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {savingsVsFirst > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800">
+                              Save {savingsVsFirst}%
+                            </span>
+                          )}
+                          {isActive && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand-dark text-white shadow-2xs">
+                              Active
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="text-base font-black text-slate-900 tracking-tight">
                         ₹{tier.unit_price.toLocaleString("en-IN")}
-                        <span className="text-[10px] text-slate-400 font-medium">
+                        <span className="text-[10px] text-slate-400 font-medium ml-0.5">
                           /pc
                         </span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -537,15 +571,25 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               {/* Nudge: Add N more to get tier price */}
               {nextTier && (
                 <div className="pt-1">
-                  <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-100 text-[11px] font-semibold text-sky-800 flex items-center space-x-1.5">
-                    <span className="text-sm">💡</span>
-                    <span>
-                      Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
-                      <strong>
-                        ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
-                      </strong>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTier(nextTier.tier.min_qty)}
+                    className="w-full text-left p-2.5 rounded-xl bg-sky-50 hover:bg-sky-100/70 border border-sky-100 text-[11px] font-semibold text-sky-800 flex items-center justify-between transition-colors cursor-pointer group"
+                    aria-label={`Add ${nextTier.piecesNeeded} more to reach ${nextTier.tier.min_qty} pieces tier at ₹${nextTier.tier.unit_price} each`}
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-sm">💡</span>
+                      <span>
+                        Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
+                        <strong>
+                          ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
+                        </strong>
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-brand-dark underline underline-offset-2 opacity-80 group-hover:opacity-100 shrink-0 ml-2">
+                      Apply
                     </span>
-                  </div>
+                  </button>
                 </div>
               )}
             </div>

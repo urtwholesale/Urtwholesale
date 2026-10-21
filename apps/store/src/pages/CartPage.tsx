@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import type { Product, CustomerDetails } from "@urbanrat/shared";
+import type { Product, CustomerDetails, Address } from "@urbanrat/shared";
 import { getUnitPrice, getNextTier } from "@urbanrat/shared";
 import {
   Trash2,
@@ -18,6 +18,7 @@ import { buildWhatsAppMessage } from "../utils/buildWhatsAppMessage";
 import { createVerifiedOrder } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
 import { EmptyState } from "../components/EmptyState";
+import { AddressPicker } from "../components/AddressPicker";
 
 interface CartPageProps {
   cartItems: { product: Product; quantity: number }[];
@@ -58,8 +59,44 @@ export function CartPage({
 
   type FormErrors = Partial<Record<keyof CustomerDetails, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+
+  function handleSelectAddress(addr: Address) {
+    setSelectedAddressId(addr.id);
+    const formattedAddress = [
+      addr.line1,
+      addr.line2,
+      addr.landmark ? `Landmark: ${addr.landmark}` : null,
+      `${addr.city}, ${addr.state}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    setCustomer({
+      name: addr.full_name,
+      phone: addr.phone,
+      address: formattedAddress,
+      pincode: addr.pincode,
+    });
+
+    try {
+      localStorage.setItem(
+        CUSTOMER_STORAGE_KEY,
+        JSON.stringify({
+          name: addr.full_name,
+          phone: addr.phone,
+          address: formattedAddress,
+          pincode: addr.pincode,
+        })
+      );
+    } catch {
+      // Ignore
+    }
+
+    setErrors({});
+  }
 
   // Per-line calculations
   const lineDetails = cartItems.map(({ product, quantity }) => {
@@ -390,6 +427,13 @@ export function CartPage({
                 </p>
               </div>
             </div>
+
+            {/* Saved Address Book Selector */}
+            <AddressPicker
+              selectedAddressId={selectedAddressId}
+              onSelectAddress={handleSelectAddress}
+              onOpenAuth={() => navigate("/login", { state: { from: "/cart" } })}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {/* Full Name */}

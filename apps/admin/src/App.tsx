@@ -4,9 +4,11 @@ import { AdminLogin } from "./features/auth/AdminLogin";
 import { DashboardOverview } from "./features/dashboard/DashboardOverview";
 import { ProductList } from "./features/products";
 import { OrderList } from "./features/orders/OrderList";
+import { ReturnsHome } from "./features/returns";
 import { ContentEditor } from "./features/content/ContentEditor";
 import { SettingsEditor } from "./features/settings/SettingsEditor";
-import { CatalogUploadHome, CategoryManager } from "./features/catalog";
+import { CatalogUploadHome, CategoryManager, ImageBulkUploadPage } from "./features/catalog";
+import { fetchPendingReturnsBadgeCount } from "./lib/adminService";
 import type { Profile } from "@urbanrat/shared";
 import {
   LayoutDashboard,
@@ -26,6 +28,8 @@ import {
   ChevronRight,
   FileSpreadsheet,
   FolderTree,
+  RotateCcw,
+  ImageIcon,
 } from "lucide-react";
 import { AdminNavigationDock } from "./components/AdminNavigationDock";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
@@ -34,8 +38,10 @@ type NavTab =
   | "dashboard"
   | "categories"
   | "catalog"
+  | "image_bulk_upload"
   | "products"
   | "orders"
+  | "returns"
   | "content"
   | "settings";
 
@@ -45,9 +51,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveSyncEnabled, setLiveSyncEnabled] = useState(true);
-  const [counts, setCounts] = useState<{ products: number; pendingOrders: number }>({
+  const [counts, setCounts] = useState<{
+    products: number;
+    pendingOrders: number;
+    pendingReturns: number;
+  }>({
     products: 0,
     pendingOrders: 0,
+    pendingReturns: 0,
   });
 
   useEffect(() => {
@@ -91,13 +102,21 @@ export default function App() {
   useEffect(() => {
     async function loadCounts() {
       try {
-        const [{ count: prodCount }, { count: orderCount }] = await Promise.all([
-          supabase.from("products").select("id", { count: "exact", head: true }),
-          supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        ]);
+        const [{ count: prodCount }, { count: orderCount }, returnsBadge] =
+          await Promise.all([
+            supabase
+              .from("products")
+              .select("id", { count: "exact", head: true }),
+            supabase
+              .from("orders")
+              .select("id", { count: "exact", head: true })
+              .eq("status", "pending"),
+            fetchPendingReturnsBadgeCount(),
+          ]);
         setCounts({
           products: prodCount ?? 0,
           pendingOrders: orderCount ?? 0,
+          pendingReturns: returnsBadge?.total_pending ?? 0,
         });
       } catch {
         // silently fallback
@@ -159,6 +178,10 @@ export default function App() {
       title: "Upload Catalog",
       subtitle: "Category-wise Single & Bulk Onboarding with Real-time QC Verification",
     },
+    image_bulk_upload: {
+      title: "Image Bulk Upload",
+      subtitle: "Upload product images, automatic SKU matching, WebP compression & CDN link generator",
+    },
     products: {
       title: "Products & Inventory",
       subtitle: "B2B Catalog Management, Wholesale Price Tiers & Stock Adjustments",
@@ -166,6 +189,10 @@ export default function App() {
     orders: {
       title: "Orders & Fulfillment",
       subtitle: "Strict RPC Status Workflow, GST Tax Invoices & Order Timeline",
+    },
+    returns: {
+      title: "Return & RTO Orders",
+      subtitle: "Reverse Logistics, Customer RMA Inspection & Carrier Claims",
     },
     content: {
       title: "Promotional Content",
@@ -381,7 +408,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleNavClick("catalog")}
-                    className={`w-full flex items-center justify-between p-3 pl-5 hover:bg-slate-50 transition text-left cursor-pointer ${
+                    className={`w-full flex items-center justify-between p-3 pl-5 hover:bg-slate-50 transition text-left cursor-pointer border-b border-slate-100/60 ${
                       activeTab === "catalog" ? "bg-slate-50/80" : ""
                     }`}
                   >
@@ -410,6 +437,44 @@ export default function App() {
                       </span>
                     ) : (
                       <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                        New
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Sub-item: Image Bulk Upload */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick("image_bulk_upload")}
+                    className={`w-full flex items-center justify-between p-3 pl-5 hover:bg-slate-50 transition text-left cursor-pointer ${
+                      activeTab === "image_bulk_upload" ? "bg-slate-50/80" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          activeTab === "image_bulk_upload"
+                            ? "bg-brand-dark text-white shadow-2xs"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Image Bulk Upload
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Bulk image links &amp; WebP optimization
+                        </span>
+                      </div>
+                    </div>
+                    {activeTab === "image_bulk_upload" ? (
+                      <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black uppercase text-brand-dark bg-brand-light/20 border border-brand-light/40 px-1.5 py-0.5 rounded">
                         New
                       </span>
                     )}
@@ -492,6 +557,49 @@ export default function App() {
                         </span>
                       )}
                       {activeTab === "orders" ? (
+                        <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
+                          Active
+                        </span>
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Returns */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick("returns")}
+                    className={`w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer ${
+                      activeTab === "returns" ? "bg-slate-50/80" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          activeTab === "returns"
+                            ? "bg-brand-dark text-white shadow-2xs"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Returns &amp; Quality
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          RMA inspection &amp; courier claims
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {counts.pendingReturns > 0 && (
+                        <span className="text-[10px] font-bold text-rose-900 bg-rose-200 px-2 py-0.5 rounded-full">
+                          {counts.pendingReturns} new
+                        </span>
+                      )}
+                      {activeTab === "returns" ? (
                         <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
                           Active
                         </span>
@@ -821,6 +929,35 @@ export default function App() {
                     </span>
                   )}
                 </button>
+
+                {/* Sub-item: Image Bulk Upload */}
+                <button
+                  type="button"
+                  onClick={() => handleNavClick("image_bulk_upload")}
+                  className={`w-full flex items-center justify-between pl-6 pr-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "image_bulk_upload"
+                      ? "bg-[#0B1E28] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <ImageIcon
+                      className={`w-3.5 h-3.5 ${
+                        activeTab === "image_bulk_upload" ? "text-brand-light" : "text-slate-400"
+                      }`}
+                    />
+                    <span>Image Bulk Upload</span>
+                  </div>
+                  {activeTab === "image_bulk_upload" ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-brand-light/20 text-brand-light border border-brand-light/30">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-black uppercase text-brand-dark bg-brand-light/20 border border-brand-light/40 px-1.5 py-0.2 rounded">
+                      New
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Products */}
@@ -889,6 +1026,47 @@ export default function App() {
                     }`}
                   >
                     Live
+                  </span>
+                )}
+              </button>
+
+              {/* Returns */}
+              <button
+                type="button"
+                onClick={() => handleNavClick("returns")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "returns"
+                    ? "bg-[#0B1E28] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <RotateCcw
+                    className={`w-4 h-4 ${
+                      activeTab === "returns" ? "text-brand-light" : "text-slate-500"
+                    }`}
+                  />
+                  <span>Returns</span>
+                </div>
+                {counts.pendingReturns > 0 ? (
+                  <span
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      activeTab === "returns"
+                        ? "bg-rose-400 text-slate-900"
+                        : "bg-rose-100 text-rose-800"
+                    }`}
+                  >
+                    {counts.pendingReturns} new
+                  </span>
+                ) : (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      activeTab === "returns"
+                        ? "bg-brand-light/20 text-brand-light"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    Desk
                   </span>
                 )}
               </button>
@@ -1080,8 +1258,10 @@ export default function App() {
           {activeTab === "dashboard" && <DashboardOverview />}
           {activeTab === "categories" && <CategoryManager />}
           {activeTab === "catalog" && <CatalogUploadHome />}
+          {activeTab === "image_bulk_upload" && <ImageBulkUploadPage />}
           {activeTab === "products" && <ProductList />}
           {activeTab === "orders" && <OrderList />}
+          {activeTab === "returns" && <ReturnsHome />}
           {activeTab === "content" && <ContentEditor />}
           {activeTab === "settings" && <SettingsEditor />}
         </div>

@@ -10,6 +10,7 @@ export interface StoreSettings {
     tagline: string;
     currency: string;
   };
+  return_window_days?: number;
 }
 
 export interface Banner {

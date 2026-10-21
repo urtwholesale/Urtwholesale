@@ -13,6 +13,7 @@ const DESKTOP_NAV_ITEMS = [
   { label: "Marketplace", to: "/marketplace" },
   { label: "Urbanrat", to: "/urbanrat" },
   { label: "Categories", to: "/categories" },
+  { label: "Account", to: "/account" },
   { label: "Menu", to: "/menu", isMenuAction: true },
 ];
 

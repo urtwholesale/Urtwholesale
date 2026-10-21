@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Category } from "@urbanrat/shared";
+import { parseSkuFromFilename } from "@urbanrat/shared";
 import {
   X,
   Download,
@@ -9,17 +10,31 @@ import {
   AlertCircle,
   Loader2,
   Info,
+  Tag,
+  ImageIcon,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 import { CategoryCascader } from "./CategoryCascader";
-import { downloadCatalogTemplate } from "../utils/templateGenerator";
-import { parseCatalogCSV } from "../utils/catalogParser";
+import {
+  downloadCatalogTemplate,
+  downloadPrefilledTemplate,
+} from "../utils/templateGenerator";
+import {
+  parseCatalogUploadedFile,
+  revalidateRow,
+  validateUploadedImageLinks,
+} from "../utils/catalogParser";
+import { KeywordsInput } from "./KeywordsInput";
 import {
   saveProductMetadata,
   adminSaveProductTiers,
+  fetchCatalogImages,
 } from "../../../lib/adminService";
 import { supabase } from "../../../lib/supabase";
 import { triggerHaptic } from "../../../utils/haptics";
 import type { BulkCatalogParsedRow } from "../types";
+import { ImagePickerModal } from "../images/ImagePickerModal";
 
 interface BulkCatalogModalProps {
   categories: Category[];
@@ -46,6 +61,12 @@ export function BulkCatalogModal({
   // Processing state
   const [processing, setProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+  const [editingRowNumber, setEditingRowNumber] = useState<number | null>(null);
+
+  // Image Library integration state
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [downloadingPrefilled, setDownloadingPrefilled] = useState(false);
+  const [autoAttaching, setAutoAttaching] = useState(false);
 
   if (!isOpen) return null;
 
@@ -55,12 +76,63 @@ export function BulkCatalogModal({
     setCsvFile(null);
     setParsedRows([]);
     setParseError(null);
+    setEditingRowNumber(null);
   }
 
   function handleDownloadTemplate() {
     if (!selectedCategory) return;
     triggerHaptic("selection");
     downloadCatalogTemplate(selectedCategory, categoryBreadcrumb);
+  }
+
+  async function handleDownloadPrefilledTemplate() {
+    if (!selectedCategory) return;
+    setDownloadingPrefilled(true);
+    triggerHaptic("selection");
+    try {
+      const { data } = await fetchCatalogImages({ limit: 1000 });
+      downloadPrefilledTemplate(selectedCategory, categoryBreadcrumb, data);
+      triggerHaptic("success");
+    } catch (err: any) {
+      console.error("Failed to download prefilled template:", err);
+    } finally {
+      setDownloadingPrefilled(false);
+    }
+  }
+
+  async function handleAutoAttachImages() {
+    setAutoAttaching(true);
+    triggerHaptic("selection");
+    try {
+      const { data: libraryImages } = await fetchCatalogImages({ limit: 1000 });
+      const skuMap = new Map<string, string[]>();
+      for (const img of libraryImages) {
+        const sku = (img.sku_hint || parseSkuFromFilename(img.original_name).sku || "").trim().toUpperCase();
+        if (sku) {
+          const existing = skuMap.get(sku) || [];
+          existing.push(img.public_url);
+          skuMap.set(sku, existing);
+        }
+      }
+
+      setParsedRows((prev) =>
+        prev.map((r) => {
+          if ((!r.images || r.images.length === 0) && r.sku) {
+            const match = skuMap.get(r.sku.trim().toUpperCase());
+            if (match && match.length > 0) {
+              const updated = { ...r, images: match.slice(0, 5) };
+              return revalidateRow(updated);
+            }
+          }
+          return r;
+        })
+      );
+      triggerHaptic("success");
+    } catch (err) {
+      console.error("Auto attach failed:", err);
+    } finally {
+      setAutoAttaching(false);
+    }
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,18 +142,31 @@ export function BulkCatalogModal({
     setCsvFile(file);
     setParsing(true);
     setParseError(null);
+    setEditingRowNumber(null);
 
     try {
-      const text = await file.text();
-      const rows = parseCatalogCSV(text);
-      setParsedRows(rows);
+      const rows = await parseCatalogUploadedFile(file);
+      const validatedRows = await validateUploadedImageLinks(rows);
+      setParsedRows(validatedRows);
       triggerHaptic("success");
     } catch (err: any) {
-      setParseError(err.message || "Failed to parse CSV file. Ensure standard formatting.");
+      setParseError(err.message || "Failed to parse catalog file. Ensure standard formatting.");
       setParsedRows([]);
     } finally {
       setParsing(false);
     }
+  }
+
+  function handleUpdateRowKeywords(rowNumber: number, newKeywords: string[]) {
+    setParsedRows((prev) =>
+      prev.map((r) => {
+        if (r.rowNumber === rowNumber) {
+          const updated = { ...r, keywords: newKeywords };
+          return revalidateRow(updated);
+        }
+        return r;
+      })
+    );
   }
 
   async function handleBatchSubmit() {
@@ -137,6 +222,7 @@ export function BulkCatalogModal({
             stock: row.stock,
             min_order_qty: row.minOrderQty,
             description: row.description || "",
+            keywords: row.keywords || [],
             images: row.images,
             specs: row.specs || {},
             is_urbanrat_brand: true,
@@ -266,7 +352,7 @@ export function BulkCatalogModal({
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory(null)}
@@ -276,11 +362,35 @@ export function BulkCatalogModal({
                   </button>
                   <button
                     type="button"
-                    onClick={handleDownloadTemplate}
-                    className="px-3.5 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1.5 shadow-2xs hover:opacity-95 cursor-pointer active:scale-95"
+                    onClick={() => {
+                      triggerHaptic("selection");
+                      setShowImagePicker(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center space-x-1.5 shadow-2xs transition cursor-pointer active:scale-95"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download CSV Template</span>
+                    <ImageIcon className="w-3.5 h-3.5 text-brand" />
+                    <span>Open Image Library</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center space-x-1.5 shadow-2xs transition cursor-pointer active:scale-95"
+                  >
+                    <Download className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Blank Template</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPrefilledTemplate}
+                    disabled={downloadingPrefilled}
+                    className="px-3.5 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1.5 shadow-2xs hover:opacity-95 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    {downloadingPrefilled ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span>Prefilled Template</span>
                   </button>
                 </div>
               </div>
@@ -313,7 +423,7 @@ export function BulkCatalogModal({
                   )}
                   <input
                     type="file"
-                    accept=".csv, text/csv, text/plain"
+                    accept=".xlsx, .xls, .csv, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -359,50 +469,166 @@ export function BulkCatalogModal({
                     </div>
                   </div>
 
-                  {/* Row Validation List preview */}
-                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs max-h-60 overflow-y-auto divide-y divide-slate-100 text-xs">
-                    {parsedRows.map((r) => (
-                      <div
-                        key={r.rowNumber}
-                        className={`p-3 flex items-start justify-between gap-3 ${
-                          r.isValid ? "hover:bg-slate-50" : "bg-rose-50/40"
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-[10px] font-bold text-slate-400">
-                              #{r.rowNumber}
-                            </span>
-                            <span className="font-bold text-slate-900 truncate">
-                              {r.name || "Untitled Product"}
-                            </span>
-                            <span className="text-[10px] font-mono text-slate-500">
-                              {r.sku}
-                            </span>
-                          </div>
-
-                          {r.errors.length > 0 ? (
-                            <p className="text-[11px] text-rose-600 mt-1 font-medium">
-                              ⚠️ {r.errors.join("; ")}
-                            </p>
-                          ) : (
-                            <p className="text-[11px] text-slate-400 mt-1">
-                              ₹{r.price} • Stock: {r.stock} • Tiers: {r.tiers.length}
-                            </p>
-                          )}
+                  {/* Auto-attach matched images action */}
+                  {parsedRows.some(
+                    (r) => (!r.images || r.images.length === 0) && r.sku && r.sku.trim().length > 0
+                  ) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-brand-light/15 border border-brand-light/35 animate-fade-in">
+                      <div className="flex items-center space-x-2.5">
+                        <Sparkles className="w-4 h-4 text-brand-dark shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">
+                            Missing images detected
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            Some products have no image URLs. Auto-attach matching images from library by SKU hint?
+                          </p>
                         </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAutoAttachImages}
+                        disabled={autoAttaching}
+                        className="px-3.5 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1.5 shadow-2xs hover:opacity-95 cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto disabled:opacity-50"
+                      >
+                        {autoAttaching ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>Auto-attach Matched Images</span>
+                      </button>
+                    </div>
+                  )}
 
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                            r.isValid
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-rose-50 text-rose-700 border border-rose-200"
+                  {/* Row Validation List preview with inline Keywords editing */}
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs max-h-72 overflow-y-auto divide-y divide-slate-100 text-xs">
+                    {parsedRows.map((r) => {
+                      const isEditingThisRow = editingRowNumber === r.rowNumber;
+                      return (
+                        <div
+                          key={r.rowNumber}
+                          className={`p-3 space-y-2 ${
+                            r.isValid ? "hover:bg-slate-50" : "bg-rose-50/40"
                           }`}
                         >
-                          {r.isValid ? "QC Ready" : "Error"}
-                        </span>
-                      </div>
-                    ))}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  #{r.rowNumber}
+                                </span>
+                                <span className="font-bold text-slate-900 truncate">
+                                  {r.name || "Untitled Product"}
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-500">
+                                  {r.sku}
+                                </span>
+                              </div>
+
+                              {r.errors.length > 0 ? (
+                                <p className="text-[11px] text-rose-600 mt-1 font-medium">
+                                  ⚠️ {r.errors.join("; ")}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  ₹{r.price} • Stock: {r.stock} • Tiers: {r.tiers.length}
+                                </p>
+                              )}
+
+                              {/* Images preview / count */}
+                              <div className="flex items-center space-x-2 mt-1">
+                                <div className="flex items-center space-x-1 text-[10px] text-slate-500">
+                                  <ImageIcon className="w-3 h-3 text-slate-400" />
+                                  <span>{r.images?.length || 0} images</span>
+                                </div>
+                                {r.images && r.images.length > 0 && (
+                                  <div className="flex items-center space-x-1">
+                                    {r.images.slice(0, 3).map((u, ui) => (
+                                      <img
+                                        key={ui}
+                                        src={u}
+                                        alt=""
+                                        className="w-4 h-4 rounded object-cover border border-slate-200"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                    ))}
+                                    {r.images.length > 3 && (
+                                      <span className="text-[9px] text-slate-400 font-bold">
+                                        +{r.images.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditingRowNumber(isEditingThisRow ? null : r.rowNumber)
+                                }
+                                className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border flex items-center space-x-1 cursor-pointer transition ${
+                                  isEditingThisRow
+                                    ? "bg-slate-900 text-white border-slate-900"
+                                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                }`}
+                              >
+                                <Tag className="w-3 h-3 text-brand-dark" />
+                                <span>{isEditingThisRow ? "Done" : "Keywords"}</span>
+                                {r.keywords && r.keywords.length > 0 && (
+                                  <span className="ml-1 px-1.5 py-0.2 bg-brand-light/30 text-brand-dark rounded-full text-[9px]">
+                                    {r.keywords.length}
+                                  </span>
+                                )}
+                              </button>
+
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                  r.isValid
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-rose-50 text-rose-700 border border-rose-200"
+                                }`}
+                              >
+                                {r.isValid ? "QC Ready" : "Error"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Keywords Summary or Inline Editor */}
+                          {isEditingThisRow ? (
+                            <div className="p-3 bg-slate-50/90 rounded-xl border border-slate-200 space-y-2 animate-fade-in">
+                              <KeywordsInput
+                                value={r.keywords || []}
+                                onChange={(newKw) => handleUpdateRowKeywords(r.rowNumber, newKw)}
+                                label={`Edit Keywords for Row #${r.rowNumber}`}
+                              />
+                            </div>
+                          ) : (
+                            r.keywords && r.keywords.length > 0 && (
+                              <div className="flex flex-wrap gap-1 pt-0.5">
+                                {r.keywords.slice(0, 5).map((kw, ki) => (
+                                  <span
+                                    key={ki}
+                                    className="px-2 py-0.5 rounded-md bg-brand-light/15 text-brand-dark border border-brand-light/30 text-[10px] font-medium"
+                                  >
+                                    #{kw}
+                                  </span>
+                                ))}
+                                {r.keywords.length > 5 && (
+                                  <span className="text-[10px] font-medium text-slate-400 self-center">
+                                    +{r.keywords.length - 5} more
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Submission CTA */}
@@ -435,6 +661,28 @@ export function BulkCatalogModal({
           )}
         </div>
       </div>
+
+      {/* Image Picker Modal */}
+      <ImagePickerModal
+        isOpen={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onSelect={(selected) => {
+          if (selected.length > 0) {
+            const urls = selected.map((s) => s.public_url).join("\n");
+            navigator.clipboard?.writeText(urls);
+            triggerHaptic("success");
+          }
+          setShowImagePicker(false);
+        }}
+        onDownloadPrefilledTemplate={(selected) => {
+          if (selectedCategory) {
+            downloadPrefilledTemplate(selectedCategory, categoryBreadcrumb, selected);
+            setShowImagePicker(false);
+          }
+        }}
+        multiSelect={true}
+        title="Image Library - Select & Copy Links"
+      />
     </div>
   );
 }
