@@ -51,6 +51,7 @@ urbanrat-store/
 │       │   ├── components/            # AdminNavigationDock (Mobile floating capsule dock)
 │       │   ├── features/
 │       │   │   ├── auth/              # Admin login with username mapping (Sjainthelegend) & role check
+│       │   │   ├── catalog/           # Category-wise Single & Bulk Catalog Uploads, QC Verification & Multi-Level Category Manager
 │       │   │   ├── dashboard/         # Executive Analytics & RPC KPI cards (DashboardOverview)
 │       │   │   ├── products/          # Catalog & inventory management (ProductList, ProductEditor, index.ts barrel)
 │       │   │   ├── orders/            # Order pipeline & GST invoice generation (OrderList, OrderDetailModal)
@@ -287,6 +288,14 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 9. **Modular Products Barrel Architecture (`apps/admin/src/features/products/index.ts`)**:
    - Encapsulates `ProductList`, `ProductEditor`, and associated catalog components through a standardized barrel export, ensuring clean imports and maintainable architectural boundaries.
 
+10. **Category-Wise Catalog Upload System & QC Engine (`apps/admin/src/features/catalog/`)**:
+    - **Supplier-Grade Catalog Workflow**: Complete catalog upload experience inspired by modern wholesale supplier platforms, styled to Urbanrat's brand identity (Tailwind v4 tokens: `brand-light`, `brand`, `brand-dark`, `surface`; light theme only; 390px mobile-first; LeaseFlow sidebar on desktop; `AdminNavigationDock` on mobile; Web Vibration API haptics; Lucide icons).
+    - **Multi-Level Category Hierarchy & Manager (`CategoryCascader.tsx` & `CategoryManagerModal.tsx`)**: Up to 4 hierarchical levels (L1 Main Category → L2 Subcategory → L3 Product Group → L4 Item Variety) with recursive depth enforcement (depth ≤ 4), parent re-assignment, live filter search, and WebP thumbnail upload.
+    - **Single Catalog Upload Flow (`SingleCatalogWizard.tsx`)**: 2-step guided wizard. Step 1: 4-level category selection drill-down with visual validation + front image upload with automated WebP compression. Step 2: Product details, SKU, specifications, stock, and B2B volume pricing tier configuration with validation.
+    - **Bulk Catalog CSV Upload Flow (`BulkCatalogModal.tsx`)**: Select target category, download dynamic category-tailored CSV template with prefilled column definitions and volume discount headers, client-side CSV parsing with instant error feedback (MOQ, price, tiers), and automated batch insertion with audit logging.
+    - **Upload History & QC Verification Dashboard (`UploadHistoryList.tsx`, `UploadDetailModal.tsx`)**: Tabbed history tracking (Bulk Uploads vs Single Uploads) with QC status pills (*All*, *Action Required*, *QC in Progress*, *QC Error*, *QC Pass*), summary statistics cards (*Total Uploads Done*, *Using Bulk Uploads*, *Using Single Uploads*), category filtering, file ID search, and item-by-item verification log inspector.
+    - **Storefront Compatibility (`apps/store/src/services/storeService.ts`)**: Recursive category descendant resolution (`get_category_descendant_ids` RPC with fallback) ensuring products assigned to deeper L3/L4 nodes seamlessly appear when customers browse parent L1/L2 categories.
+
 ---
 
 ## 5. Database Schema & Security (Supabase)
@@ -302,6 +311,7 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 | `005_create_verified_order.sql` | Atomic order verification | `create_verified_order` transactional function verifying stock and volume tier pricing. |
 | `006_custom_order_id.sql` | Alphanumeric order sequencing | Standardizes `URT-YYMMDD-XXXX` sequential format and public order lookup policy. |
 | `007_policies_and_dealers.sql` | Policy metadata & Dealer B2B portal | `store_pages` publishing columns (`is_published`, `sort_order`, `show_in_footer`, `meta_description`), `dealer_applications` table, and `submit_dealer_application` RPC. |
+| `008_catalog_uploads.sql` | Catalog upload batches & recursive hierarchy | `catalog_uploads`, `catalog_upload_items`, `get_category_descendant_ids` recursive function, RLS policies. |
 
 ### Storage Buckets
 
@@ -420,6 +430,13 @@ Deploy each application as an independent Vercel project on separate subdomains 
 
 ## 9. Recent Changelog
 
+- **Category-Wise Catalog Upload System & QC Verification Workflow (`apps/admin/src/features/catalog/`)**: Built a complete supplier-inspired catalog upload and multi-level hierarchy management system tailored to Urbanrat's brand design system (Tailwind v4 tokens: `brand-light`, `brand`, `brand-dark`, `surface`; light theme only; 390px mobile-first; LeaseFlow sidebar on desktop; `AdminNavigationDock` on mobile; Web Vibration API haptics; Lucide icons). Key highlights:
+  - **4-Level Nested Category Tree & Manager (`CategoryCascader.tsx` & `CategoryManagerModal.tsx`)**: Enforces up to 4 levels of depth (L1 Main Category → L2 Subcategory → L3 Product Group → L4 Leaf Item Variety) with recursive depth constraint checks, live search filtering, parent reassignment, and WebP thumbnail upload.
+  - **Single Catalog Upload Wizard (`SingleCatalogWizard.tsx`)**: 2-step guided wizard for single product creation. Step 1 selects category via 4-column cascader and captures front image with automated client-side WebP compression. Step 2 configures product details, SKU, specifications, stock, and B2B volume pricing tiers with validation.
+  - **Bulk Catalog CSV Upload Flow (`BulkCatalogModal.tsx`)**: Category-wise bulk upload with dynamic CSV template generator (`templateGenerator.ts`), client-side CSV parsing and validation (`catalogParser.ts`), row-level error diagnostic table, and atomic batch insertion with audit logging.
+  - **Upload History & QC Verification Dashboard (`UploadHistoryList.tsx`, `UploadDetailModal.tsx`)**: Tabbed history tracking (Bulk Uploads vs Single Uploads) with QC status pills (*All*, *Action Required*, *QC in Progress*, *QC Error*, *QC Pass*), summary statistics cards (*Total Uploads Done*, *Using Bulk Uploads*, *Using Single Uploads*), category filtering, file ID search, and item-by-item verification log inspector.
+  - **Storefront Backward Compatibility (`apps/store/src/services/storeService.ts`)**: Recursive category descendant resolution (`get_category_descendant_ids` RPC with fallback) ensuring products assigned to deeper L3/L4 nodes seamlessly appear when customers browse parent L1/L2 categories.
+  - **Database Migration (`008_catalog_uploads.sql`)**: Created `catalog_uploads` and `catalog_upload_items` tables with RLS policies, indexing, and the recursive `get_category_descendant_ids` Postgres function.
 - **Client-Side WebP Image Compressor Engine (`ImageCompressorTool.tsx` & `imageCompressor.ts`)**: Added a browser-native image compression engine utilizing HTML5 Canvas WebP encoding with dimension clamping (1200px for products, 1920px for hero banners) and visual quality optimization (82%–84%). Reduces banner and catalog image sizes by **65%–85%** before uploading to Supabase Storage, dramatically accelerating mobile storefront Largest Contentful Paint (LCP). Features an interactive standalone tool with live side-by-side preview comparisons, dimension sliders, and automated in-flight compression inside `adminService.ts`.
 - **Mobile Admin Navigation Dock (`AdminNavigationDock.tsx`) & Customer UI Parity**: Implemented an ergonomic floating frosted glass bottom capsule dock for the Admin Panel on mobile viewports (`< 768px`). Features 5 quick-switch tabs (Dashboard, Products, Orders, Content, Menu) and a slide-up bottom sheet drawer with quick access to Settings, Standalone Image Compressor, Live Sync toggle, and Super Admin Sign Out, while preserving the LeaseFlow sidebar on desktop (`>= 768px`).
 - **Standardized 5:4 Fixed Aspect Ratio Hero Media (`aspect-5/4`)**: Locked all promotional hero banners in the customer storefront (`HomePage.tsx`) and admin preview (`ContentEditor.tsx`) to a fixed 5:4 aspect ratio (`aspect-5/4`) with smooth rounded corners and `object-cover` focal rendering, eliminating layout shifts and image squishing.

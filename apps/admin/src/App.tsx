@@ -6,6 +6,7 @@ import { ProductList } from "./features/products";
 import { OrderList } from "./features/orders/OrderList";
 import { ContentEditor } from "./features/content/ContentEditor";
 import { SettingsEditor } from "./features/settings/SettingsEditor";
+import { CatalogUploadHome } from "./features/catalog";
 import type { Profile } from "@urbanrat/shared";
 import {
   LayoutDashboard,
@@ -23,11 +24,18 @@ import {
   Radio,
   ShieldCheck,
   ChevronRight,
+  FileSpreadsheet,
 } from "lucide-react";
 import { AdminNavigationDock } from "./components/AdminNavigationDock";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
 
-type NavTab = "dashboard" | "products" | "orders" | "content" | "settings";
+type NavTab =
+  | "dashboard"
+  | "catalog"
+  | "products"
+  | "orders"
+  | "content"
+  | "settings";
 
 export default function App() {
   const [adminProfile, setAdminProfile] = useState<Profile | null>(null);
@@ -140,6 +148,10 @@ export default function App() {
     dashboard: {
       title: "Dashboard Overview",
       subtitle: "Executive Analytics, RPC Revenue Metrics & Live Trajectory",
+    },
+    catalog: {
+      title: "Upload Catalog",
+      subtitle: "Category-wise Single & Bulk Onboarding with Real-time QC Verification",
     },
     products: {
       title: "Products & Inventory",
@@ -307,6 +319,44 @@ export default function App() {
                       </span>
                     ) : (
                       <ChevronRight className="w-4 h-4 text-slate-300" />
+                    )}
+                  </button>
+
+                  {/* Catalog Upload */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick("catalog")}
+                    className={`w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer ${
+                      activeTab === "catalog" ? "bg-slate-50/80" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          activeTab === "catalog"
+                            ? "bg-brand-dark text-white shadow-2xs"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Upload Catalog
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Single &amp; bulk onboarding with QC checks
+                        </span>
+                      </div>
+                    </div>
+                    {activeTab === "catalog" ? (
+                      <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                        New
+                      </span>
                     )}
                   </button>
 
@@ -652,6 +702,35 @@ export default function App() {
                 Commerce &amp; Sales
               </p>
 
+              {/* Upload Catalog */}
+              <button
+                type="button"
+                onClick={() => handleNavClick("catalog")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "catalog"
+                    ? "bg-[#0B1E28] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <FileSpreadsheet
+                    className={`w-4 h-4 ${
+                      activeTab === "catalog" ? "text-brand-light" : "text-slate-500"
+                    }`}
+                  />
+                  <span>Upload Catalog</span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeTab === "catalog"
+                      ? "bg-brand-light/20 text-brand-light border border-brand-light/30"
+                      : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  }`}
+                >
+                  New
+                </span>
+              </button>
+
               {/* Products */}
               <button
                 type="button"
@@ -907,6 +986,7 @@ export default function App() {
         {/* Tab Content Views */}
         <div className="flex-1">
           {activeTab === "dashboard" && <DashboardOverview />}
+          {activeTab === "catalog" && <CatalogUploadHome />}
           {activeTab === "products" && <ProductList />}
           {activeTab === "orders" && <OrderList />}
           {activeTab === "content" && <ContentEditor />}

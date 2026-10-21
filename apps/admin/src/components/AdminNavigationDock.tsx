@@ -9,7 +9,13 @@ import {
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 
-export type NavTab = "dashboard" | "products" | "orders" | "content" | "settings";
+export type NavTab =
+  | "dashboard"
+  | "catalog"
+  | "products"
+  | "orders"
+  | "content"
+  | "settings";
 
 interface AdminNavigationDockProps {
   activeTab: NavTab;

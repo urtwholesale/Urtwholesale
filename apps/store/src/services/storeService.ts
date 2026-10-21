@@ -114,6 +114,43 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 /**
+ * Resolves category ID and all its recursive descendant subcategory IDs.
+ * Ensures products filed under Level 3/4 categories appear when browsing parent categories.
+ */
+export async function getCategoryAndDescendantIds(targetId: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.rpc("get_category_descendant_ids", {
+      p_category_id: targetId,
+    });
+    if (!error && Array.isArray(data) && data.length > 0) {
+      return data.map((row: any) => row.id);
+    }
+  } catch {
+    // Fall back to client-side traversal if RPC not yet deployed
+  }
+
+  try {
+    const { data } = await supabase.from("categories").select("id, parent_id");
+    if (!data) return [targetId];
+
+    const result = new Set<string>([targetId]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const cat of data) {
+        if (cat.parent_id && result.has(cat.parent_id) && !result.has(cat.id)) {
+          result.add(cat.id);
+          added = true;
+        }
+      }
+    }
+    return Array.from(result);
+  } catch {
+    return [targetId];
+  }
+}
+
+/**
  * Fetch products with live filtering, sorting on products.price, and joined price tiers
  */
 export async function fetchProducts(
@@ -141,10 +178,14 @@ export async function fetchProducts(
     .select(PRODUCT_SELECT, { count: "exact" })
     .eq("is_active", true);
 
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
-  } else if (subCategoryId) {
-    query = query.eq("category_id", subCategoryId);
+  const targetCatId = categoryId || subCategoryId;
+  if (targetCatId) {
+    const matchedCategoryIds = await getCategoryAndDescendantIds(targetCatId);
+    if (matchedCategoryIds.length === 1) {
+      query = query.eq("category_id", matchedCategoryIds[0]);
+    } else {
+      query = query.in("category_id", matchedCategoryIds);
+    }
   } else if (categorySlug) {
     const { data: catData, error: catError } = await supabase
       .from("categories")
@@ -157,7 +198,12 @@ export async function fetchProducts(
     }
 
     if (catData) {
-      query = query.eq("category_id", catData.id);
+      const matchedCategoryIds = await getCategoryAndDescendantIds(catData.id);
+      if (matchedCategoryIds.length === 1) {
+        query = query.eq("category_id", matchedCategoryIds[0]);
+      } else {
+        query = query.in("category_id", matchedCategoryIds);
+      }
     } else {
       return { products: [], total: 0 };
     }
