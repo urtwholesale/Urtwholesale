@@ -11,6 +11,7 @@ import { triggerHaptic } from "../utils/haptics";
 
 export type NavTab =
   | "dashboard"
+  | "categories"
   | "catalog"
   | "products"
   | "orders"

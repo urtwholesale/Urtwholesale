@@ -1,5 +1,15 @@
 import { supabase } from "./supabase";
-import type { Product, Order, PriceTier, StorePage, Banner, StoreSettings } from "@urbanrat/shared";
+import type {
+  Product,
+  Order,
+  PriceTier,
+  StorePage,
+  Banner,
+  StoreSettings,
+  Category,
+  CategoryAttribute,
+  InheritedCategoryAttribute,
+} from "@urbanrat/shared";
 import { compressImage, type CompressionResult } from "../utils/imageCompressor";
 
 export interface DashboardStats {
@@ -522,3 +532,353 @@ export async function saveBanner(banner: Partial<Banner> & { id: string }): Prom
 
   if (error) throw error;
 }
+
+// ----------------------------------------------------------------------------
+// 6. CATEGORY SERVICES
+// ----------------------------------------------------------------------------
+
+export async function fetchCategories(): Promise<Category[]> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return (data as Category[]) || [];
+}
+
+export async function fetchCategoryById(id: string): Promise<Category | null> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data as Category;
+}
+
+export function slugifyCategoryName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function createCategory(cat: {
+  name: string;
+  slug?: string;
+  parent_id?: string | null;
+  image_url?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+}): Promise<Category> {
+  let slug = cat.slug?.trim() || slugifyCategoryName(cat.name);
+  if (!slug) slug = `cat-${Date.now()}`;
+
+  // Check slug uniqueness
+  const { data: existing } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", slug)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+  }
+
+  let sortOrder = cat.sort_order;
+  if (sortOrder === undefined) {
+    let query = supabase
+      .from("categories")
+      .select("sort_order")
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    if (cat.parent_id) {
+      query = query.eq("parent_id", cat.parent_id);
+    } else {
+      query = query.is("parent_id", null);
+    }
+
+    const { data: siblings } = await query;
+    sortOrder = siblings && siblings[0] ? (siblings[0].sort_order || 0) + 1 : 0;
+  }
+
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({
+      name: cat.name.trim(),
+      slug,
+      parent_id: cat.parent_id || null,
+      image_url: cat.image_url || null,
+      is_active: cat.is_active ?? true,
+      sort_order: sortOrder,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Category;
+}
+
+export async function updateCategory(
+  id: string,
+  updates: Partial<Category>
+): Promise<Category> {
+  const payload: any = { ...updates };
+  delete payload.id;
+  delete payload.created_at;
+
+  const { data, error } = await supabase
+    .from("categories")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Category;
+}
+
+export interface CategoryDeletionCheck {
+  canDelete: boolean;
+  childrenCount: number;
+  productCount: number;
+  reason?: string;
+}
+
+export async function checkCategoryDeletion(id: string): Promise<CategoryDeletionCheck> {
+  const [childrenRes, productsRes] = await Promise.all([
+    supabase.from("categories").select("id", { count: "exact", head: true }).eq("parent_id", id),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("category_id", id),
+  ]);
+
+  const childrenCount = childrenRes.count || 0;
+  const productCount = productsRes.count || 0;
+
+  if (childrenCount > 0 && productCount > 0) {
+    return {
+      canDelete: false,
+      childrenCount,
+      productCount,
+      reason: `Cannot delete this category because it contains ${childrenCount} subcategories and ${productCount} assigned products. Reassign or delete them first.`,
+    };
+  }
+
+  if (childrenCount > 0) {
+    return {
+      canDelete: false,
+      childrenCount,
+      productCount: 0,
+      reason: `Cannot delete this category because it contains ${childrenCount} subcategories. Move or delete child categories first.`,
+    };
+  }
+
+  if (productCount > 0) {
+    return {
+      canDelete: false,
+      childrenCount: 0,
+      productCount,
+      reason: `Cannot delete this category because ${productCount} products are currently assigned to it. Move products to another category first.`,
+    };
+  }
+
+  return {
+    canDelete: true,
+    childrenCount: 0,
+    productCount: 0,
+  };
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const check = await checkCategoryDeletion(id);
+  if (!check.canDelete) {
+    throw new Error(check.reason || "Category cannot be deleted because it is in use.");
+  }
+
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function reorderCategories(
+  updates: { id: string; sort_order: number }[]
+): Promise<void> {
+  const promises = updates.map(({ id, sort_order }) =>
+    supabase.from("categories").update({ sort_order }).eq("id", id)
+  );
+  await Promise.all(promises);
+}
+
+export async function toggleCategoryActive(
+  id: string,
+  is_active: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from("categories")
+    .update({ is_active })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function uploadCategoryImage(
+  file: File,
+  onCompressed?: (result: CompressionResult) => void
+): Promise<string> {
+  const compResult = await compressImage(file, {
+    maxWidth: 800,
+    maxHeight: 800,
+    quality: 0.85,
+  });
+
+  onCompressed?.(compResult);
+
+  const fileToUpload = compResult.file;
+  const uniqueName = `cat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.webp`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("product-images")
+    .upload(`categories/${uniqueName}`, fileToUpload, {
+      cacheControl: "31536000",
+      contentType: "image/webp",
+      upsert: false,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage
+    .from("product-images")
+    .getPublicUrl(`categories/${uniqueName}`);
+
+  return data.publicUrl;
+}
+
+// ----------------------------------------------------------------------------
+// 7. CATEGORY ATTRIBUTES SERVICES
+// ----------------------------------------------------------------------------
+
+export async function fetchCategoryAttributes(
+  categoryId: string
+): Promise<CategoryAttribute[]> {
+  const { data, error } = await supabase
+    .from("category_attributes")
+    .select("*")
+    .eq("category_id", categoryId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+  return (data || []).map((row: any) => ({
+    ...row,
+    options: Array.isArray(row.options) ? row.options : [],
+  }));
+}
+
+export async function fetchInheritedCategoryAttributes(
+  categoryId: string
+): Promise<InheritedCategoryAttribute[]> {
+  const { data: allCategories, error: catError } = await supabase
+    .from("categories")
+    .select("id, name, parent_id");
+
+  if (catError || !allCategories) return [];
+
+  const catMap = new Map<string, { id: string; name: string; parent_id: string | null }>();
+  for (const c of allCategories) {
+    catMap.set(c.id, c);
+  }
+
+  // Collect ancestors from immediate parent up to root
+  const ancestorIds: { id: string; name: string }[] = [];
+  let curr = catMap.get(categoryId);
+  while (curr && curr.parent_id) {
+    const parent = catMap.get(curr.parent_id);
+    if (!parent) break;
+    ancestorIds.push({ id: parent.id, name: parent.name });
+    curr = parent;
+  }
+
+  if (ancestorIds.length === 0) return [];
+
+  const { data: attrs, error: attrError } = await supabase
+    .from("category_attributes")
+    .select("*")
+    .in("category_id", ancestorIds.map((a) => a.id))
+    .order("sort_order", { ascending: true });
+
+  if (attrError || !attrs) return [];
+
+  const ancestorMap = new Map(ancestorIds.map((a) => [a.id, a.name]));
+
+  return attrs.map((row: any) => ({
+    ...row,
+    options: Array.isArray(row.options) ? row.options : [],
+    inherited_from_category_id: row.category_id,
+    inherited_from_category_name: ancestorMap.get(row.category_id) || "Parent Category",
+  }));
+}
+
+export async function saveCategoryAttribute(
+  attribute: Partial<CategoryAttribute> & {
+    category_id: string;
+    label: string;
+    key: string;
+  }
+): Promise<CategoryAttribute> {
+  const payload: any = {
+    category_id: attribute.category_id,
+    label: attribute.label.trim(),
+    key: attribute.key.trim().toLowerCase().replace(/[^\w-]/g, "_"),
+    type: attribute.type || "text",
+    options: attribute.options || [],
+    required: attribute.required ?? false,
+    apply_to_all_products: attribute.apply_to_all_products ?? false,
+    help_text: attribute.help_text?.trim() || null,
+    sort_order: attribute.sort_order ?? 0,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (attribute.id) {
+    payload.id = attribute.id;
+  }
+
+  const { data, error } = await supabase
+    .from("category_attributes")
+    .upsert(payload)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return {
+    ...data,
+    options: Array.isArray(data.options) ? data.options : [],
+  } as CategoryAttribute;
+}
+
+export async function deleteCategoryAttribute(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("category_attributes")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function reorderCategoryAttributes(
+  categoryId: string,
+  orderedIds: string[]
+): Promise<void> {
+  const promises = orderedIds.map((id, index) =>
+    supabase
+      .from("category_attributes")
+      .update({ sort_order: index, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("category_id", categoryId)
+  );
+
+  await Promise.all(promises);
+}
+

@@ -5,4 +5,5 @@ export { SingleCatalogWizard } from "./components/SingleCatalogWizard";
 export { BulkCatalogModal } from "./components/BulkCatalogModal";
 export { UploadHistoryList } from "./components/UploadHistoryList";
 export { UploadDetailModal } from "./components/UploadDetailModal";
+export { CategoryManager } from "./categories";
 export * from "./types";

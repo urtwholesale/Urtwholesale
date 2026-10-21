@@ -6,7 +6,7 @@ import { ProductList } from "./features/products";
 import { OrderList } from "./features/orders/OrderList";
 import { ContentEditor } from "./features/content/ContentEditor";
 import { SettingsEditor } from "./features/settings/SettingsEditor";
-import { CatalogUploadHome } from "./features/catalog";
+import { CatalogUploadHome, CategoryManager } from "./features/catalog";
 import type { Profile } from "@urbanrat/shared";
 import {
   LayoutDashboard,
@@ -25,12 +25,14 @@ import {
   ShieldCheck,
   ChevronRight,
   FileSpreadsheet,
+  FolderTree,
 } from "lucide-react";
 import { AdminNavigationDock } from "./components/AdminNavigationDock";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
 
 type NavTab =
   | "dashboard"
+  | "categories"
   | "catalog"
   | "products"
   | "orders"
@@ -148,6 +150,10 @@ export default function App() {
     dashboard: {
       title: "Dashboard Overview",
       subtitle: "Executive Analytics, RPC Revenue Metrics & Live Trajectory",
+    },
+    categories: {
+      title: "Category Hierarchy & Attributes",
+      subtitle: "Multi-level 4-tier tree browser, product specifications & ordering",
     },
     catalog: {
       title: "Upload Catalog",
@@ -322,11 +328,60 @@ export default function App() {
                     )}
                   </button>
 
-                  {/* Catalog Upload */}
+                  {/* Catalog Group with Sub-Items */}
+                  <div className="bg-slate-50/70 border-y border-slate-100/80 px-3 py-1.5 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Layers className="w-3.5 h-3.5 text-brand-dark" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                        Catalog
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400">
+                      Hierarchy &amp; Upload
+                    </span>
+                  </div>
+
+                  {/* Sub-item: Categories */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick("categories")}
+                    className={`w-full flex items-center justify-between p-3 pl-5 hover:bg-slate-50 transition text-left cursor-pointer border-b border-slate-100/60 ${
+                      activeTab === "categories" ? "bg-slate-50/80" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          activeTab === "categories"
+                            ? "bg-brand-dark text-white shadow-2xs"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <FolderTree className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Categories
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          4-Level tree, reorder &amp; attributes
+                        </span>
+                      </div>
+                    </div>
+                    {activeTab === "categories" ? (
+                      <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                    )}
+                  </button>
+
+                  {/* Sub-item: Upload Catalog */}
                   <button
                     type="button"
                     onClick={() => handleNavClick("catalog")}
-                    className={`w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer ${
+                    className={`w-full flex items-center justify-between p-3 pl-5 hover:bg-slate-50 transition text-left cursor-pointer ${
                       activeTab === "catalog" ? "bg-slate-50/80" : ""
                     }`}
                   >
@@ -702,34 +757,71 @@ export default function App() {
                 Commerce &amp; Sales
               </p>
 
-              {/* Upload Catalog */}
-              <button
-                type="button"
-                onClick={() => handleNavClick("catalog")}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "catalog"
-                    ? "bg-[#0B1E28] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <FileSpreadsheet
-                    className={`w-4 h-4 ${
-                      activeTab === "catalog" ? "text-brand-light" : "text-slate-500"
-                    }`}
-                  />
-                  <span>Upload Catalog</span>
+              {/* Group: Catalog with Sub-Items */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between px-3.5 py-1 text-xs font-bold text-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <Layers className="w-3.5 h-3.5 text-brand-dark" />
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">Catalog</span>
+                  </div>
                 </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    activeTab === "catalog"
-                      ? "bg-brand-light/20 text-brand-light border border-brand-light/30"
-                      : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+
+                {/* Sub-item: Categories */}
+                <button
+                  type="button"
+                  onClick={() => handleNavClick("categories")}
+                  className={`w-full flex items-center justify-between pl-6 pr-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "categories"
+                      ? "bg-[#0B1E28] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                   }`}
                 >
-                  New
-                </span>
-              </button>
+                  <div className="flex items-center space-x-2.5">
+                    <FolderTree
+                      className={`w-3.5 h-3.5 ${
+                        activeTab === "categories" ? "text-brand-light" : "text-slate-400"
+                      }`}
+                    />
+                    <span>Categories</span>
+                  </div>
+                  {activeTab === "categories" ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-brand-light/20 text-brand-light border border-brand-light/30">
+                      Active
+                    </span>
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+                  )}
+                </button>
+
+                {/* Sub-item: Upload Catalog */}
+                <button
+                  type="button"
+                  onClick={() => handleNavClick("catalog")}
+                  className={`w-full flex items-center justify-between pl-6 pr-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "catalog"
+                      ? "bg-[#0B1E28] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <FileSpreadsheet
+                      className={`w-3.5 h-3.5 ${
+                        activeTab === "catalog" ? "text-brand-light" : "text-slate-400"
+                      }`}
+                    />
+                    <span>Upload Catalog</span>
+                  </div>
+                  {activeTab === "catalog" ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-brand-light/20 text-brand-light border border-brand-light/30">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                      New
+                    </span>
+                  )}
+                </button>
+              </div>
 
               {/* Products */}
               <button
@@ -986,6 +1078,7 @@ export default function App() {
         {/* Tab Content Views */}
         <div className="flex-1">
           {activeTab === "dashboard" && <DashboardOverview />}
+          {activeTab === "categories" && <CategoryManager />}
           {activeTab === "catalog" && <CatalogUploadHome />}
           {activeTab === "products" && <ProductList />}
           {activeTab === "orders" && <OrderList />}

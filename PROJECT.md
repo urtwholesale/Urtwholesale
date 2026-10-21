@@ -296,6 +296,14 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
     - **Upload History & QC Verification Dashboard (`UploadHistoryList.tsx`, `UploadDetailModal.tsx`)**: Tabbed history tracking (Bulk Uploads vs Single Uploads) with QC status pills (*All*, *Action Required*, *QC in Progress*, *QC Error*, *QC Pass*), summary statistics cards (*Total Uploads Done*, *Using Bulk Uploads*, *Using Single Uploads*), category filtering, file ID search, and item-by-item verification log inspector.
     - **Storefront Compatibility (`apps/store/src/services/storeService.ts`)**: Recursive category descendant resolution (`get_category_descendant_ids` RPC with fallback) ensuring products assigned to deeper L3/L4 nodes seamlessly appear when customers browse parent L1/L2 categories.
 
+11. **Category Manager & Dynamic Specification Schemas (`apps/admin/src/features/catalog/categories/`)**:
+    - **Multi-Column Finder Browser**: 4-column drill-down browser (Level 1 | Level 2 | Level 3 | Level 4) on desktop with dark pill active selection and directional arrows (`ChevronRight`), and stacked drill-down list on mobile with breadcrumb trail and back navigation.
+    - **Full Category Lifecycle Controls**: Small modal dialog for add, rename, parent reassignment, active/inactive toggle, and up/down reordering within siblings.
+    - **Safe Deletion Pre-Flight Engine**: Automatically checks for nested subcategories and assigned products; blocks deletion if dependencies exist and displays clear explanatory diagnostic reasons.
+    - **Client-Side WebP Category Image Compressor**: Converts category media to WebP format via Canvas compression before uploading to `product-images` storage bucket.
+    - **Dynamic Attributes Schema Engine**: Configures custom product specifications per category (`text`, `number`, `select`, `multiselect`, `boolean`) with option tag builders, required toggles, and subcategory inheritance. Displays inherited attributes as read-only chips with source category breadcrumbs.
+    - **Live Category Search**: Instant query filtering matching across all 4 tiers with automatic tree expansion and column jump.
+
 ---
 
 ## 5. Database Schema & Security (Supabase)
@@ -312,6 +320,7 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 | `006_custom_order_id.sql` | Alphanumeric order sequencing | Standardizes `URT-YYMMDD-XXXX` sequential format and public order lookup policy. |
 | `007_policies_and_dealers.sql` | Policy metadata & Dealer B2B portal | `store_pages` publishing columns (`is_published`, `sort_order`, `show_in_footer`, `meta_description`), `dealer_applications` table, and `submit_dealer_application` RPC. |
 | `008_catalog_uploads.sql` | Catalog upload batches & recursive hierarchy | `catalog_uploads`, `catalog_upload_items`, `get_category_descendant_ids` recursive function, RLS policies. |
+| `009_category_attributes.sql` | Dynamic category attribute schemas | `category_attributes` table, options JSONB array, RLS policies, indexing. |
 
 ### Storage Buckets
 
@@ -430,6 +439,14 @@ Deploy each application as an independent Vercel project on separate subdomains 
 
 ## 9. Recent Changelog
 
+- **Category Manager, Multi-Column Finder Browser & Attribute Schemas (`apps/admin/src/features/catalog/categories/`)**: Built a full-featured category management system with 4-level nesting (L1 Main Category | L2 Subcategory | L3 Product Group | L4 Item Variety) and dynamic product specification schemas:
+  - **Finder-Style Column Browser**: 4-column drill-down browser on desktop with dark pill active highlighting and right chevrons; collapses to stacked drill-down list on mobile with breadcrumb navigation.
+  - **Category Lifecycle Controls**: Create, rename, parent reassignment, active/inactive toggle, up/down sibling reordering, and WebP thumbnail upload.
+  - **Safe Deletion Pre-Flight Engine**: Blocks category deletion if subcategories or assigned products exist, showing detailed diagnostic reasons.
+  - **Dynamic Attribute Engine (`category_attributes`)**: Dynamic specification builder (`text`, `number`, `select`, `multiselect`, `boolean`) with option tag chips, required toggle, and tree inheritance (inherited attributes displayed as read-only chips).
+  - **Top Search Box**: Live search query ("Try Chargers, Earphones, Cables…") that filters across all 4 levels and automatically jumps and opens the column tree to matching items.
+  - **Navigation Integration**: Grouped "Catalog" item under *Commerce & Sales* with sub-items "Categories" and "Upload Catalog", mirrored in mobile `AdminNavigationDock` menu drawer.
+  - **Database Migration (`009_category_attributes.sql`)**: Applied and verified live in Supabase.
 - **Category-Wise Catalog Upload System & QC Verification Workflow (`apps/admin/src/features/catalog/`)**: Built a complete supplier-inspired catalog upload and multi-level hierarchy management system tailored to Urbanrat's brand design system (Tailwind v4 tokens: `brand-light`, `brand`, `brand-dark`, `surface`; light theme only; 390px mobile-first; LeaseFlow sidebar on desktop; `AdminNavigationDock` on mobile; Web Vibration API haptics; Lucide icons). Key highlights:
   - **4-Level Nested Category Tree & Manager (`CategoryCascader.tsx` & `CategoryManagerModal.tsx`)**: Enforces up to 4 levels of depth (L1 Main Category → L2 Subcategory → L3 Product Group → L4 Leaf Item Variety) with recursive depth constraint checks, live search filtering, parent reassignment, and WebP thumbnail upload.
   - **Single Catalog Upload Wizard (`SingleCatalogWizard.tsx`)**: 2-step guided wizard for single product creation. Step 1 selects category via 4-column cascader and captures front image with automated client-side WebP compression. Step 2 configures product details, SKU, specifications, stock, and B2B volume pricing tiers with validation.
