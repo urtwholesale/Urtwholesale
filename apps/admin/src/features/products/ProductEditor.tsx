@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import type { Product, PriceTier } from "@urbanrat/shared";
+import { useState, useEffect, useMemo } from "react";
+import type { Product, PriceTier, Category } from "@urbanrat/shared";
 import {
   saveProductMetadata,
   adminAdjustStock,
   adminSaveProductTiers,
   uploadProductImage,
-  fetchAdminCategories,
+  fetchCategories,
 } from "../../lib/adminService";
 import { KeywordsInput } from "../catalog/components/KeywordsInput";
 import {
@@ -31,7 +31,9 @@ interface ProductEditorProps {
 export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps) {
   const isNew = !product;
 
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [parentCategoryId, setParentCategoryId] = useState<string>("");
+  const [subcategoryId, setSubcategoryId] = useState<string>("");
 
   // Metadata form fields
   const [name, setName] = useState(product?.name || "");
@@ -90,9 +92,71 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Root / Primary categories (parent_id is null or missing from categories map)
+  const rootCategories = useMemo(() => {
+    const idSet = new Set(categories.map((c) => c.id));
+    return categories
+      .filter((c) => !c.parent_id || !idSet.has(c.parent_id))
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.name.localeCompare(b.name));
+  }, [categories]);
+
+  // Subcategories belonging to the selected root category (including nested children)
+  const availableSubcategories = useMemo(() => {
+    if (!parentCategoryId) return [];
+    const list: { id: string; label: string }[] = [];
+
+    const collectChildren = (pid: string, prefix = "") => {
+      const children = categories
+        .filter((c) => c.parent_id === pid)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.name.localeCompare(b.name));
+
+      for (const child of children) {
+        const label = prefix ? `${prefix} › ${child.name}` : child.name;
+        list.push({ id: child.id, label });
+        collectChildren(child.id, label);
+      }
+    };
+
+    collectChildren(parentCategoryId);
+    return list;
+  }, [parentCategoryId, categories]);
+
   useEffect(() => {
-    fetchAdminCategories().then(setCategories).catch(console.error);
-  }, []);
+    fetchCategories()
+      .then((cats) => {
+        setCategories(cats);
+        if (product?.category_id) {
+          const catMap = new Map(cats.map((c) => [c.id, c]));
+          const currentCat = catMap.get(product.category_id);
+          if (currentCat) {
+            if (currentCat.parent_id) {
+              // Find the root ancestor
+              let root = currentCat;
+              while (root.parent_id && catMap.get(root.parent_id)) {
+                root = catMap.get(root.parent_id)!;
+              }
+              setParentCategoryId(root.id);
+              setSubcategoryId(currentCat.id);
+            } else {
+              setParentCategoryId(currentCat.id);
+              setSubcategoryId("");
+            }
+          }
+        }
+      })
+      .catch(console.error);
+  }, [product?.category_id]);
+
+  function handleParentCategoryChange(newParentId: string) {
+    setParentCategoryId(newParentId);
+    setSubcategoryId("");
+    setCategoryId(newParentId);
+  }
+
+  function handleSubcategoryChange(newSubId: string) {
+    setSubcategoryId(newSubId);
+    setCategoryId(newSubId || parentCategoryId);
+  }
 
   // Auto-slugify name on new product
   function handleNameChange(val: string) {
@@ -369,21 +433,77 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 />
               </div>
 
+              {/* Category (Primary) */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">Category</label>
                 <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none bg-white"
+                  value={parentCategoryId}
+                  onChange={(e) => handleParentCategoryChange(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none bg-white cursor-pointer"
                 >
                   <option value="">Select Category...</option>
-                  {categories.map((c) => (
+                  {rootCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {/* Subcategory */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Subcategory</span>
+                  {availableSubcategories.length > 0 && (
+                    <span className="text-[10px] text-brand-dark font-medium bg-brand-light/30 px-1.5 py-0.5 rounded-md">
+                      {availableSubcategories.length} available
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={subcategoryId}
+                  onChange={(e) => handleSubcategoryChange(e.target.value)}
+                  disabled={!parentCategoryId || availableSubcategories.length === 0}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:ring-2 focus:ring-brand-light focus:outline-none bg-white transition cursor-pointer ${
+                    !parentCategoryId || availableSubcategories.length === 0
+                      ? "border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
+                      : "border-slate-200 text-slate-800"
+                  }`}
+                >
+                  {!parentCategoryId ? (
+                    <option value="">Select Category first...</option>
+                  ) : availableSubcategories.length === 0 ? (
+                    <option value="">No subcategories (Direct Category)</option>
+                  ) : (
+                    <>
+                      <option value="">Select Subcategory (Optional)...</option>
+                      {availableSubcategories.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.label}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {/* Selected Path Breadcrumb Pill */}
+              {parentCategoryId && (
+                <div className="sm:col-span-2 -mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                  <span className="font-semibold text-slate-600">Selected Path:</span>
+                  <span className="text-brand-dark font-medium">
+                    {rootCategories.find((c) => c.id === parentCategoryId)?.name}
+                  </span>
+                  {subcategoryId && (
+                    <>
+                      <span className="text-slate-400">›</span>
+                      <span className="text-brand-dark font-bold">
+                        {availableSubcategories.find((s) => s.id === subcategoryId)?.label || ""}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
