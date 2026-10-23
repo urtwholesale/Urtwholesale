@@ -241,7 +241,8 @@ export function CartPage({
               savedOrder.customer?.address ||
               `${customer.address.trim()}, PIN: ${customer.pincode.trim()}`,
           },
-          upiId: settings?.upi_id || "7000947033-2@ybl",
+          upiId: settings?.upi_id || "7000947033-1@okbizaxis",
+          qrCodeUrl: `${window.location.origin}/payment-qr.png`,
         });
 
         const whatsappCheckoutUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(

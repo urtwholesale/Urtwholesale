@@ -116,6 +116,17 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     setTimeout(() => setCopiedId(false), 2000);
   }
 
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const upiId = settings?.upi_id || "7000947033-1@okbizaxis";
+
+  function handleCopyUpi() {
+    triggerHaptic("selection");
+    navigator.clipboard.writeText(upiId);
+    setCopiedUpi(true);
+    showToast(`UPI ID ${upiId} copied to clipboard`);
+    setTimeout(() => setCopiedUpi(false), 2000);
+  }
+
   function handleQuickLookup(e: React.FormEvent) {
     e.preventDefault();
     if (!lookupQuery.trim()) {
@@ -1158,6 +1169,79 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                 )}
               </div>
             )}
+          </div>
+
+          {/* ── UPI Payment & QR Code Card ── */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-sm">
+                  ₹
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900">
+                    Pay via UPI / QR Code
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Scan &amp; pay with any UPI app
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                ₹{total.toLocaleString("en-IN")}
+              </span>
+            </div>
+
+            {/* QR Code image */}
+            <div className="flex flex-col items-center justify-center p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
+              <div className="w-48 sm:w-52 h-auto rounded-xl overflow-hidden shadow-xs border border-slate-200 bg-white">
+                <img
+                  src="/payment-qr.png"
+                  alt="Ajay Wholesale Mobile Accessories UPI QR Code"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+              <p className="text-[11px] font-semibold text-slate-500 text-center">
+                Google Pay &bull; PhonePe &bull; Paytm &bull; BHIM UPI
+              </p>
+            </div>
+
+            {/* UPI ID copy box */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                UPI ID for Payment
+              </label>
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2">
+                <span className="text-xs font-mono font-bold text-slate-800 truncate mr-2">
+                  {upiId}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyUpi}
+                  className="shrink-0 text-xs font-bold text-brand-dark hover:text-brand-dark/80 flex items-center space-x-1 cursor-pointer transition"
+                >
+                  {copiedUpi ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600 text-[11px]">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-slate-600 text-[11px]">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Direct Pay with UPI App button */}
+            <a
+              href={`upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("Ajay Wholesale Mobile Accessories")}&am=${total}&cu=INR`}
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99]"
+            >
+              <span>Pay ₹{total.toLocaleString("en-IN")} via UPI App</span>
+            </a>
           </div>
 
           {/* ── Price Details Card ── */}

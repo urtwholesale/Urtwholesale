@@ -463,7 +463,7 @@ export async function getSettings(): Promise<StoreSettings> {
 
     const defaultSettings: StoreSettings = {
       whatsapp_number: "",
-      upi_id: "7000947033-2@ybl",
+      upi_id: "7000947033-1@okbizaxis",
       store_name: "URT Wholesale",
       free_delivery_min: 999,
       shipping_fee: 49,

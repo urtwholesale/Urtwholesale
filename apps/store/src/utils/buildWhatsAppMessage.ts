@@ -24,9 +24,11 @@ export interface BuildWhatsAppMessageOptions {
   customer?: CustomerInfo;
   orderUrl?: string;
   upiId?: string;
+  qrCodeUrl?: string;
 }
 
-export const DEFAULT_UPI_ID = "7000947033-2@ybl";
+export const DEFAULT_UPI_ID = "7000947033-1@okbizaxis";
+export const DEFAULT_QR_PATH = "/payment-qr.png";
 
 const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
 
@@ -53,6 +55,7 @@ export function buildWhatsAppMessage({
   total,
   customer,
   upiId = DEFAULT_UPI_ID,
+  qrCodeUrl,
 }: BuildWhatsAppMessageOptions): string {
   const formattedOrderId = orderId || "TEMP";
 
@@ -81,6 +84,12 @@ export function buildWhatsAppMessage({
   const customerPhone = customer?.phone?.trim() || "";
   const customerAddress = customer?.address?.trim() || "";
   const paymentUpiId = (upiId || DEFAULT_UPI_ID).trim();
+  const paymentQrUrl = (
+    qrCodeUrl ||
+    (typeof window !== "undefined" && window.location?.origin
+      ? `${window.location.origin}${DEFAULT_QR_PATH}`
+      : "")
+  ).trim();
 
   const lines = [
     "Hello URT Wholesale 👋",
@@ -99,6 +108,10 @@ export function buildWhatsAppMessage({
 
   if (paymentUpiId) {
     lines.push("", "💳 *UPI ID for Payment:*", paymentUpiId);
+  }
+
+  if (paymentQrUrl) {
+    lines.push("", "📲 *Scan & Pay QR Code:*", paymentQrUrl);
   }
 
   lines.push("", "Please confirm availability. Thank you! 🙏");
