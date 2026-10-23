@@ -6,7 +6,9 @@ import {
   adminSaveProductTiers,
   uploadProductImage,
   fetchCategories,
+  deleteProduct,
 } from "../../lib/adminService";
+import { triggerHaptic } from "../../utils/haptics";
 import { KeywordsInput } from "../catalog/components/KeywordsInput";
 import {
   X,
@@ -91,6 +93,22 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDeleteProduct() {
+    if (!product?.id) return;
+    setDeleting(true);
+    try {
+      await deleteProduct(product.id);
+      triggerHaptic("success");
+      onSaved();
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete product.");
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }
 
   // Level 1: Root / Primary categories (parent_id is null or missing from categories map)
   const rootCategories = useMemo(() => {
@@ -977,37 +995,92 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
           </div>
 
           {/* Actions */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
-            >
-              Cancel
-            </button>
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+            {!isNew && product?.id ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                title="Delete this product from catalog"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Product</span>
+              </button>
+            ) : <div />}
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-md transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-              style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-              }}
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving to Live DB...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Save Product</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-md transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                style={{
+                  background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                }}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saving to Live DB...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Save Product</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
+
+        {/* ── Confirm Delete Product Modal ── */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center space-x-2 text-rose-600">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <h4 className="font-black text-sm text-slate-900">Delete Product?</h4>
+              </div>
+
+              <p className="text-xs text-slate-600">
+                Are you sure you want to permanently delete <span className="font-bold text-slate-900">"{product?.name}"</span> ({product?.sku || "No SKU"})?
+                This will remove it from the catalog and inventory.
+              </p>
+
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDeleteProduct}
+                  className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Confirm Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

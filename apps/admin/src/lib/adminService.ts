@@ -299,6 +299,61 @@ export async function saveProductMetadata(
 }
 
 /**
+ * Deletes a product by ID.
+ * If product cannot be hard-deleted due to foreign key restrictions (e.g. historical return items),
+ * it gracefully soft-deactivates the product so it is removed from catalog & inventory.
+ */
+export async function deleteProduct(productId: string): Promise<{ success: boolean; softDeleted?: boolean }> {
+  // 1. Clean up product price tiers first
+  try {
+    await supabase.from("product_price_tiers").delete().eq("product_id", productId);
+  } catch (tierErr) {
+    console.warn("Clean up price tiers warning:", tierErr);
+  }
+
+  // 2. Delete product from database
+  const { error } = await supabase.from("products").delete().eq("id", productId);
+
+  if (error) {
+    // If foreign key constraint exists (e.g. returns or order history references product_id)
+    if (error.code === "23503" || error.message?.includes("foreign key") || error.message?.includes("violates")) {
+      const { error: updateErr } = await supabase
+        .from("products")
+        .update({ is_active: false, stock: 0 })
+        .eq("id", productId);
+      if (updateErr) throw updateErr;
+      return { success: true, softDeleted: true };
+    }
+    throw error;
+  }
+
+  return { success: true, softDeleted: false };
+}
+
+/**
+ * Bulk deletes multiple products by ID.
+ */
+export async function deleteProducts(
+  productIds: string[]
+): Promise<{ deletedIds: string[]; failedIds: string[]; errors: string[] }> {
+  const deletedIds: string[] = [];
+  const failedIds: string[] = [];
+  const errors: string[] = [];
+
+  for (const id of productIds) {
+    try {
+      await deleteProduct(id);
+      deletedIds.push(id);
+    } catch (err: any) {
+      failedIds.push(id);
+      errors.push(err.message || `Failed to delete product ${id}`);
+    }
+  }
+
+  return { deletedIds, failedIds, errors };
+}
+
+/**
  * Stock edits MUST go strictly through admin_adjust_stock RPC
  */
 export async function adminAdjustStock(
@@ -314,6 +369,56 @@ export async function adminAdjustStock(
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * Bulk updates stock for multiple products.
+ * Mode: "set" (sets all selected products to exact stock value)
+ *       "adjust" (adds or subtracts delta from current stock)
+ */
+export async function adminBulkUpdateStock(params: {
+  productIds: string[];
+  mode: "set" | "adjust";
+  value: number;
+  reason: string;
+}): Promise<{ updatedCount: number; errors: string[] }> {
+  const { productIds, mode, value, reason } = params;
+  let updatedCount = 0;
+  const errors: string[] = [];
+
+  for (const id of productIds) {
+    try {
+      if (mode === "adjust") {
+        if (value !== 0) {
+          await adminAdjustStock(id, value, reason || "Bulk stock adjustment");
+        }
+      } else {
+        const newStock = Math.max(0, Math.round(value));
+        const { error: updateErr } = await supabase
+          .from("products")
+          .update({ stock: newStock, updated_at: new Date().toISOString() })
+          .eq("id", id);
+        if (updateErr) throw updateErr;
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from("stock_movements").insert({
+            product_id: id,
+            change: 0,
+            reason: `${reason || "Bulk stock update"} (Set to ${newStock})`,
+            admin_id: user?.id || null,
+          });
+        } catch {
+          // ignore audit movement log error
+        }
+      }
+      updatedCount++;
+    } catch (err: any) {
+      errors.push(err.message || `Failed to update product ${id}`);
+    }
+  }
+
+  return { updatedCount, errors };
 }
 
 /**
