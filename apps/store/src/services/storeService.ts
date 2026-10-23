@@ -15,6 +15,7 @@ import type {
   Address,
   Review,
 } from "@urbanrat/shared";
+import * as addressService from "./addressService";
 
 /**
  * Custom typed error class for store services
@@ -696,47 +697,14 @@ export async function fetchAddresses(): Promise<Address[]> {
 export async function createAddress(
   address: Omit<Address, "id" | "user_id" | "created_at" | "updated_at">
 ): Promise<Address> {
-  ensureConfigured();
-
-  const { data: authData } = await supabase.auth.getUser();
-  if (!authData.user) {
-    throw new StoreError("User must be logged in to create address.", "UNAUTHENTICATED");
-  }
-
-  const { data, error } = await supabase
-    .from("addresses")
-    .insert({
-      ...address,
-      user_id: authData.user.id,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new StoreError(error.message, error.code, error);
-  }
-
-  return data as Address;
+  return addressService.createAddress(address as any);
 }
 
 export async function updateAddress(
   id: string,
   updates: Partial<Address>
 ): Promise<Address> {
-  ensureConfigured();
-
-  const { data, error } = await supabase
-    .from("addresses")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) {
-    throw new StoreError(error.message, error.code, error);
-  }
-
-  return data as Address;
+  return addressService.updateAddress(id, updates as any);
 }
 
 export async function deleteAddress(id: string): Promise<void> {
