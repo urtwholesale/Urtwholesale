@@ -150,81 +150,94 @@ export function CategoryColumn({
                   triggerHaptic("selection");
                   onSelect(cat);
                 }}
-                className={`group relative rounded-2xl p-2.5 transition-all cursor-pointer border flex items-center justify-between ${
+                className={`group relative rounded-2xl p-3 transition-all cursor-pointer border flex flex-col justify-between ${
                   isSelected
                     ? "bg-linear-to-r from-sky-50 via-teal-50/70 to-white text-slate-900 border-brand-dark/40 ring-1 ring-brand-dark/25 shadow-xs"
                     : "bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs"
                 }`}
               >
-                {/* Left: Thumbnail & Name */}
-                <div className="flex items-center space-x-2.5 min-w-0 flex-1 pr-1.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border transition-colors ${
-                      isSelected
-                        ? "bg-white border-brand-dark/30 shadow-2xs ring-1 ring-brand-dark/20"
-                        : "bg-slate-50 border-slate-200/80"
-                    }`}
-                  >
-                    {cat.image_url ? (
-                      <img
-                        src={cat.image_url}
-                        alt={cat.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Folder
-                        className={`w-4 h-4 ${
-                          isSelected ? "text-brand-dark" : "text-slate-400"
-                        }`}
-                      />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-1.5">
-                      <span
-                        className={`text-xs truncate block ${
-                          isSelected ? "font-extrabold text-slate-900" : "font-bold text-slate-800"
-                        }`}
-                        title={cat.name}
-                      >
-                        {cat.name}
-                      </span>
-                      {!cat.is_active && (
-                        <span
-                          className={`text-[8px] font-extrabold uppercase px-1 rounded shrink-0 ${
-                            isSelected
-                              ? "bg-amber-100/90 text-amber-900 border border-amber-300"
-                              : "bg-amber-100 text-amber-800"
+                {/* Top Row: Thumbnail + Category Name & Slug + Selection Indicator */}
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border transition-colors ${
+                        isSelected
+                          ? "bg-white border-brand-dark/30 shadow-2xs ring-1 ring-brand-dark/20"
+                          : "bg-slate-50 border-slate-200/80"
+                      }`}
+                    >
+                      {cat.image_url ? (
+                        <img
+                          src={cat.image_url}
+                          alt={cat.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Folder
+                          className={`w-4 h-4 ${
+                            isSelected ? "text-brand-dark" : "text-slate-400"
                           }`}
-                        >
-                          Inactive
-                        </span>
+                        />
                       )}
                     </div>
-                    <span
-                      className={`text-[10px] truncate block ${
-                        isSelected ? "font-medium text-brand-dark/90" : "font-medium text-slate-400"
-                      }`}
-                      title={`/${cat.slug}`}
-                    >
-                      /{cat.slug}
-                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1.5">
+                        <span
+                          className={`text-xs truncate block ${
+                            isSelected ? "font-extrabold text-slate-900" : "font-bold text-slate-800"
+                          }`}
+                          title={cat.name}
+                        >
+                          {cat.name}
+                        </span>
+                        {!cat.is_active && (
+                          <span
+                            className={`text-[8px] font-extrabold uppercase px-1 rounded shrink-0 ${
+                              isSelected
+                                ? "bg-amber-100/90 text-amber-900 border border-amber-300"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[10px] truncate block ${
+                          isSelected ? "font-medium text-brand-dark/90" : "font-medium text-slate-400"
+                        }`}
+                        title={`/${cat.slug}`}
+                      >
+                        /{cat.slug}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Right Chevron / Selected Indicator */}
+                  {isSelected ? (
+                    <div className="w-5 h-5 rounded-full bg-brand-dark flex items-center justify-center text-white shadow-xs shrink-0">
+                      <ChevronRight className="w-3.5 h-3.5 stroke-3" />
+                    </div>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 opacity-60 group-hover:opacity-100 group-hover:text-slate-500 transition-opacity" />
+                  )}
                 </div>
 
-                {/* Right: Actions on Hover & Selected Arrow */}
-                <div className="flex items-center space-x-1 shrink-0">
-                  {/* Action Buttons (Reveal on Hover) */}
-                  <div
-                    className="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                {/* Bottom Row: Action Toolbar (Always visible & accessible) */}
+                <div
+                  className={`pt-2 mt-2 border-t flex items-center justify-between text-slate-400 ${
+                    isSelected ? "border-brand-dark/15" : "border-slate-100"
+                  }`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Reorder Up/Down */}
+                  <div className="flex items-center space-x-0.5">
                     <button
                       type="button"
                       disabled={idx === 0}
                       onClick={() => onReorder(cat.id, "up")}
-                      className="p-1 rounded-md transition disabled:opacity-20 cursor-pointer hover:bg-slate-200/80 text-slate-500 hover:text-slate-800"
+                      className="p-1 rounded-md transition disabled:opacity-20 cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-800"
                       title="Move up"
                     >
                       <ArrowUp className="w-3 h-3" />
@@ -233,36 +246,38 @@ export function CategoryColumn({
                       type="button"
                       disabled={idx === sortedCategories.length - 1}
                       onClick={() => onReorder(cat.id, "down")}
-                      className="p-1 rounded-md transition disabled:opacity-20 cursor-pointer hover:bg-slate-200/80 text-slate-500 hover:text-slate-800"
+                      className="p-1 rounded-md transition disabled:opacity-20 cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-800"
                       title="Move down"
                     >
                       <ArrowDown className="w-3 h-3" />
                     </button>
+                  </div>
 
+                  {/* Feature Actions */}
+                  <div className="flex items-center space-x-0.5">
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         triggerHaptic("selection");
                         onOpenAttributes(cat);
                       }}
-                      className="p-1.5 rounded-lg transition cursor-pointer hover:bg-brand-light/15 text-brand-dark"
+                      className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md transition cursor-pointer hover:bg-brand-light/15 text-brand-dark text-[10px] font-bold"
                       title="Manage Category Attributes"
                     >
-                      <Sparkles className="w-3.5 h-3.5 stroke-2" />
+                      <Sparkles className="w-3 h-3 stroke-2" />
+                      <span>Schema</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         triggerHaptic("selection");
                         onToggleActive(cat.id, cat.is_active);
                       }}
-                      className={`p-1.5 rounded-lg transition cursor-pointer ${
+                      className={`p-1 rounded-md transition cursor-pointer ${
                         cat.is_active
                           ? "hover:bg-slate-100 text-slate-400 hover:text-slate-700"
-                          : "hover:bg-amber-100 text-amber-600"
+                          : "hover:bg-amber-100 text-amber-600 bg-amber-50"
                       }`}
                       title={cat.is_active ? "Deactivate category" : "Activate category"}
                     >
@@ -271,12 +286,11 @@ export function CategoryColumn({
 
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         triggerHaptic("selection");
                         onEdit(cat);
                       }}
-                      className="p-1.5 rounded-lg transition cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                      className="p-1 rounded-md transition cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
                       title="Edit Category"
                     >
                       <Edit2 className="w-3 h-3" />
@@ -284,26 +298,16 @@ export function CategoryColumn({
 
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         triggerHaptic("heavy");
                         onDelete(cat);
                       }}
-                      className="p-1.5 rounded-lg transition cursor-pointer hover:bg-rose-100 text-slate-300 hover:text-rose-600"
+                      className="p-1 rounded-md transition cursor-pointer hover:bg-rose-50 text-slate-300 hover:text-rose-600"
                       title="Delete Category"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
-
-                  {/* Selected right indicator */}
-                  {isSelected ? (
-                    <div className="w-5 h-5 rounded-full bg-brand-dark flex items-center justify-center text-white shadow-xs ml-0.5 shrink-0">
-                      <ChevronRight className="w-3.5 h-3.5 stroke-3" />
-                    </div>
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 ml-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  )}
                 </div>
               </div>
             );
