@@ -681,12 +681,44 @@ export function ImageBulkUploadPage() {
                   </div>
                 )}
 
+                {/* Alert banner when any uploads have failed */}
+                {queue.some((q) => q.status === "failed") && (
+                  <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-800 text-xs flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-600">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-rose-900 leading-tight">
+                          {queue.filter((q) => q.status === "failed").length} image(s) encountered an error
+                        </p>
+                        <p className="text-[11px] text-rose-700 truncate">
+                          {queue.find((q) => q.status === "failed")?.errorMessage || "Upload failed. Check connection or retry."}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleBatchUpload}
+                      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[11px] shrink-0 cursor-pointer shadow-xs transition active:scale-95 flex items-center space-x-1"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Retry All</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Grid */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-1">
                   {queue.map((item) => (
                     <div
                       key={item.id}
-                      className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex flex-col justify-between p-1.5 shadow-2xs"
+                      className={`group relative aspect-square rounded-2xl overflow-hidden border bg-slate-50 flex flex-col justify-between p-1.5 shadow-2xs transition-all ${
+                        item.status === "failed"
+                          ? "border-rose-400 ring-2 ring-rose-300/60"
+                          : "border-slate-200"
+                      }`}
+                      title={item.errorMessage || item.name}
                     >
                       <img
                         src={item.previewUrl}
@@ -696,13 +728,22 @@ export function ImageBulkUploadPage() {
 
                       {/* Top Action / Remove X */}
                       <div className="relative z-10 flex items-center justify-between">
-                        {item.warnings.length > 0 && (
+                        {item.status === "failed" ? (
+                          <span
+                            title={item.errorMessage || "Upload failed"}
+                            className="p-1 rounded-md bg-rose-600 text-white font-bold text-[9px] flex items-center space-x-0.5 shadow-xs"
+                          >
+                            <AlertCircle className="w-2.5 h-2.5" />
+                          </span>
+                        ) : item.warnings.length > 0 ? (
                           <span
                             title={item.warnings.join("\n")}
                             className="p-1 rounded-md bg-amber-400 text-slate-950 font-bold text-[9px] flex items-center space-x-0.5 shadow-xs"
                           >
                             <AlertTriangle className="w-2.5 h-2.5" />
                           </span>
+                        ) : (
+                          <span />
                         )}
 
                         <button
@@ -727,7 +768,8 @@ export function ImageBulkUploadPage() {
                           <button
                             type="button"
                             onClick={() => handleRetryItem(item.id)}
-                            className="w-full py-1 rounded-lg bg-rose-600 text-white text-[9px] font-bold shadow-xs hover:bg-rose-700 flex items-center justify-center space-x-1 cursor-pointer"
+                            className="w-full py-1 rounded-lg bg-rose-600 text-white text-[9px] font-bold shadow-xs hover:bg-rose-700 flex items-center justify-center space-x-1 cursor-pointer transition active:scale-95"
+                            title={item.errorMessage ? `Error: ${item.errorMessage}. Click to retry.` : "Click to retry"}
                           >
                             <RefreshCw className="w-2.5 h-2.5" />
                             <span>Retry</span>
@@ -754,7 +796,13 @@ export function ImageBulkUploadPage() {
                 {/* 4. Primary Upload Button "Get Image Link" */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
                   <div className="text-xs text-slate-500">
-                    {queue.filter((q) => q.status === "queued").length} queued • Parallel upload (3 concurrent)
+                    {queue.filter((q) => q.status === "queued").length} queued
+                    {queue.filter((q) => q.status === "failed").length > 0 && (
+                      <span className="text-rose-600 font-bold ml-1">
+                        • {queue.filter((q) => q.status === "failed").length} failed
+                      </span>
+                    )}
+                    {" "}• Parallel upload (3 concurrent)
                   </div>
 
                   <button
@@ -767,6 +815,11 @@ export function ImageBulkUploadPage() {
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span>Processing &amp; Uploading...</span>
+                      </>
+                    ) : queue.some((q) => q.status === "failed") && !queue.some((q) => q.status === "queued") ? (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Retry Failed Uploads</span>
                       </>
                     ) : (
                       <>
