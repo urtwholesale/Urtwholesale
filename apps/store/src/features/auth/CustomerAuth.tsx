@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import {
@@ -53,6 +53,24 @@ export function CustomerAuth({
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [isGoogleConfigured, setIsGoogleConfigured] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) return;
+
+    fetch(`${supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseAnonKey },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.external?.google !== undefined) {
+          setIsGoogleConfigured(Boolean(data.external.google));
+        }
+      })
+      .catch((err) => console.warn("Supabase auth settings check skipped:", err));
+  }, []);
 
   // If already logged in, show account card with sign out
   if (user) {
@@ -133,14 +151,51 @@ export function CustomerAuth({
     triggerHaptic("selection");
     setLoading(true);
     setStatusMessage(null);
+
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      let googleActive = isGoogleConfigured;
+      if (googleActive === null && supabaseUrl && supabaseAnonKey) {
+        try {
+          const res = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+            headers: { apikey: supabaseAnonKey },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.external?.google !== undefined) {
+              googleActive = Boolean(data.external.google);
+              setIsGoogleConfigured(googleActive);
+            }
+          }
+        } catch {
+          // Ignore network probe failure
+        }
+      }
+
+      if (googleActive === false) {
+        setStatusMessage({
+          type: "error",
+          text: "Google Sign-In is not enabled on your Supabase project yet. Please sign in with Email & Password, or enable the Google provider in your Supabase Dashboard (Authentication → Providers → Google).",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
         },
       });
+
       if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
     } catch (err: unknown) {
       const e = err as Error;
       setStatusMessage({
@@ -557,6 +612,11 @@ export function CustomerAuth({
               />
             </svg>
             <span>Continue with Google</span>
+            {isGoogleConfigured === false && (
+              <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-normal">
+                Not enabled in Supabase
+              </span>
+            )}
           </button>
         </div>
       )}
