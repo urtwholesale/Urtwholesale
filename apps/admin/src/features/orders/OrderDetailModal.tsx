@@ -35,6 +35,7 @@ import {
   Sparkles,
   Clock,
   Package,
+  XCircle,
 } from "lucide-react";
 
 interface OrderDetailModalProps {
@@ -87,6 +88,7 @@ export function OrderDetailModal({
   const [internalNote, setInternalNote] = useState(order.admin_note || "");
   const [updatingNote, setUpdatingNote] = useState(false);
   const [noteSuccess, setNoteSuccess] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
 
   // Error feedback
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +164,40 @@ export function OrderDetailModal({
       setError(err?.message || "Failed to update order status via RPC.");
     } finally {
       setUpdatingStatus(false);
+    }
+  }
+
+  // Direct Cancellation Action
+  async function handleDirectCancel() {
+    if (order.status === "cancelled") return;
+    const reason = window.prompt(
+      `Cancel Order #${order.id} for ${order.customer?.name || "Customer"}?\n\nThis will void the order and return all units back to stock.\n\nCancellation note (optional):`,
+      "Cancelled by admin"
+    );
+    if (reason === null) return;
+
+    setCancellingOrder(true);
+    setError(null);
+    setStatusSuccess(null);
+    try {
+      const res = await adminUpdateOrderStatus(
+        order.id,
+        "cancelled",
+        reason.trim() || "Cancelled by admin"
+      );
+      const restoreNotice =
+        res?.items_restored > 0
+          ? ` (${res.items_restored} item units returned to inventory)`
+          : "";
+      setStatusSuccess(`Order #${order.id} cancelled successfully!${restoreNotice}`);
+      setSelectedStatus("cancelled");
+      onUpdated();
+      fetchOrderEvents(order.id).then(setEvents).catch(console.error);
+    } catch (err: any) {
+      console.error("Cancel order error:", err);
+      setError(err?.message || "Failed to cancel order.");
+    } finally {
+      setCancellingOrder(false);
     }
   }
 
@@ -502,6 +538,33 @@ export function OrderDetailModal({
                 <Printer className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Print Packing Slip</span>
               </button>
+
+              {/* Direct Cancel Order Button */}
+              {selectedStatus !== "cancelled" ? (
+                <button
+                  type="button"
+                  disabled={cancellingOrder}
+                  onClick={handleDirectCancel}
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shadow-2xs transition active:scale-95 flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {cancellingOrder ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Cancelling...</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Cancel Order</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <span className="px-3 py-1.5 rounded-xl bg-rose-100 text-rose-800 text-xs font-black inline-flex items-center space-x-1 border border-rose-200">
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>Order Cancelled</span>
+                </span>
+              )}
             </div>
 
             {/* WhatsApp Communication */}

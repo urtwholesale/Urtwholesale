@@ -16,6 +16,7 @@ import {
   fetchAdminOrderCounts,
   fetchOrderNoticeCounts,
   adminBulkUpdateOrderStatus,
+  adminUpdateOrderStatus,
   exportOrdersToExcel,
   exportOrdersToCSV,
 } from "../../lib/adminService";
@@ -31,6 +32,7 @@ import {
   Copy,
   Download,
   X,
+  XCircle,
   Calendar,
   Globe,
   MessageCircle,
@@ -241,6 +243,28 @@ export function OrderList() {
     } catch (err: any) {
       triggerHaptic("heavy");
       showToast(err?.message || "Failed to bulk update orders.");
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  }
+
+  // ── Single Order Quick Cancel ──
+  async function handleQuickCancel(order: Order) {
+    if (order.status === "cancelled") return;
+    triggerHaptic("heavy");
+    const confirmMsg = `Cancel Order #${order.id} for ${order.customer?.name || "Customer"} (₹${(order.total || 0).toLocaleString("en-IN")})?\n\nThis will void the order and restore ordered units back to catalog inventory.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setBulkActionInProgress(true);
+    try {
+      const res = await adminUpdateOrderStatus(order.id, "cancelled", "Cancelled by admin via Orders Hub");
+      triggerHaptic("success");
+      const restored = res?.items_restored > 0 ? ` (${res.items_restored} units returned to stock)` : "";
+      showToast(`Order #${order.id} cancelled successfully${restored}`);
+      loadData();
+    } catch (err: any) {
+      triggerHaptic("heavy");
+      showToast(err?.message || "Failed to cancel order.");
     } finally {
       setBulkActionInProgress(false);
     }
@@ -579,6 +603,17 @@ export function OrderList() {
               <span>Mark Shipped</span>
             </button>
 
+            {/* Cancel Orders */}
+            <button
+              type="button"
+              disabled={bulkActionInProgress}
+              onClick={() => handleBulkStatusTransition("cancelled")}
+              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              <span>Cancel Orders</span>
+            </button>
+
             {/* Export Selected to Excel */}
             <button
               type="button"
@@ -815,18 +850,35 @@ export function OrderList() {
 
                         {/* Action Button */}
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerHaptic("selection");
-                              setSelectedOrder(ord);
-                            }}
-                            className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 font-bold text-xs transition cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Manage</span>
-                          </button>
+                          <div className="flex items-center justify-end space-x-1.5">
+                            {ord.status !== "cancelled" && ord.status !== "delivered" && (
+                              <button
+                                type="button"
+                                disabled={bulkActionInProgress}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickCancel(ord);
+                                }}
+                                title="Cancel order and restore stock"
+                                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200/70 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span className="hidden xl:inline">Cancel</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                triggerHaptic("selection");
+                                setSelectedOrder(ord);
+                              }}
+                              className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 font-bold text-xs transition cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Manage</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -919,17 +971,32 @@ export function OrderList() {
                         <span className="capitalize">{ord.payment_status || "Pending"}</span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerHaptic("selection");
-                          setSelectedOrder(ord);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
-                      >
-                        Manage
-                      </button>
+                      <div className="flex items-center space-x-1.5">
+                        {ord.status !== "cancelled" && ord.status !== "delivered" && (
+                          <button
+                            type="button"
+                            disabled={bulkActionInProgress}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuickCancel(ord);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs border border-rose-200"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerHaptic("selection");
+                            setSelectedOrder(ord);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
+                        >
+                          Manage
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
