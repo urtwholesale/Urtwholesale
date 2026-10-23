@@ -50,7 +50,7 @@ export function CategoryColumn({
   // If this is Level > 1 and no parent has been selected in the previous level, show idle empty state
   if (level > 1 && !isParentSelected) {
     return (
-      <div className="flex-1 min-w-[280px] max-w-[340px] bg-white rounded-3xl border border-slate-200/80 p-5 flex flex-col justify-center items-center text-center shadow-xs">
+      <div className="flex-1 min-w-70 max-w-85 bg-white rounded-3xl border border-slate-200/80 p-5 flex flex-col justify-center items-center text-center shadow-xs">
         <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-300 mb-3">
           <Layers className="w-6 h-6 stroke-1.5" />
         </div>
@@ -76,7 +76,7 @@ export function CategoryColumn({
       : "bg-emerald-100 text-emerald-800 border-emerald-200/80";
 
   return (
-    <div className="flex-1 min-w-[280px] max-w-[340px] bg-white rounded-3xl border border-slate-200/80 flex flex-col shadow-xs overflow-hidden">
+    <div className="flex-1 min-w-70 max-w-85 bg-white rounded-3xl border border-slate-200/80 flex flex-col shadow-xs overflow-hidden">
       {/* Column Header */}
       <div className="p-4 pb-3 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center justify-between mb-1">
@@ -117,7 +117,7 @@ export function CategoryColumn({
       </div>
 
       {/* Column Content List */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-[360px] max-h-[640px] custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-90 max-h-160 custom-scrollbar">
         {sortedCategories.length === 0 ? (
           <div className="h-full py-16 flex flex-col items-center justify-center text-center p-4">
             <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-slate-300 mb-2">
@@ -152,7 +152,7 @@ export function CategoryColumn({
                 }}
                 className={`group relative rounded-2xl p-2.5 transition-all cursor-pointer border flex items-center justify-between ${
                   isSelected
-                    ? "bg-gradient-to-r from-sky-50 via-teal-50/70 to-white text-slate-900 border-brand-dark/40 ring-1 ring-brand-dark/25 shadow-xs"
+                    ? "bg-linear-to-r from-sky-50 via-teal-50/70 to-white text-slate-900 border-brand-dark/40 ring-1 ring-brand-dark/25 shadow-xs"
                     : "bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs"
                 }`}
               >
