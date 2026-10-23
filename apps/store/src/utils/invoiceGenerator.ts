@@ -97,7 +97,7 @@ export function printOrderInvoice(order: Order, settings?: StoreSettings | null)
     <body>
       <div class="no-print" style="max-width: 800px; margin: 0 auto 16px; text-align: right;">
         <button onclick="window.print()" style="background: #0A82A8; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 13px;">
-          🖨️ Print / Save as PDF
+          Print / Save as PDF
         </button>
       </div>
 

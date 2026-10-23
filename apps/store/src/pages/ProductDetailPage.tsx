@@ -31,6 +31,7 @@ import {
   Star,
   Send,
   Layers,
+  Lightbulb,
 } from "lucide-react";
 import { QuantityInput } from "../components/QuantityInput";
 import { triggerHaptic } from "../utils/haptics";
@@ -578,7 +579,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     aria-label={`Add ${nextTier.piecesNeeded} more to reach ${nextTier.tier.min_qty} pieces tier at ₹${nextTier.tier.unit_price} each`}
                   >
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-sm">💡</span>
+                      <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                       <span>
                         Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
                         <strong>

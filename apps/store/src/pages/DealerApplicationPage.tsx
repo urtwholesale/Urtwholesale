@@ -610,8 +610,9 @@ export function DealerApplicationPage() {
 
         {/* Submit Button */}
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[11px] text-slate-400">
-            🔒 Protected by Row Level Security. No credit card required.
+          <p className="text-[11px] text-slate-400 flex items-center space-x-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Protected by Row Level Security. No credit card required.</span>
           </p>
 
           <button

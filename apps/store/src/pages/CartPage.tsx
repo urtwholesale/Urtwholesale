@@ -12,6 +12,7 @@ import {
   Hash,
   Loader2,
   AlertCircle,
+  Lightbulb,
 } from "lucide-react";
 import { QuantityInput } from "../components/QuantityInput";
 import { buildWhatsAppMessage } from "../utils/buildWhatsAppMessage";
@@ -403,7 +404,7 @@ export function CartPage({
                   {nextTier && (
                     <div className="pt-1.5 border-t border-slate-100/60">
                       <div className="p-2 rounded-xl bg-sky-50 border border-sky-100 text-[11px] font-semibold text-sky-800 flex items-center space-x-1.5">
-                        <span className="text-sm">💡</span>
+                        <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                         <span>
                           Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
                           <strong>
