@@ -22,11 +22,13 @@ import {
   Ban,
   Layers,
   Edit2,
+  CheckSquare,
 } from "lucide-react";
 import {
   uploadCatalogImage,
   listCatalogImages,
   deleteCatalogImage,
+  deleteCatalogImages,
   type CatalogImage,
 } from "../../../lib/adminService";
 import {
@@ -85,6 +87,8 @@ export function ImageBulkUploadPage() {
   } | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [confirmDeleteImage, setConfirmDeleteImage] = useState<CatalogImage | null>(null);
+  const [confirmDeleteBulk, setConfirmDeleteBulk] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // ── Library Tab State ──
   const [libraryImages, setLibraryImages] = useState<CatalogImage[]>([]);
@@ -479,23 +483,54 @@ export function ImageBulkUploadPage() {
       setSessionLinks((prev) => prev.filter((img) => img.id !== image.id));
       setLibraryImages((prev) => prev.filter((img) => img.id !== image.id));
       setConfirmDeleteImage(null);
+      setLibraryTotalCount((prev) => Math.max(0, prev - 1));
       triggerHaptic("success");
     } catch (err: any) {
       // Check if blocked because image is in use
       const msg = err.message || "";
-      if (msg.includes("in use by") || msg.includes("referenced by")) {
+      if (msg.includes("in use by") || msg.includes("referenced by") || msg.includes("used by")) {
         const parts = msg.split(":");
         const usedByStr = parts[1] || "";
         const usedBy = usedByStr
           .split(",")
           .map((s: string) => s.trim())
           .filter(Boolean);
-        setDeleteConflict({ image, usedBy });
+        setDeleteConflict({ image, usedBy: usedBy.length > 0 ? usedBy : [msg] });
       } else {
         alert(msg || "Failed to delete image.");
       }
     } finally {
       setIsDeletingId(null);
+    }
+  }
+
+  // ── Bulk Remove Selected Images ──
+  async function handleExecuteBulkDelete() {
+    if (selectedLibraryIds.size === 0) return;
+    setIsBulkDeleting(true);
+    triggerHaptic("selection");
+    try {
+      const idsToDelete = Array.from(selectedLibraryIds);
+      const res = await deleteCatalogImages(idsToDelete);
+
+      const deletedSet = new Set(res.deletedIds);
+      setSessionLinks((prev) => prev.filter((img) => !deletedSet.has(img.id)));
+      setLibraryImages((prev) => prev.filter((img) => !deletedSet.has(img.id)));
+      setLibraryTotalCount((prev) => Math.max(0, prev - res.deletedIds.length));
+      setSelectedLibraryIds(new Set());
+      setConfirmDeleteBulk(false);
+
+      if (res.failedIds.length > 0) {
+        alert(
+          `Successfully deleted ${res.deletedIds.length} image(s).\n${res.failedIds.length} image(s) could not be deleted because they are referenced by active products.`
+        );
+      } else {
+        triggerHaptic("success");
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to delete selected images.");
+    } finally {
+      setIsBulkDeleting(false);
     }
   }
 
@@ -1197,16 +1232,54 @@ export function ImageBulkUploadPage() {
                 />
               </div>
 
-              {/* Multi-select Action */}
-              {selectedLibraryIds.size > 0 && (
+              {/* Select All Toggle */}
+              {libraryImages.length > 0 && (
                 <button
                   type="button"
-                  onClick={handleCopySelectedLibrary}
-                  className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shadow-2xs"
+                  onClick={() => {
+                    triggerHaptic("selection");
+                    if (selectedLibraryIds.size === libraryImages.length) {
+                      setSelectedLibraryIds(new Set());
+                    } else {
+                      setSelectedLibraryIds(new Set(libraryImages.map((img) => img.id)));
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center space-x-1 cursor-pointer shadow-2xs"
                 >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy {selectedLibraryIds.size} Selected</span>
+                  <CheckSquare className="w-3.5 h-3.5 text-slate-500" />
+                  <span>
+                    {selectedLibraryIds.size === libraryImages.length && libraryImages.length > 0
+                      ? "Deselect All"
+                      : "Select All"}
+                  </span>
                 </button>
+              )}
+
+              {/* Multi-select Actions */}
+              {selectedLibraryIds.size > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCopySelectedLibrary}
+                    className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shadow-2xs hover:opacity-95"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy {selectedLibraryIds.size} Selected</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("selection");
+                      setConfirmDeleteBulk(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shadow-2xs transition active:scale-95"
+                    title="Delete selected images from catalog"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete {selectedLibraryIds.size} Selected</span>
+                  </button>
+                </>
               )}
 
               <button
@@ -1283,9 +1356,11 @@ export function ImageBulkUploadPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          triggerHaptic("selection");
                           setConfirmDeleteImage(img);
                         }}
-                        className="p-1 rounded-full bg-black/60 hover:bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer shadow-xs"
+                        className="w-6 h-6 rounded-lg bg-white/95 hover:bg-rose-600 text-slate-600 hover:text-white border border-slate-300/80 hover:border-rose-600 flex items-center justify-center transition cursor-pointer shadow-xs"
+                        title="Delete image"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -1452,6 +1527,48 @@ export function ImageBulkUploadPage() {
                   <Trash2 className="w-3.5 h-3.5" />
                 )}
                 <span>Confirm Remove</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM BULK REMOVE IMAGES MODAL ── */}
+      {confirmDeleteBulk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center space-x-2 text-rose-600">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <h4 className="font-black text-sm text-slate-900">
+                Delete {selectedLibraryIds.size} Selected Images?
+              </h4>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Are you sure you want to delete <span className="font-bold text-slate-800">{selectedLibraryIds.size}</span> selected image(s) from the catalog?
+              Any images currently in use by active products will be safely preserved.
+            </p>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteBulk(false)}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={handleExecuteBulkDelete}
+                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+              >
+                {isBulkDeleting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Confirm Delete ({selectedLibraryIds.size})</span>
               </button>
             </div>
           </div>

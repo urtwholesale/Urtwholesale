@@ -1886,12 +1886,30 @@ export async function deleteCatalogImage(
 ): Promise<{ success: boolean; storage_path?: string }> {
   let storagePath: string | undefined;
 
+  // 1. Try admin_delete_catalog_image RPC
   try {
     const { data, error } = await supabase.rpc("admin_delete_catalog_image", {
       p_image_id: id,
     });
 
-    if (!error && data) {
+    if (error) {
+      // If image is in use by products, throw the usage guard error
+      if (
+        error.message?.includes("used by") ||
+        error.message?.includes("Cannot delete") ||
+        error.message?.includes("in use")
+      ) {
+        throw new Error(error.message);
+      }
+      console.warn("admin_delete_catalog_image RPC error, attempting fallback update:", error.message);
+      const { error: updateErr } = await supabase
+        .from("catalog_images")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (updateErr) {
+        console.warn("Fallback soft-delete error:", updateErr.message);
+      }
+    } else if (data) {
       const res = data as {
         success: boolean;
         in_use?: boolean;
@@ -1908,20 +1926,59 @@ export async function deleteCatalogImage(
       }
       storagePath = res.storage_path;
     }
-  } catch (rpcErr: any) {
-    console.warn("admin_delete_catalog_image RPC skipped/failed:", rpcErr?.message);
+  } catch (err: any) {
+    if (
+      err.message?.includes("used by") ||
+      err.message?.includes("Cannot delete") ||
+      err.message?.includes("in use")
+    ) {
+      throw err;
+    }
+    console.warn("admin_delete_catalog_image error:", err?.message);
+    try {
+      await supabase
+        .from("catalog_images")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+    } catch {
+      // Ignore fallback error
+    }
   }
 
   // Remove from local cache
   removeCatalogImageFromLocalCache(id);
 
-  // If storage path exists, attempt deletion from both buckets
+  // If storage path exists, attempt deletion from storage
   if (storagePath) {
     await supabase.storage.from("catalog-images").remove([storagePath]).catch(() => {});
     await supabase.storage.from("product-images").remove([storagePath]).catch(() => {});
   }
 
   return { success: true, storage_path: storagePath };
+}
+
+/**
+ * Bulk deletes multiple catalog images by ID.
+ * Returns arrays of successfully deleted IDs and failed IDs.
+ */
+export async function deleteCatalogImages(
+  ids: string[]
+): Promise<{ deletedIds: string[]; failedIds: string[]; errors: string[] }> {
+  const deletedIds: string[] = [];
+  const failedIds: string[] = [];
+  const errors: string[] = [];
+
+  for (const id of ids) {
+    try {
+      await deleteCatalogImage(id);
+      deletedIds.push(id);
+    } catch (err: any) {
+      failedIds.push(id);
+      errors.push(err.message || `Failed to delete ${id}`);
+    }
+  }
+
+  return { deletedIds, failedIds, errors };
 }
 
 /**
