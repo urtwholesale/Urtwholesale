@@ -242,10 +242,11 @@ export function CartPage({
               `${customer.address.trim()}, PIN: ${customer.pincode.trim()}`,
           },
           upiId: settings?.upi_id || "7000947033-1@okbizaxis",
-          qrCodeUrl: `${window.location.origin}/payment-qr.png`,
+          siteUrl: import.meta.env.VITE_PUBLIC_SITE_URL || "",
         });
 
-        const whatsappCheckoutUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(
+        const cleanTargetPhone = targetPhone.replace(/\D/g, "");
+        const whatsappCheckoutUrl = `https://wa.me/${cleanTargetPhone}?text=${encodeURIComponent(
           whatsappMessage
         )}`;
         window.open(whatsappCheckoutUrl, "_blank");

@@ -12,6 +12,8 @@ import { getSettings, isSupabaseConfigured } from "../services/storeService";
 interface SettingsContextValue {
   settings: StoreSettings | null;
   whatsappNumber: string | null;
+  upiId: string;
+  storeName: string;
   loading: boolean;
   error: Error | null;
   refreshSettings: () => Promise<void>;
@@ -20,6 +22,8 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue>({
   settings: null,
   whatsappNumber: null,
+  upiId: "7000947033-1@okbizaxis",
+  storeName: "URT Wholesale",
   loading: true,
   error: null,
   refreshSettings: async () => {},
@@ -56,12 +60,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Clean and validate whatsapp_number: must be non-empty string, else null
   const rawNumber = settings?.whatsapp_number?.trim();
   const whatsappNumber = rawNumber && rawNumber.length >= 7 ? rawNumber : null;
+  const upiId = settings?.upi_id?.trim() || "7000947033-1@okbizaxis";
+  const storeName =
+    settings?.store_name?.trim() ||
+    settings?.store_info?.name?.trim() ||
+    "URT Wholesale";
 
   return (
     <SettingsContext.Provider
       value={{
         settings,
         whatsappNumber,
+        upiId,
+        storeName,
         loading,
         error,
         refreshSettings: loadSettings,

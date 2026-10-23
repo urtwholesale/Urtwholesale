@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router";
+import QRCode from "qrcode";
 import { fetchOrderById } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
 import { useAuth } from "../context/AuthContext";
@@ -117,7 +118,41 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   }
 
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState(false);
+
   const upiId = settings?.upi_id || "7000947033-1@okbizaxis";
+  const storeName = settings?.store_name || settings?.store_info?.name || "URT Wholesale";
+
+  const upiLink = useMemo(() => {
+    if (!order) return "";
+    const totalAmount = order.total ?? 0;
+    return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(storeName)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent(order.id)}`;
+  }, [upiId, storeName, order]);
+
+  useEffect(() => {
+    if (!upiLink) return;
+    let isMounted = true;
+    QRCode.toDataURL(upiLink, {
+      width: 240,
+      margin: 1,
+      errorCorrectionLevel: "M",
+    })
+      .then((url: string) => {
+        if (isMounted) {
+          setQrDataUrl(url);
+          setQrError(false);
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn("Dynamic UPI QR generation failed, using static fallback:", err);
+        if (isMounted) setQrError(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [upiLink]);
 
   function handleCopyUpi() {
     triggerHaptic("selection");
@@ -1171,7 +1206,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             )}
           </div>
 
-          {/* ── UPI Payment & QR Code Card ── */}
+          {/* ── "Pay now" Dynamic UPI & QR Code Card ── */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center space-x-2.5">
@@ -1180,10 +1215,10 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-900">
-                    Pay via UPI / QR Code
+                    Pay now
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    Scan &amp; pay with any UPI app
+                    Scan with GPay, PhonePe, Paytm, or BHIM UPI
                   </p>
                 </div>
               </div>
@@ -1192,17 +1227,17 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
               </span>
             </div>
 
-            {/* QR Code image */}
+            {/* QR Code container (Dynamic QR generated from UPI link with static fallback) */}
             <div className="flex flex-col items-center justify-center p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
-              <div className="w-48 sm:w-52 h-auto rounded-xl overflow-hidden shadow-xs border border-slate-200 bg-white">
+              <div className="w-48 sm:w-52 h-48 sm:h-52 rounded-xl overflow-hidden shadow-xs border border-slate-200 bg-white flex items-center justify-center p-2">
                 <img
-                  src="/payment-qr.png"
-                  alt="Ajay Wholesale Mobile Accessories UPI QR Code"
-                  className="w-full h-auto object-contain"
+                  src={!qrError && qrDataUrl ? qrDataUrl : "/payment-qr.png"}
+                  alt={`UPI Payment QR Code for Order #${order.id}`}
+                  className="w-full h-full object-contain"
                 />
               </div>
               <p className="text-[11px] font-semibold text-slate-500 text-center">
-                Google Pay &bull; PhonePe &bull; Paytm &bull; BHIM UPI
+                Scan to pay <strong>₹{total.toLocaleString("en-IN")}</strong> for Order #{order.id}
               </p>
             </div>
 
@@ -1235,12 +1270,12 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
               </div>
             </div>
 
-            {/* Direct Pay with UPI App button */}
+            {/* Direct Pay with UPI App button (Mobile) */}
             <a
-              href={`upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("Ajay Wholesale Mobile Accessories")}&am=${total}&cu=INR`}
+              href={upiLink}
               className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99]"
             >
-              <span>Pay ₹{total.toLocaleString("en-IN")} via UPI App</span>
+              <span>Pay with UPI app (₹{total.toLocaleString("en-IN")})</span>
             </a>
           </div>
 

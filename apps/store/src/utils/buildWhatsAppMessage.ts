@@ -22,21 +22,30 @@ export interface BuildWhatsAppMessageOptions {
   shipping?: number | string;
   total: number;
   customer?: CustomerInfo;
-  orderUrl?: string;
+  siteUrl?: string;
   upiId?: string;
-  qrCodeUrl?: string;
 }
 
 export const DEFAULT_UPI_ID = "7000947033-1@okbizaxis";
-export const DEFAULT_QR_PATH = "/payment-qr.png";
 
-const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+const NUMBER_EMOJIS = [
+  "1\u{FE0F}\u{20E3}",
+  "2\u{FE0F}\u{20E3}",
+  "3\u{FE0F}\u{20E3}",
+  "4\u{FE0F}\u{20E3}",
+  "5\u{FE0F}\u{20E3}",
+  "6\u{FE0F}\u{20E3}",
+  "7\u{FE0F}\u{20E3}",
+  "8\u{FE0F}\u{20E3}",
+  "9\u{FE0F}\u{20E3}",
+  "10\u{FE0F}\u{20E3}",
+];
 
 function getItemNumberEmoji(index: number): string {
   if (index < NUMBER_EMOJIS.length) {
     return NUMBER_EMOJIS[index]!;
   }
-  return `${index + 1}️⃣`;
+  return `${index + 1}\u{FE0F}\u{20E3}`;
 }
 
 function formatMoney(amount: number): string {
@@ -45,7 +54,11 @@ function formatMoney(amount: number): string {
 
 /**
  * Builds the plain-text WhatsApp order message with real newlines.
- * Never includes "%0A" - URL encoding must only be performed once when building the URL.
+ * Emojis are defined via explicit Unicode code-point escapes (\u{...}) to prevent
+ * surrogate pair corruption or encoding issues ( / U+FFFD).
+ *
+ * Never uses window.location.origin or localhost for URLs.
+ * If siteUrl is omitted or contains localhost, the "Track order & pay" link is omitted.
  */
 export function buildWhatsAppMessage({
   orderId = "TEMP",
@@ -54,8 +67,8 @@ export function buildWhatsAppMessage({
   shipping = "FREE",
   total,
   customer,
+  siteUrl,
   upiId = DEFAULT_UPI_ID,
-  qrCodeUrl,
 }: BuildWhatsAppMessageOptions): string {
   const formattedOrderId = orderId || "TEMP";
 
@@ -71,7 +84,7 @@ export function buildWhatsAppMessage({
     .join("\n\n");
 
   const savingsLine =
-    savings && savings > 0 ? `🏷️ Wholesale savings: ₹${formatMoney(savings)}\n` : "";
+    savings && savings > 0 ? `\u{1F3F7}\u{FE0F} Wholesale savings: ₹${formatMoney(savings)}\n` : "";
 
   let shippingText = "FREE";
   if (typeof shipping === "number") {
@@ -84,37 +97,36 @@ export function buildWhatsAppMessage({
   const customerPhone = customer?.phone?.trim() || "";
   const customerAddress = customer?.address?.trim() || "";
   const paymentUpiId = (upiId || DEFAULT_UPI_ID).trim();
-  const paymentQrUrl = (
-    qrCodeUrl ||
-    (typeof window !== "undefined" && window.location?.origin
-      ? `${window.location.origin}${DEFAULT_QR_PATH}`
-      : "")
-  ).trim();
 
-  const lines = [
-    "Hello URT Wholesale 👋",
+  const lines: string[] = [
+    `Hello URT Wholesale \u{1F44B}`,
     "I'd like to place an order:",
     "",
-    `🧾 *Order #${formattedOrderId}*`,
+    `\u{1F9FE} *Order #${formattedOrderId}*`,
     "━━━━━━━━━━━━━━",
     itemsSection,
     "━━━━━━━━━━━━━━",
-    `${savingsLine}🚚 Shipping: ${shippingText}\n💰 *Total: ₹${formatMoney(total)}*`,
+    `${savingsLine}\u{1F69A} Shipping: ${shippingText}\n\u{1F4B0} *Total: ₹${formatMoney(total)}*`,
     "",
-    `👤 *Name:* ${customerName}`,
-    `📞 *Phone:* ${customerPhone}`,
-    `📍 *Address:* ${customerAddress}`,
+    `\u{1F464} *Name:* ${customerName}`,
+    `\u{1F4DE} *Phone:* ${customerPhone}`,
+    `\u{1F4CD} *Address:* ${customerAddress}`,
   ];
 
   if (paymentUpiId) {
-    lines.push("", "💳 *UPI ID for Payment:*", paymentUpiId);
+    lines.push("", `\u{1F4B3} *UPI ID for Payment:*`, paymentUpiId);
   }
 
-  if (paymentQrUrl) {
-    lines.push("", "📲 *Scan & Pay QR Code:*", paymentQrUrl);
+  // Track order & pay link: only absolute URL from siteUrl (never localhost)
+  const cleanSiteUrl = (siteUrl || "").trim().replace(/\/+$/, "");
+  const isLocalhost =
+    cleanSiteUrl.includes("localhost") || cleanSiteUrl.includes("127.0.0.1");
+
+  if (cleanSiteUrl && !isLocalhost && formattedOrderId) {
+    lines.push("", `\u{1F517} Track order & pay:`, `${cleanSiteUrl}/order/${formattedOrderId}`);
   }
 
-  lines.push("", "Please confirm availability. Thank you! 🙏");
+  lines.push("", `Please confirm availability. Thank you! \u{1F64F}`);
 
   return lines.join("\n");
 }

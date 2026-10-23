@@ -11,10 +11,12 @@ import {
   ShieldCheck,
   User,
   AlertCircle,
+  QrCode,
 } from "lucide-react";
 
 export function SettingsEditor() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [upiId, setUpiId] = useState("7000947033-1@okbizaxis");
   const [popularSearches, setPopularSearches] = useState("");
   const [storeName, setStoreName] = useState("");
   const [tagline, setTagline] = useState("");
@@ -45,10 +47,14 @@ export function SettingsEditor() {
           for (const row of data) {
             if (row.key === "whatsapp_number" && typeof row.value === "string") {
               setWhatsappNumber(row.value);
+            } else if (row.key === "upi_id" && typeof row.value === "string") {
+              setUpiId(row.value);
+            } else if (row.key === "store_name" && typeof row.value === "string") {
+              setStoreName(row.value);
             } else if (row.key === "popular_searches" && Array.isArray(row.value)) {
               setPopularSearches(row.value.join(", "));
-            } else if (row.key === "store_info" && typeof row.value === "object") {
-              setStoreName(row.value.name || "");
+            } else if (row.key === "store_info" && typeof row.value === "object" && row.value !== null) {
+              if (row.value.name) setStoreName(row.value.name);
               setTagline(row.value.tagline || "");
             } else if (row.key === "admin_username" && typeof row.value === "string") {
               setAdminUsername(row.value);
@@ -83,6 +89,18 @@ export function SettingsEditor() {
           key: "whatsapp_number",
           value: JSON.stringify(whatsappNumber.trim()),
           description: "Primary WhatsApp order dispatch & support number",
+          updated_at: new Date().toISOString(),
+        },
+        {
+          key: "upi_id",
+          value: JSON.stringify(upiId.trim()),
+          description: "Store UPI ID for receiving customer QR payments",
+          updated_at: new Date().toISOString(),
+        },
+        {
+          key: "store_name",
+          value: JSON.stringify(storeName.trim()),
+          description: "Store display name used in UPI and branding",
           updated_at: new Date().toISOString(),
         },
         {
@@ -240,6 +258,25 @@ export function SettingsEditor() {
           />
           <p className="text-[11px] text-slate-400 mt-1">
             Include country code without '+' or spaces (e.g. 919876543210). Used for all customer WhatsApp order dispatches.
+          </p>
+        </div>
+
+        {/* Store UPI ID */}
+        <div>
+          <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+            <QrCode className="w-3.5 h-3.5 text-brand-dark" />
+            <span>Store UPI ID for Payments</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={upiId}
+            onChange={(e) => setUpiId(e.target.value)}
+            placeholder="7000947033-1@okbizaxis"
+            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
+          />
+          <p className="text-[11px] text-slate-400 mt-1">
+            UPI ID displayed to customers in WhatsApp messages and encoded into the order dynamic QR code.
           </p>
         </div>
 

@@ -19,7 +19,7 @@ function orderOgPlugin(): Plugin {
       const match = url.match(/\/order\/([a-zA-Z0-9_-]+)/);
       if (match && match[1]) {
         const orderId = match[1];
-        const title = `URT Wholesale – Order #${orderId}`;
+        const title = `URT Wholesale – Order #${orderId} (₹199)`;
         const description = `1 item • ₹199 • Free shipping`;
         const image = `https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1200&h=630&auto=format&fit=crop&q=80`;
         const orderUrl = `http://localhost:5173/order/${orderId}`;

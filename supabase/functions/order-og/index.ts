@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
           ? order.items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0)
           : 1;
         const totalAmount = Number(order.total || 0).toLocaleString("en-IN");
-        orderTitle = `URT Wholesale – Order #${order.id}`;
+        orderTitle = `URT Wholesale – Order #${order.id} (₹${totalAmount})`;
         orderDesc = `${itemCount} ${itemCount === 1 ? "item" : "items"} • ₹${totalAmount} • Free shipping`;
 
         if (Array.isArray(order.items) && order.items[0]?.image) {
