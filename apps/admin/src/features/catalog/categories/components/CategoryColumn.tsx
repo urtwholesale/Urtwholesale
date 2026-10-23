@@ -50,7 +50,7 @@ export function CategoryColumn({
   // If this is Level > 1 and no parent has been selected in the previous level, show idle empty state
   if (level > 1 && !isParentSelected) {
     return (
-      <div className="flex-1 min-w-65 max-w-85 bg-white rounded-3xl border border-slate-200/80 p-5 flex flex-col justify-center items-center text-center shadow-xs">
+      <div className="flex-1 min-w-[280px] max-w-[340px] bg-white rounded-3xl border border-slate-200/80 p-5 flex flex-col justify-center items-center text-center shadow-xs">
         <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-center text-slate-300 mb-3">
           <Layers className="w-6 h-6 stroke-1.5" />
         </div>
@@ -66,13 +66,24 @@ export function CategoryColumn({
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name)
   );
 
+  const levelBadgeClass =
+    level === 1
+      ? "bg-sky-100 text-sky-800 border-sky-200/80"
+      : level === 2
+      ? "bg-teal-100 text-teal-800 border-teal-200/80"
+      : level === 3
+      ? "bg-indigo-100 text-indigo-800 border-indigo-200/80"
+      : "bg-emerald-100 text-emerald-800 border-emerald-200/80";
+
   return (
-    <div className="flex-1 min-w-65 max-w-85 bg-white rounded-3xl border border-slate-200/80 flex flex-col shadow-xs overflow-hidden">
+    <div className="flex-1 min-w-[280px] max-w-[340px] bg-white rounded-3xl border border-slate-200/80 flex flex-col shadow-xs overflow-hidden">
       {/* Column Header */}
       <div className="p-4 pb-3 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center space-x-2">
-            <span className="w-6 h-6 rounded-lg bg-brand-light/20 text-brand-dark flex items-center justify-center text-[11px] font-black">
+            <span
+              className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black border ${levelBadgeClass}`}
+            >
               L{level}
             </span>
             <h3 className="text-xs font-black text-slate-900 tracking-tight">{levelTitle}</h3>
@@ -106,7 +117,7 @@ export function CategoryColumn({
       </div>
 
       {/* Column Content List */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-90 max-h-160 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-[360px] max-h-[640px] custom-scrollbar">
         {sortedCategories.length === 0 ? (
           <div className="h-full py-16 flex flex-col items-center justify-center text-center p-4">
             <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-slate-300 mb-2">
@@ -141,16 +152,16 @@ export function CategoryColumn({
                 }}
                 className={`group relative rounded-2xl p-2.5 transition-all cursor-pointer border flex items-center justify-between ${
                   isSelected
-                    ? "bg-[#0B1E28] text-white border-[#0B1E28] shadow-md"
-                    : "bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/70 hover:border-slate-300 shadow-2xs"
+                    ? "bg-gradient-to-r from-sky-50 via-teal-50/70 to-white text-slate-900 border-brand-dark/40 ring-1 ring-brand-dark/25 shadow-xs"
+                    : "bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs"
                 }`}
               >
                 {/* Left: Thumbnail & Name */}
-                <div className="flex items-center space-x-2.5 min-w-0 flex-1 pr-2">
+                <div className="flex items-center space-x-2.5 min-w-0 flex-1 pr-1.5">
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border ${
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border transition-colors ${
                       isSelected
-                        ? "bg-slate-800 border-slate-700"
+                        ? "bg-white border-brand-dark/30 shadow-2xs ring-1 ring-brand-dark/20"
                         : "bg-slate-50 border-slate-200/80"
                     }`}
                   >
@@ -163,7 +174,7 @@ export function CategoryColumn({
                     ) : (
                       <Folder
                         className={`w-4 h-4 ${
-                          isSelected ? "text-brand-light" : "text-slate-400"
+                          isSelected ? "text-brand-dark" : "text-slate-400"
                         }`}
                       />
                     )}
@@ -172,17 +183,18 @@ export function CategoryColumn({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-1.5">
                       <span
-                        className={`text-xs font-bold truncate block ${
-                          isSelected ? "text-white" : "text-slate-900"
+                        className={`text-xs truncate block ${
+                          isSelected ? "font-extrabold text-slate-900" : "font-bold text-slate-800"
                         }`}
+                        title={cat.name}
                       >
                         {cat.name}
                       </span>
                       {!cat.is_active && (
                         <span
-                          className={`text-[8px] font-extrabold uppercase px-1 rounded ${
+                          className={`text-[8px] font-extrabold uppercase px-1 rounded shrink-0 ${
                             isSelected
-                              ? "bg-slate-700 text-slate-300"
+                              ? "bg-amber-100/90 text-amber-900 border border-amber-300"
                               : "bg-amber-100 text-amber-800"
                           }`}
                         >
@@ -191,33 +203,28 @@ export function CategoryColumn({
                       )}
                     </div>
                     <span
-                      className={`text-[10px] font-medium truncate block ${
-                        isSelected ? "text-slate-400" : "text-slate-400"
+                      className={`text-[10px] truncate block ${
+                        isSelected ? "font-medium text-brand-dark/90" : "font-medium text-slate-400"
                       }`}
+                      title={`/${cat.slug}`}
                     >
                       /{cat.slug}
                     </span>
                   </div>
                 </div>
 
-                {/* Right: Actions & Selected Arrow */}
+                {/* Right: Actions on Hover & Selected Arrow */}
                 <div className="flex items-center space-x-1 shrink-0">
-                  {/* Reorder Up/Down */}
+                  {/* Action Buttons (Reveal on Hover) */}
                   <div
-                    className={`flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${
-                      isSelected ? "opacity-100" : ""
-                    }`}
+                    className="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
                       disabled={idx === 0}
                       onClick={() => onReorder(cat.id, "up")}
-                      className={`p-1 rounded-md transition disabled:opacity-20 cursor-pointer ${
-                        isSelected
-                          ? "hover:bg-slate-800 text-slate-300"
-                          : "hover:bg-slate-200 text-slate-500"
-                      }`}
+                      className="p-1 rounded-md transition disabled:opacity-20 cursor-pointer hover:bg-slate-200/80 text-slate-500 hover:text-slate-800"
                       title="Move up"
                     >
                       <ArrowUp className="w-3 h-3" />
@@ -226,100 +233,76 @@ export function CategoryColumn({
                       type="button"
                       disabled={idx === sortedCategories.length - 1}
                       onClick={() => onReorder(cat.id, "down")}
-                      className={`p-1 rounded-md transition disabled:opacity-20 cursor-pointer ${
-                        isSelected
-                          ? "hover:bg-slate-800 text-slate-300"
-                          : "hover:bg-slate-200 text-slate-500"
-                      }`}
+                      className="p-1 rounded-md transition disabled:opacity-20 cursor-pointer hover:bg-slate-200/80 text-slate-500 hover:text-slate-800"
                       title="Move down"
                     >
                       <ArrowDown className="w-3 h-3" />
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic("selection");
+                        onOpenAttributes(cat);
+                      }}
+                      className="p-1.5 rounded-lg transition cursor-pointer hover:bg-brand-light/15 text-brand-dark"
+                      title="Manage Category Attributes"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 stroke-2" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic("selection");
+                        onToggleActive(cat.id, cat.is_active);
+                      }}
+                      className={`p-1.5 rounded-lg transition cursor-pointer ${
+                        cat.is_active
+                          ? "hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                          : "hover:bg-amber-100 text-amber-600"
+                      }`}
+                      title={cat.is_active ? "Deactivate category" : "Activate category"}
+                    >
+                      {cat.is_active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic("selection");
+                        onEdit(cat);
+                      }}
+                      className="p-1.5 rounded-lg transition cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                      title="Edit Category"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic("heavy");
+                        onDelete(cat);
+                      }}
+                      className="p-1.5 rounded-lg transition cursor-pointer hover:bg-rose-100 text-slate-300 hover:text-rose-600"
+                      title="Delete Category"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
-
-                  {/* Attributes shortcut */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic("selection");
-                      onOpenAttributes(cat);
-                    }}
-                    className={`p-1.5 rounded-lg transition cursor-pointer ${
-                      isSelected
-                        ? "hover:bg-slate-800 text-brand-light"
-                        : "hover:bg-slate-100 text-slate-400 hover:text-brand-dark"
-                    }`}
-                    title="Manage Category Attributes"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 stroke-2" />
-                  </button>
-
-                  {/* Toggle Active */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic("selection");
-                      onToggleActive(cat.id, cat.is_active);
-                    }}
-                    className={`p-1.5 rounded-lg transition cursor-pointer ${
-                      isSelected
-                        ? cat.is_active
-                          ? "hover:bg-slate-800 text-slate-300"
-                          : "hover:bg-slate-800 text-amber-400"
-                        : cat.is_active
-                        ? "hover:bg-slate-100 text-slate-400 hover:text-slate-700"
-                        : "hover:bg-amber-50 text-amber-600"
-                    }`}
-                    title={cat.is_active ? "Deactivate category" : "Activate category"}
-                  >
-                    {cat.is_active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                  </button>
-
-                  {/* Edit */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic("selection");
-                      onEdit(cat);
-                    }}
-                    className={`p-1.5 rounded-lg transition cursor-pointer ${
-                      isSelected
-                        ? "hover:bg-slate-800 text-slate-300"
-                        : "hover:bg-slate-100 text-slate-400 hover:text-slate-700"
-                    }`}
-                    title="Edit Category"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic("heavy");
-                      onDelete(cat);
-                    }}
-                    className={`p-1.5 rounded-lg transition cursor-pointer ${
-                      isSelected
-                        ? "hover:bg-rose-950 text-rose-300"
-                        : "hover:bg-rose-50 text-slate-300 hover:text-rose-600"
-                    }`}
-                    title="Delete Category"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
 
                   {/* Selected right indicator */}
                   {isSelected ? (
-                    <div className="w-5 h-5 rounded-full bg-brand-dark flex items-center justify-center text-white ml-1">
+                    <div className="w-5 h-5 rounded-full bg-brand-dark flex items-center justify-center text-white shadow-xs ml-0.5 shrink-0">
                       <ChevronRight className="w-3.5 h-3.5 stroke-3" />
                     </div>
                   ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 ml-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                 </div>
               </div>
