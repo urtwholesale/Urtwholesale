@@ -379,6 +379,28 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     });
   }, [order]);
 
+  // Return window calculation (configurable via store_settings.return_window_days)
+  const returnWindowDays = settings?.return_window_days ?? 7;
+  const returnInfo = useMemo(() => {
+    if (!order || order.status.toLowerCase() !== "delivered") {
+      return { isDelivered: false, isWithinWindow: false, daysRemaining: 0 };
+    }
+    const deliveredEv = (order.events || order.order_events || []).find(
+      (e) => e.status.toLowerCase() === "delivered"
+    );
+    const deliveryDate = deliveredEv
+      ? new Date(deliveredEv.created_at)
+      : new Date(order.updated_at || order.created_at);
+    const diffDays = Math.floor(
+      (Date.now() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return {
+      isDelivered: true,
+      isWithinWindow: diffDays <= returnWindowDays,
+      daysRemaining: Math.max(0, returnWindowDays - diffDays),
+    };
+  }, [order, returnWindowDays]);
+
   // Loading state
   if (loading) {
     return (
@@ -557,28 +579,6 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
   const statusConfig =
     statusConfigMap[order.status.toLowerCase()] || fallbackStatus;
-
-  // Return window calculation (configurable via store_settings.return_window_days)
-  const returnWindowDays = settings?.return_window_days ?? 7;
-  const returnInfo = useMemo(() => {
-    if (!order || order.status.toLowerCase() !== "delivered") {
-      return { isDelivered: false, isWithinWindow: false, daysRemaining: 0 };
-    }
-    const deliveredEv = (order.events || order.order_events || []).find(
-      (e) => e.status.toLowerCase() === "delivered"
-    );
-    const deliveryDate = deliveredEv
-      ? new Date(deliveredEv.created_at)
-      : new Date(order.updated_at || order.created_at);
-    const diffDays = Math.floor(
-      (Date.now() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return {
-      isDelivered: true,
-      isWithinWindow: diffDays <= returnWindowDays,
-      daysRemaining: Math.max(0, returnWindowDays - diffDays),
-    };
-  }, [order, returnWindowDays]);
 
   // Check customer ownership if logged in with a different user ID
   if (user && order.user_id && order.user_id !== user.id) {
