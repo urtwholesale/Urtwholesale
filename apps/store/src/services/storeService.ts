@@ -463,6 +463,7 @@ export async function getSettings(): Promise<StoreSettings> {
 
     const defaultSettings: StoreSettings = {
       whatsapp_number: "",
+      upi_id: "7000947033-2@ybl",
       store_name: "URT Wholesale",
       free_delivery_min: 999,
       shipping_fee: 49,
@@ -489,6 +490,8 @@ export async function getSettings(): Promise<StoreSettings> {
       data.forEach((row: { key: string; value: any }) => {
         if (row.key === "whatsapp_number" && typeof row.value === "string") {
           defaultSettings.whatsapp_number = row.value;
+        } else if (row.key === "upi_id" && typeof row.value === "string") {
+          defaultSettings.upi_id = row.value;
         } else if (row.key === "store_name" && typeof row.value === "string") {
           defaultSettings.store_name = row.value;
           defaultSettings.store_info.name = row.value;

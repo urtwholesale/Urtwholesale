@@ -1,5 +1,6 @@
 export interface StoreSettings {
   whatsapp_number: string;
+  upi_id?: string;
   store_name?: string;
   free_delivery_min?: number;
   shipping_fee?: number;

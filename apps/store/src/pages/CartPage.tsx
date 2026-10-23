@@ -223,7 +223,6 @@ export function CartPage({
         "";
 
       if (targetPhone) {
-        const orderUrl = `${window.location.origin}/order/${savedOrder.id}`;
         const whatsappMessage = buildWhatsAppMessage({
           orderId: savedOrder.id,
           items: (savedOrder.items || []).map((i: any) => ({
@@ -242,7 +241,7 @@ export function CartPage({
               savedOrder.customer?.address ||
               `${customer.address.trim()}, PIN: ${customer.pincode.trim()}`,
           },
-          orderUrl,
+          upiId: settings?.upi_id || "7000947033-2@ybl",
         });
 
         const whatsappCheckoutUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(

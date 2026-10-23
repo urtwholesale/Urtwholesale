@@ -814,6 +814,7 @@ export async function fetchStoreSettings(): Promise<StoreSettings> {
 
   const settings: any = {
     whatsapp_number: "",
+    upi_id: "7000947033-2@ybl",
     store_name: "URT Wholesale",
     free_delivery_min: 999,
     shipping_fee: 49,

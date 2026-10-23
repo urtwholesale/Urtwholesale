@@ -23,7 +23,10 @@ export interface BuildWhatsAppMessageOptions {
   total: number;
   customer?: CustomerInfo;
   orderUrl?: string;
+  upiId?: string;
 }
+
+export const DEFAULT_UPI_ID = "7000947033-2@ybl";
 
 const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
 
@@ -49,7 +52,7 @@ export function buildWhatsAppMessage({
   shipping = "FREE",
   total,
   customer,
-  orderUrl,
+  upiId = DEFAULT_UPI_ID,
 }: BuildWhatsAppMessageOptions): string {
   const formattedOrderId = orderId || "TEMP";
 
@@ -77,6 +80,7 @@ export function buildWhatsAppMessage({
   const customerName = customer?.name?.trim() || "";
   const customerPhone = customer?.phone?.trim() || "";
   const customerAddress = customer?.address?.trim() || "";
+  const paymentUpiId = (upiId || DEFAULT_UPI_ID).trim();
 
   const lines = [
     "Hello URT Wholesale 👋",
@@ -93,8 +97,8 @@ export function buildWhatsAppMessage({
     `📍 *Address:* ${customerAddress}`,
   ];
 
-  if (orderUrl && orderUrl.trim()) {
-    lines.push("", "🔗 View order & pay:", orderUrl.trim());
+  if (paymentUpiId) {
+    lines.push("", "💳 *UPI ID for Payment:*", paymentUpiId);
   }
 
   lines.push("", "Please confirm availability. Thank you! 🙏");
