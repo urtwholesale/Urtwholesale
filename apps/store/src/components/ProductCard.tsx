@@ -6,7 +6,7 @@ import { triggerHaptic } from "../utils/haptics";
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart?: (product: Product) => void;
+  onAddToCart?: (product: Product, quantity?: number) => void;
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
@@ -32,7 +32,9 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     triggerHaptic("success");
 
     setIsAdded(true);
-    onAddToCart?.(product);
+    const firstTierMin = tiers[0]?.min_qty;
+    const addQty = Math.max(10, product.min_order_qty || firstTierMin || 10);
+    onAddToCart?.(product, addQty);
 
     // Keep checkmark for 1.8 seconds, then morph smoothly back to plus
     setTimeout(() => {

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 interface HomePageProps {
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, quantity?: number) => void;
 }
 
 export function HomePage({ onAddToCart }: HomePageProps) {
@@ -270,7 +270,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               <ProductCard
                 key={product.id}
                 product={product}
-                onAddToCart={onAddToCart}
+                onAddToCart={(p, qty) => onAddToCart(p, qty ?? Math.max(10, p.min_order_qty || 10))}
               />
             ))}
           </div>
@@ -353,7 +353,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               <ProductCard
                 key={product.id}
                 product={product}
-                onAddToCart={onAddToCart}
+                onAddToCart={(p, qty) => onAddToCart(p, qty ?? Math.max(10, p.min_order_qty || 10))}
               />
             ))}
           </div>

@@ -102,7 +102,8 @@ export function CartPage({
   // Per-line calculations
   const lineDetails = cartItems.map(({ product, quantity }) => {
     const tiers = product.price_tiers || [];
-    const minQty = product.min_order_qty || 1;
+    const firstTierMin = tiers[0]?.min_qty;
+    const minQty = Math.max(1, product.min_order_qty || firstTierMin || 1);
     const step = product.order_qty_step || 1;
     const unitPrice = getUnitPrice(tiers, quantity);
     const lineTotal = unitPrice * quantity;

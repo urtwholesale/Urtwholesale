@@ -159,7 +159,8 @@ export default function App() {
           // If product was deleted, inactive, or stock is 0, drop it
           if (!live || live.stock <= 0) continue;
 
-          const minQty = live.min_order_qty || 1;
+          const firstTierMin = live.price_tiers?.[0]?.min_qty;
+          const minQty = Math.max(1, live.min_order_qty || firstTierMin || 1);
           const step = live.order_qty_step || 1;
           let qty = item.quantity;
 
@@ -230,15 +231,18 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  function handleAddToCart(product: Product, quantity = 1) {
+  function handleAddToCart(product: Product, quantity?: number) {
     triggerHaptic("success");
+    const firstTierMin = product.price_tiers?.[0]?.min_qty;
+    const resolvedMin = Math.max(10, product.min_order_qty || firstTierMin || 10);
+    const qtyToAdd = quantity !== undefined ? quantity : resolvedMin;
     setCartItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id);
-      let newQty = quantity;
+      let newQty = qtyToAdd;
       if (existingIndex > -1) {
         const updated = [...prev];
         const existing = updated[existingIndex]!;
-        newQty = existing.quantity + quantity;
+        newQty = existing.quantity + qtyToAdd;
         const clampedQty = product.stock ? Math.min(newQty, product.stock) : newQty;
         updated[existingIndex] = {
           ...existing,
@@ -251,7 +255,7 @@ export default function App() {
       return [...prev, { product, quantity: newQty }];
     });
 
-    setToastMessage(`Added ${product.name} to cart`);
+    setToastMessage(`Added ${qtyToAdd} × ${product.name} to cart`);
     setTimeout(() => {
       setToastMessage(null);
     }, 2400);
