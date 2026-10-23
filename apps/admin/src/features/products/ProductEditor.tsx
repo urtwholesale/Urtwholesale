@@ -34,7 +34,6 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [categories, setCategories] = useState<Category[]>([]);
   const [parentCategoryId, setParentCategoryId] = useState<string>("");
   const [subcategoryId, setSubcategoryId] = useState<string>("");
-  const [subcategory2Id, setSubcategory2Id] = useState<string>("");
 
   // Metadata form fields
   const [name, setName] = useState(product?.name || "");
@@ -109,14 +108,6 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.name.localeCompare(b.name));
   }, [parentCategoryId, categories]);
 
-  // Level 3: Subcategory 2 (direct children of the selected Level 2 subcategory)
-  const level3Categories = useMemo(() => {
-    if (!subcategoryId) return [];
-    return categories
-      .filter((c) => c.parent_id === subcategoryId)
-      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.name.localeCompare(b.name));
-  }, [subcategoryId, categories]);
-
   useEffect(() => {
     fetchCategories()
       .then((cats) => {
@@ -134,11 +125,10 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
             }
             const l1 = chain[0]?.id || "";
             const l2 = chain[1]?.id || "";
-            const l3 = chain[2]?.id || "";
 
             setParentCategoryId(l1);
             setSubcategoryId(l2);
-            setSubcategory2Id(l3);
+            setCategoryId(l2 || l1);
           }
         }
       })
@@ -148,19 +138,12 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   function handleParentCategoryChange(newParentId: string) {
     setParentCategoryId(newParentId);
     setSubcategoryId("");
-    setSubcategory2Id("");
     setCategoryId(newParentId);
   }
 
   function handleSubcategoryChange(newSubId: string) {
     setSubcategoryId(newSubId);
-    setSubcategory2Id("");
     setCategoryId(newSubId || parentCategoryId);
-  }
-
-  function handleSubcategory2Change(newSub2Id: string) {
-    setSubcategory2Id(newSub2Id);
-    setCategoryId(newSub2Id || subcategoryId || parentCategoryId);
   }
 
   // Auto-slugify name on new product
@@ -438,8 +421,8 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 />
               </div>
 
-              {/* Category Hierarchy: Category -> Subcategory -> Subcategory 2 */}
-              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Category Hierarchy: Category -> Subcategory -> Product */}
+              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* 1. Category */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700">Category</label>
@@ -493,43 +476,6 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                     )}
                   </select>
                 </div>
-
-                {/* 3. Subcategory 2 */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Subcategory 2</span>
-                    {level3Categories.length > 0 && (
-                      <span className="text-[10px] text-brand-dark font-medium bg-brand-light/30 px-1.5 py-0.5 rounded-md">
-                        {level3Categories.length}
-                      </span>
-                    )}
-                  </label>
-                  <select
-                    value={subcategory2Id}
-                    onChange={(e) => handleSubcategory2Change(e.target.value)}
-                    disabled={!subcategoryId || level3Categories.length === 0}
-                    className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:ring-2 focus:ring-brand-light focus:outline-none bg-white transition cursor-pointer ${
-                      !subcategoryId || level3Categories.length === 0
-                        ? "border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
-                        : "border-slate-200 text-slate-800"
-                    }`}
-                  >
-                    {!subcategoryId ? (
-                      <option value="">Select Subcategory first...</option>
-                    ) : level3Categories.length === 0 ? (
-                      <option value="">None available</option>
-                    ) : (
-                      <>
-                        <option value="">Select Subcategory 2 (Optional)...</option>
-                        {level3Categories.map((sub2) => (
-                          <option key={sub2.id} value={sub2.id}>
-                            {sub2.name}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                </div>
               </div>
 
               {/* Selected Path Breadcrumb Pill */}
@@ -547,11 +493,11 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                       </span>
                     </>
                   )}
-                  {subcategory2Id && (
+                  {name && (
                     <>
                       <span className="text-slate-400">›</span>
-                      <span className="text-brand-dark font-bold">
-                        {level3Categories.find((s) => s.id === subcategory2Id)?.name}
+                      <span className="text-slate-700 font-bold bg-white border border-slate-200/80 px-1.5 py-0.5 rounded text-[10px] shadow-2xs">
+                        {name} (Product)
                       </span>
                     </>
                   )}
