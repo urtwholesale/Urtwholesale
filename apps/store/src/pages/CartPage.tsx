@@ -182,7 +182,7 @@ export function CartPage({
     return Object.keys(newErrors).length === 0;
   }
 
-  async function handleCheckout(isWhatsApp = false) {
+  async function handleCheckout() {
     if (isSubmitting) return;
 
     if (!validateForm()) {
@@ -217,7 +217,12 @@ export function CartPage({
       onClearCart();
 
       // 3. Build WhatsApp message using SERVER-RETURNED totals and items
-      if (isWhatsApp && whatsappNumber) {
+      const targetPhone =
+        whatsappNumber ||
+        settings?.whatsapp_number?.trim() ||
+        "";
+
+      if (targetPhone) {
         const orderUrl = `${window.location.origin}/order/${savedOrder.id}`;
         const whatsappMessage = buildWhatsAppMessage({
           orderId: savedOrder.id,
@@ -240,7 +245,7 @@ export function CartPage({
           orderUrl,
         });
 
-        const whatsappCheckoutUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+        const whatsappCheckoutUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(
           whatsappMessage
         )}`;
         window.open(whatsappCheckoutUrl, "_blank");
@@ -603,46 +608,24 @@ export function CartPage({
             </span>
           </div>
 
-          <div className="space-y-2.5 pt-2">
-            {/* WhatsApp Checkout (Only shown if whatsappNumber configured) */}
-            {whatsappNumber && (
-              <button
-                type="button"
-                onClick={() => handleCheckout(true)}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center space-x-2 py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99] cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Verifying Order with Server...</span>
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="w-4.5 h-4.5" />
-                    <span>Checkout via WhatsApp</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            {/* Direct Order Confirmation */}
+          <div className="pt-2">
+            {/* WhatsApp Checkout */}
             <button
               type="button"
-              onClick={() => handleCheckout(false)}
+              onClick={handleCheckout}
               disabled={isSubmitting}
-              className="w-full py-3.5 px-4 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99] cursor-pointer disabled:opacity-60 flex items-center justify-center space-x-2"
-              style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-              }}
+              className="w-full flex items-center justify-center space-x-2 py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99] cursor-pointer"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Placing Verified Order...</span>
+                  <span>Verifying Order with Server...</span>
                 </>
               ) : (
-                <span>Confirm Wholesale Order</span>
+                <>
+                  <MessageCircle className="w-4.5 h-4.5" />
+                  <span>Checkout via WhatsApp</span>
+                </>
               )}
             </button>
           </div>
