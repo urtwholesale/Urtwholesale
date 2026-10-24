@@ -13,8 +13,10 @@ import {
   RotateCcw,
   Sparkles,
   ChevronDown,
+  Layers,
   X,
 } from "lucide-react";
+import { triggerHaptic } from "../utils/haptics";
 
 interface MarketplacePageProps {
   onAddToCart: (product: Product) => void;
@@ -39,10 +41,13 @@ export function MarketplacePage({
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const initialCat = searchParams.get("category") || "all";
+  const initialSubCat = searchParams.get("subcategory") || searchParams.get("sub") || null;
   const initialSort = (searchParams.get("sort") as "newest" | "price_asc" | "price_desc") || "newest";
 
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]); // Parent categories
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCat);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(initialSubCat);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [sortOption, setSortOption] = useState<"newest" | "price_asc" | "price_desc">(initialSort);
   const [priceBracketIndex, setPriceBracketIndex] = useState(0);
@@ -55,13 +60,26 @@ export function MarketplacePage({
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 12;
 
-  // Load categories
+  // Load all categories and resolve parent vs child
   useEffect(() => {
     async function loadCats() {
       try {
         const cats = await fetchCategories();
-        // Show main parent categories in top sticky chip bar
-        setCategories(cats.filter((c) => c.parent_id === null));
+        setAllCategories(cats);
+        const parents = cats.filter((c) => c.parent_id === null);
+        setCategories(parents);
+
+        // If initial category in URL was actually a subcategory slug, resolve parent
+        if (initialCat && initialCat !== "all") {
+          const sub = cats.find((c) => c.slug === initialCat && c.parent_id !== null);
+          if (sub) {
+            const parent = cats.find((p) => p.id === sub.parent_id);
+            if (parent) {
+              setSelectedCategory(parent.slug);
+              setSelectedSubCategory(sub.slug);
+            }
+          }
+        }
       } catch (e) {
         console.error("Failed to load categories:", e);
       }
@@ -69,13 +87,24 @@ export function MarketplacePage({
     loadCats();
   }, []);
 
-  // Sync category from URL param if changed externally
+  // Sync category and subcategory from URL params if changed externally
   useEffect(() => {
-    const urlCat = searchParams.get("category");
-    if (urlCat && urlCat !== selectedCategory) {
+    const urlCat = searchParams.get("category") || "all";
+    const urlSub = searchParams.get("subcategory") || searchParams.get("sub") || null;
+    if (urlCat !== selectedCategory) {
       setSelectedCategory(urlCat);
     }
+    if (urlSub !== selectedSubCategory) {
+      setSelectedSubCategory(urlSub);
+    }
   }, [searchParams]);
+
+  // Derived active parent and available subcategories
+  const activeParent = categories.find((c) => c.slug === selectedCategory);
+  const subCategories = activeParent
+    ? allCategories.filter((c) => c.parent_id === activeParent.id)
+    : allCategories.filter((c) => c.parent_id !== null);
+  const activeSubCategory = allCategories.find((c) => c.slug === selectedSubCategory);
 
   const loadInitialProducts = async () => {
     setLoading(true);
@@ -83,8 +112,13 @@ export function MarketplacePage({
     setPage(1);
     try {
       const bracket = PRICE_BRACKETS[priceBracketIndex];
+      // Target slug: if subcategory is selected, query that specific subcategory;
+      // otherwise query parent category (which automatically resolves all descendants);
+      // if "all", query all store catalog.
+      const targetSlug = selectedSubCategory || (selectedCategory === "all" ? undefined : selectedCategory);
+
       const res = await fetchProducts({
-        categorySlug: selectedCategory === "all" ? undefined : selectedCategory,
+        categorySlug: targetSlug,
         isUrbanratBrand: brandOnly ? true : undefined,
         search: searchQuery,
         sort: sortOption,
@@ -107,7 +141,7 @@ export function MarketplacePage({
   // Load products whenever filters change
   useEffect(() => {
     loadInitialProducts();
-  }, [selectedCategory, searchQuery, sortOption, priceBracketIndex, brandOnly]);
+  }, [selectedCategory, selectedSubCategory, searchQuery, sortOption, priceBracketIndex, brandOnly]);
 
   // Load more (pagination / infinite scroll button)
   async function handleLoadMore() {
@@ -117,8 +151,10 @@ export function MarketplacePage({
     try {
       const bracket = PRICE_BRACKETS[priceBracketIndex];
       const nextPage = page + 1;
+      const targetSlug = selectedSubCategory || (selectedCategory === "all" ? undefined : selectedCategory);
+
       const res = await fetchProducts({
-        categorySlug: selectedCategory === "all" ? undefined : selectedCategory,
+        categorySlug: targetSlug,
         isUrbanratBrand: brandOnly ? true : undefined,
         search: searchQuery,
         sort: sortOption,
@@ -138,17 +174,43 @@ export function MarketplacePage({
   }
 
   function handleCategoryChange(slug: string) {
+    triggerHaptic("selection");
     setSelectedCategory(slug);
+    setSelectedSubCategory(null);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (slug === "all") next.delete("category");
-      else next.set("category", slug);
+      if (slug === "all") {
+        next.delete("category");
+        next.delete("subcategory");
+        next.delete("sub");
+      } else {
+        next.set("category", slug);
+        next.delete("subcategory");
+        next.delete("sub");
+      }
+      return next;
+    });
+  }
+
+  function handleSubCategoryChange(subSlug: string | null) {
+    triggerHaptic("selection");
+    setSelectedSubCategory(subSlug);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (!subSlug) {
+        next.delete("subcategory");
+        next.delete("sub");
+      } else {
+        next.set("subcategory", subSlug);
+      }
       return next;
     });
   }
 
   function handleResetFilters() {
+    triggerHaptic("selection");
     setSelectedCategory("all");
+    setSelectedSubCategory(null);
     setSearchQuery("");
     setSortOption("newest");
     setPriceBracketIndex(0);
@@ -156,6 +218,7 @@ export function MarketplacePage({
   }
 
   const activeFilterCount =
+    (selectedSubCategory ? 1 : 0) +
     (searchQuery.trim() ? 1 : 0) +
     (sortOption !== "newest" ? 1 : 0) +
     (priceBracketIndex !== 0 ? 1 : 0);
@@ -169,7 +232,7 @@ export function MarketplacePage({
         onClick={() => handleCategoryChange("all")}
         className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition active:scale-95 cursor-pointer ${
           selectedCategory === "all"
-            ? "text-white shadow-xs"
+            ? "text-white shadow-xs font-black"
             : "bg-white text-slate-600 border border-slate-200/90 hover:bg-slate-50"
         }`}
         style={
@@ -190,7 +253,7 @@ export function MarketplacePage({
             onClick={() => handleCategoryChange(cat.slug)}
             className={`shrink-0 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 cursor-pointer ${
               isSelected
-                ? "text-white shadow-xs"
+                ? "text-white shadow-xs font-black"
                 : "bg-white text-slate-600 border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300"
             }`}
             style={
@@ -215,9 +278,70 @@ export function MarketplacePage({
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-12">
-      {/* ── Category Filter Chips Strip (Mobile & Desktop) ── */}
-      <div className="-mx-4 px-4 sm:-mx-6 sm:px-6 py-2 bg-[#F8F9FB]/90 backdrop-blur-md border-b border-slate-200/60 shadow-2xs">
+      {/* ── Category & Subcategory Filter Chips Strips (Mobile & Desktop) ── */}
+      <div className="-mx-4 px-4 sm:-mx-6 sm:px-6 py-2.5 bg-surface/90 backdrop-blur-md border-b border-slate-200/60 shadow-2xs space-y-2">
+        {/* Row 1: Parent Category Chips */}
         {categoryChips}
+
+        {/* Row 2: Subcategories (Dedicated strip for easy access) */}
+        {subCategories.length > 0 && (
+          <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none no-scrollbar pt-1.5 border-t border-slate-200/60 animate-in fade-in slide-in-from-top-1 duration-200">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0 mr-1 flex items-center space-x-1">
+              <Layers className="w-3.5 h-3.5 text-brand-dark" />
+              <span className="hidden sm:inline">Subcategories:</span>
+            </span>
+
+            {/* "All in Category" pill */}
+            <button
+              type="button"
+              onClick={() => handleSubCategoryChange(null)}
+              className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition active:scale-95 cursor-pointer ${
+                selectedSubCategory === null
+                  ? "bg-slate-900 text-white shadow-xs font-black"
+                  : "bg-white text-slate-600 border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300"
+              }`}
+            >
+              All {activeParent ? activeParent.name : "Subcategories"}
+            </button>
+
+            {/* Subcategory individual pills */}
+            {subCategories.map((sub) => {
+              const isSelected = selectedSubCategory === sub.slug;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => {
+                    if (selectedCategory === "all" && sub.parent_id) {
+                      const p = allCategories.find((c) => c.id === sub.parent_id);
+                      if (p) setSelectedCategory(p.slug);
+                    }
+                    handleSubCategoryChange(sub.slug);
+                  }}
+                  className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-semibold transition active:scale-95 cursor-pointer ${
+                    isSelected
+                      ? "text-white shadow-xs font-black"
+                      : "bg-white text-slate-700 border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300"
+                  }`}
+                  style={
+                    isSelected
+                      ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
+                      : {}
+                  }
+                >
+                  {sub.image_url && (
+                    <img
+                      src={sub.image_url}
+                      alt=""
+                      className="w-3 h-3 rounded-full object-cover shrink-0"
+                    />
+                  )}
+                  <span>{sub.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Page Header ── */}
@@ -226,7 +350,7 @@ export function MarketplacePage({
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
             <span>{brandOnly ? "Urbanrat Original Collection" : "Marketplace"}</span>
             {brandOnly && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#5ADBE5]/20 text-[#0A82A8]">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-light/20 text-brand-dark">
                 Official
               </span>
             )}
@@ -234,6 +358,10 @@ export function MarketplacePage({
           <p className="text-xs text-slate-500 mt-0.5">
             {brandOnly
               ? "Signature high-spec mobile electronics engineered by Urbanrat"
+              : activeSubCategory
+              ? `Filtered by subcategory: ${activeSubCategory.name}`
+              : activeParent
+              ? `Browsing ${activeParent.name} & subcategories`
               : "Direct factory inventory of accessories & components"}
           </p>
         </div>
@@ -244,22 +372,78 @@ export function MarketplacePage({
         </div>
       </div>
 
-      {/* ── Desktop Search Bar & Filter Controls (Hidden on mobile per user request) ── */}
+      {/* ── Desktop Search Bar & Filter Controls (Includes Subcategory Dropdown) ── */}
       <div className="hidden md:grid md:grid-cols-12 gap-2.5">
-        {/* Search */}
-        <div className="col-span-6 relative">
+        {/* Search (5 cols) */}
+        <div className="col-span-5 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search products by model, specs or SKU..."
-            className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-[#0A82A8] shadow-2xs transition"
+            className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark shadow-2xs transition"
           />
         </div>
 
-        {/* Sort Dropdown */}
+        {/* Subcategory Dropdown (3 cols) */}
         <div className="col-span-3 relative">
+          <div className="relative">
+            <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <select
+              value={selectedSubCategory || "all"}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "all") {
+                  handleSubCategoryChange(null);
+                } else {
+                  const sub = allCategories.find((c) => c.slug === val);
+                  if (sub && sub.parent_id) {
+                    const parent = allCategories.find((p) => p.id === sub.parent_id);
+                    if (parent && selectedCategory !== parent.slug) {
+                      setSelectedCategory(parent.slug);
+                    }
+                  }
+                  handleSubCategoryChange(val);
+                }
+              }}
+              aria-label="Filter by subcategory"
+              className="w-full pl-8 pr-8 py-2.5 text-xs bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark shadow-2xs appearance-none font-semibold text-slate-700 cursor-pointer truncate"
+            >
+              <option value="all">
+                {selectedCategory === "all"
+                  ? "All Subcategories"
+                  : `All ${activeParent?.name || "Subcategories"}`}
+              </option>
+
+              {selectedCategory !== "all" && activeParent ? (
+                subCategories.map((sub) => (
+                  <option key={sub.id} value={sub.slug}>
+                    {sub.name}
+                  </option>
+                ))
+              ) : (
+                categories.map((parent) => {
+                  const children = allCategories.filter((c) => c.parent_id === parent.id);
+                  if (children.length === 0) return null;
+                  return (
+                    <optgroup key={parent.id} label={parent.name}>
+                      {children.map((sub) => (
+                        <option key={sub.id} value={sub.slug}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })
+              )}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Sort Dropdown (2 cols) */}
+        <div className="col-span-2 relative">
           <div className="relative">
             <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <select
@@ -268,25 +452,25 @@ export function MarketplacePage({
                 setSortOption(e.target.value as "newest" | "price_asc" | "price_desc")
               }
               aria-label="Sort products"
-              className="w-full pl-8 pr-8 py-2.5 text-xs bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-[#0A82A8] shadow-2xs appearance-none font-semibold text-slate-700 cursor-pointer"
+              className="w-full pl-8 pr-8 py-2.5 text-xs bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark shadow-2xs appearance-none font-semibold text-slate-700 cursor-pointer"
             >
-              <option value="newest">Newest First</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
+              <option value="newest">Newest</option>
+              <option value="price_asc">Price: Low</option>
+              <option value="price_desc">Price: High</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
         </div>
 
-        {/* Price Bracket Dropdown */}
-        <div className="col-span-3 relative">
+        {/* Price Bracket Dropdown (2 cols) */}
+        <div className="col-span-2 relative">
           <div className="relative">
             <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <select
               value={priceBracketIndex}
               onChange={(e) => setPriceBracketIndex(Number(e.target.value))}
               aria-label="Filter by price range"
-              className="w-full pl-8 pr-8 py-2.5 text-xs bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-[#0A82A8] shadow-2xs appearance-none font-semibold text-slate-700 cursor-pointer"
+              className="w-full pl-8 pr-8 py-2.5 text-xs bg-white border border-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark shadow-2xs appearance-none font-semibold text-slate-700 cursor-pointer"
             >
               {PRICE_BRACKETS.map((b, idx) => (
                 <option key={idx} value={idx}>
@@ -301,24 +485,53 @@ export function MarketplacePage({
 
       {/* ── Active Filters Bar (if active) ── */}
       {(selectedCategory !== "all" ||
+        selectedSubCategory ||
         searchQuery ||
         priceBracketIndex > 0 ||
         sortOption !== "newest") && (
-        <div className="flex items-center justify-between text-xs text-slate-500 bg-white px-3 py-2 rounded-xl border border-slate-100">
-          <div className="flex items-center space-x-2">
-            <span className="font-semibold text-slate-700">Filters active:</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 bg-white px-3.5 py-2.5 rounded-2xl border border-slate-100 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span className="font-bold text-slate-700 text-[11px]">Filters active:</span>
+
             {selectedCategory !== "all" && (
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
-                Category: {selectedCategory}
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800 font-semibold text-[11px]">
+                <span>Category: {activeParent?.name || selectedCategory}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange("all")}
+                  className="text-slate-400 hover:text-slate-700 cursor-pointer ml-0.5"
+                  title="Clear category"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </span>
             )}
+
+            {selectedSubCategory && (
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-brand-light/15 text-brand-dark font-bold text-[11px] border border-brand-light/30">
+                <Layers className="w-3 h-3 text-brand-dark" />
+                <span>
+                  Subcategory: {activeSubCategory?.name || selectedSubCategory}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleSubCategoryChange(null)}
+                  className="text-brand-dark hover:text-[#065A75] cursor-pointer ml-0.5"
+                  title="Clear subcategory"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
             {priceBracketIndex > 0 && (
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
+              <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-medium text-[11px]">
                 {PRICE_BRACKETS[priceBracketIndex]?.label}
               </span>
             )}
+
             {searchQuery && (
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium truncate max-w-[120px]">
+              <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-medium text-[11px] truncate max-w-35">
                 "{searchQuery}"
               </span>
             )}
@@ -327,10 +540,10 @@ export function MarketplacePage({
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center space-x-1 text-rose-600 hover:text-rose-700 font-bold cursor-pointer"
+            className="inline-flex items-center space-x-1 text-rose-600 hover:text-rose-700 font-bold text-xs cursor-pointer active:scale-95 transition shrink-0 ml-auto"
           >
             <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
+            <span>Reset All</span>
           </button>
         </div>
       )}
@@ -372,7 +585,7 @@ export function MarketplacePage({
         </div>
       ) : (
         <EmptyState
-          icon={<Sparkles className="w-8 h-8 text-[#0A82A8]" />}
+          icon={<Sparkles className="w-8 h-8 text-brand-dark" />}
           title="No products match your filters"
           description="Try broadening your search keywords or resetting price and category filters."
           actionText="Reset All Filters"
@@ -388,11 +601,11 @@ export function MarketplacePage({
           aria-label="Search and filter products"
           className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-slate-900 text-white shadow-xl hover:bg-slate-800 active:scale-95 transition-all cursor-pointer border border-slate-700/60"
         >
-          <SlidersHorizontal className="w-4 h-4 stroke-[2.2] text-[#5ADBE5]" />
+          <SlidersHorizontal className="w-4 h-4 stroke-[2.2] text-brand-light" />
           <span className="text-xs font-bold tracking-wide">Filter</span>
           {activeFilterCount > 0 && (
             <span
-              className="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black text-slate-950 flex items-center justify-center shadow-xs"
+              className="min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-black text-slate-950 flex items-center justify-center shadow-xs"
               style={{
                 background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
               }}
@@ -455,7 +668,7 @@ export function MarketplacePage({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Model, specs, or SKU..."
-                  className="w-full pl-10 pr-9 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-[#0A82A8] transition"
+                  className="w-full pl-10 pr-9 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark transition"
                 />
                 {searchQuery && (
                   <button
@@ -469,7 +682,69 @@ export function MarketplacePage({
               </div>
             </div>
 
-            {/* 2. Sort Options */}
+            {/* 2. Subcategories Filter (Mobile Drawer) */}
+            {subCategories.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                    <Layers className="w-3.5 h-3.5 text-brand-dark" />
+                    <span>Subcategories ({activeParent ? activeParent.name : "All"})</span>
+                  </label>
+                  {selectedSubCategory && (
+                    <button
+                      type="button"
+                      onClick={() => handleSubCategoryChange(null)}
+                      className="text-[11px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto no-scrollbar py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSubCategoryChange(null)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      selectedSubCategory === null
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    All {activeParent ? activeParent.name : "Subcategories"}
+                  </button>
+                  {subCategories.map((sub) => {
+                    const isSelected = selectedSubCategory === sub.slug;
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => {
+                          if (selectedCategory === "all" && sub.parent_id) {
+                            const p = allCategories.find((c) => c.id === sub.parent_id);
+                            if (p) setSelectedCategory(p.slug);
+                          }
+                          handleSubCategoryChange(sub.slug);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                          isSelected
+                            ? "text-white shadow-xs font-black"
+                            : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+                        }`}
+                        style={
+                          isSelected
+                            ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
+                            : {}
+                        }
+                      >
+                        {sub.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Sort Options */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700">Sort By</label>
               <div className="grid grid-cols-3 gap-2">

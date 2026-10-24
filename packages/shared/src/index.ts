@@ -1,6 +1,9 @@
 export type { Product } from "./types/product";
 export type {
   Category,
+  CategoryNode,
+  CategoryProductCounts,
+  ProductListFilters,
   CategoryAttribute,
   CategoryAttributeType,
   InheritedCategoryAttribute,
@@ -114,5 +117,47 @@ export {
   type CatalogImage,
   type ParsedSkuHint,
 } from "./catalogImages";
+
+export {
+  normalizeHeaderKey,
+  HEADER_ALIASES,
+  CANONICAL_FIELD_ALIASES,
+  CANONICAL_FIELD_OPTIONS,
+  resolveCanonicalHeader,
+  parseBool,
+} from "./catalogHeaders";
+
+export {
+  buildCategoryTree,
+  getCategoryPath,
+  getCategoryBreadcrumbs,
+} from "./categoryTree";
+
+export type {
+  BulkOperationType,
+  BulkOperationStatus,
+  BulkOperationRecord,
+  BulkMrpPatch,
+  BulkProductPatch,
+  BulkTierMode,
+  BulkTierAdjustmentPayload,
+  BulkTierFromBasePayload,
+  BulkTierPayload,
+  BulkStockMode,
+  BulkStockSheetRow,
+  BulkStockItemPayload,
+  BulkImageMode,
+  BulkPreviewRow,
+  BulkOpResult,
+} from "./types/bulk";
+
+export {
+  computeTierAdjustment,
+  computeTiersFromBase,
+  validateTiers,
+  computeStockResult,
+  computeImageUpdate,
+} from "./bulkOps";
+
 
 

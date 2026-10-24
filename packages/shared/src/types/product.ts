@@ -25,6 +25,8 @@ export interface Product {
   rating_count?: number;
   is_trending?: boolean;
   low_stock_threshold?: number;
+  brand?: string | null;
+  attributes?: Record<string, any>;
   price_tiers?: PriceTier[];
   created_at: string;
   updated_at?: string;

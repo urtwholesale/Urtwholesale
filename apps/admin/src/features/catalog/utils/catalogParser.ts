@@ -1,17 +1,97 @@
+import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import type { BulkCatalogParsedRow } from "../types";
-import { normalizeKeywords, validateCatalogImageUrl } from "@urbanrat/shared";
-import { supabase } from "../../../lib/supabase";
+import {
+  normalizeKeywords,
+  resolveCanonicalHeader,
+  parseBool,
+} from "@urbanrat/shared";
 
-/**
- * Normalizes header string for fuzzy matching (e.g. "Product Name*" -> "productname")
- */
-function normalizeHeader(h: string): string {
-  return String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+export interface BulkCatalogParseResult {
+  rows: BulkCatalogParsedRow[];
+  ignoredColumns: string[];
+  duplicateColumns?: { canonical: string; headers: string[] }[];
+  rawHeaders: string[];
 }
 
 /**
- * Re-validates a single row (used when editing fields or keywords inline in preview)
+ * Validates a single bulk import image URL.
+ * Accepts:
+ * - HTTPS URLs from the 'product-images' bucket
+ * - HTTPS URLs from the 'catalog-images' bucket
+ * - Any valid HTTPS URL ending in a standard image extension or from standard image hosts
+ */
+export function validateBulkImportImageUrl(url: string): { valid: boolean; error?: string } {
+  const trimmed = (url || "").trim();
+  if (!trimmed) {
+    return { valid: false, error: "Image URL is empty" };
+  }
+
+  const isLocalDev = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(trimmed);
+  if (!/^https:\/\//i.test(trimmed) && !isLocalDev) {
+    return { valid: false, error: "Image URL must start with https://" };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return { valid: false, error: "Image link is not a valid URL" };
+  }
+
+  const lower = parsed.href.toLowerCase();
+  if (
+    lower.includes("/product-images/") ||
+    lower.includes("/catalog-images/")
+  ) {
+    return { valid: true };
+  }
+
+  const pathname = parsed.pathname.toLowerCase();
+  const match = pathname.match(/\.(jpg|jpeg|png|webp|gif|avif|svg|bmp|tiff|tif)(\?.*)?$/i);
+  if (!match) {
+    if (
+      parsed.hostname.includes("unsplash.com") ||
+      parsed.hostname.includes("cloudinary.com") ||
+      parsed.hostname.includes("imgur.com") ||
+      parsed.hostname.includes("supabase.co")
+    ) {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      error: "URL does not end with a recognized image extension (.jpg, .png, .webp, etc.)",
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Generates URL slug ensuring symbols like '+' convert to '-plus-' instead of merging.
+ */
+export function generateSlug(name: string): string {
+  return (name || "")
+    .toLowerCase()
+    .replace(/\+/g, "-plus-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Generates fallback SKU ensuring symbols like '+' convert to '-PLUS-'.
+ */
+export function generateSku(name: string, rowNumber: number): string {
+  const clean = (name || "")
+    .toUpperCase()
+    .replace(/\+/g, "-PLUS-")
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `URT-${clean.slice(0, 20)}-${rowNumber}`;
+}
+
+/**
+ * Re-validates a single row (used when editing fields inline in preview)
  */
 export function revalidateRow(row: BulkCatalogParsedRow): BulkCatalogParsedRow {
   const errors: string[] = [];
@@ -38,7 +118,15 @@ export function revalidateRow(row: BulkCatalogParsedRow): BulkCatalogParsedRow {
     errors.push("Minimum order quantity must be at least 1.");
   }
 
-  // Check Volume Tiers
+  if (isNaN(row.orderQtyStep) || row.orderQtyStep < 1) {
+    errors.push("Order quantity step must be at least 1.");
+  }
+
+  if (isNaN(row.lowStockThreshold) || row.lowStockThreshold < 0) {
+    errors.push("Low stock alert threshold must be greater than or equal to 0.");
+  }
+
+  // Check Volume Tiers: strictly increasing qty, non-increasing price
   if (row.tiers && row.tiers.length > 1) {
     for (let t = 1; t < row.tiers.length; t++) {
       const prev = row.tiers[t - 1];
@@ -66,11 +154,9 @@ export function revalidateRow(row: BulkCatalogParsedRow): BulkCatalogParsedRow {
   // Check images
   if (row.images && row.images.length > 0) {
     row.images.forEach((imgUrl, idx) => {
-      if (imgUrl && imgUrl.trim()) {
-        const v = validateCatalogImageUrl(imgUrl.trim());
-        if (!v.valid) {
-          errors.push(`Image ${idx + 1}: ${v.errors.join(", ")}`);
-        }
+      const v = validateBulkImportImageUrl(imgUrl);
+      if (!v.valid) {
+        errors.push(`Image ${idx + 1}: ${v.error}`);
       }
     });
   }
@@ -83,31 +169,81 @@ export function revalidateRow(row: BulkCatalogParsedRow): BulkCatalogParsedRow {
 }
 
 /**
- * Parses and validates uploaded CSV/Excel spreadsheet data against Urbanrat catalog constraints.
+ * Parses 2D array of string cells with canonical header mapping, specs JSON parsing,
+ * tier rules (1-5), boolean casting, duplicate detection, and suggested SKU generation.
  */
-export function parseSpreadsheetRows(dataLines: string[][]): BulkCatalogParsedRow[] {
-  // Filter out comment lines starting with '#'
+export function parseSpreadsheetRowsWithReport(
+  dataLines: string[][],
+  customMappings?: Record<string, string>
+): BulkCatalogParseResult {
+  // Filter out empty rows and comment rows starting with '#'
   const nonCommentLines = dataLines.filter(
-    (row) => row.length > 0 && !String(row[0] || "").startsWith("#")
+    (row) => row && row.length > 0 && !String(row[0] || "").trim().startsWith("#")
   );
 
   if (nonCommentLines.length < 2) {
     throw new Error("File must contain a header row and at least one product row.");
   }
 
-  const rawHeaders = nonCommentLines[0] || [];
-  const headerMap = new Map<string, number>();
-  rawHeaders.forEach((h, idx) => {
-    headerMap.set(normalizeHeader(String(h)), idx);
+  const rawHeaders = (nonCommentLines[0] || []).map((h) => String(h || "").trim()).filter(Boolean);
+  const headerMap = new Map<string, number[]>(); // canonical -> array of column indices
+  const canonicalToRawHeaders = new Map<string, string[]>();
+  const ignoredColumns: string[] = [];
+
+  rawHeaders.forEach((rawTrimmed, idx) => {
+    const canonical = resolveCanonicalHeader(rawTrimmed, customMappings);
+    if (canonical) {
+      const indices = headerMap.get(canonical) || [];
+      indices.push(idx);
+      headerMap.set(canonical, indices);
+
+      const headers = canonicalToRawHeaders.get(canonical) || [];
+      headers.push(rawTrimmed);
+      canonicalToRawHeaders.set(canonical, headers);
+    } else {
+      ignoredColumns.push(rawTrimmed);
+    }
   });
 
-  const getCol = (normalizedName: string, row?: string[]): string => {
+  const duplicateColumns: { canonical: string; headers: string[] }[] = [];
+  for (const [canonical, headers] of canonicalToRawHeaders.entries()) {
+    if (headers.length > 1) {
+      duplicateColumns.push({ canonical, headers });
+    }
+  }
+
+  const getCol = (canonical: string, row?: string[]): string => {
     if (!row) return "";
-    const idx = headerMap.get(normalizedName);
-    return idx !== undefined && idx < row.length ? String(row[idx] ?? "").trim() : "";
+    const indices = headerMap.get(canonical);
+    if (!indices || indices.length === 0) return "";
+    for (const idx of indices) {
+      if (idx < row.length) {
+        const val = String(row[idx] ?? "").trim();
+        if (val) return val;
+      }
+    }
+    return "";
+  };
+
+  const getAllCols = (canonical: string, row?: string[]): string[] => {
+    if (!row) return [];
+    const indices = headerMap.get(canonical);
+    if (!indices || indices.length === 0) return [];
+    const results: string[] = [];
+    for (const idx of indices) {
+      if (idx < row.length) {
+        const val = String(row[idx] ?? "").trim();
+        if (val) results.push(val);
+      }
+    }
+    return results;
   };
 
   const parsedRows: BulkCatalogParsedRow[] = [];
+
+  // Duplication tracking maps (case-insensitive value -> info object)
+  const skuSeen = new Map<string, { rowNumber: number; name: string }>();
+  const slugSeen = new Map<string, { rowNumber: number; name: string }>();
 
   for (let i = 1; i < nonCommentLines.length; i++) {
     const row = nonCommentLines[i];
@@ -115,25 +251,65 @@ export function parseSpreadsheetRows(dataLines: string[][]): BulkCatalogParsedRo
     const rowNumber = i;
     const errors: string[] = [];
 
-    // 1. Name
-    const name =
-      getCol("productname", row) ||
-      getCol("name", row) ||
-      getCol("title", row);
+    // 1. Product Name
+    const name = getCol("name", row);
     if (!name) {
       errors.push("Product name is required.");
     }
 
-    // 2. SKU
-    const sku =
-      getCol("sku", row) ||
-      `URT-${Date.now().toString(36).toUpperCase()}-${i}`;
+    // 2. URL Slug
+    const rawSlug = getCol("slug", row);
+    const slug = rawSlug || (name ? generateSlug(name) : "");
 
-    // 3. Pricing
-    const priceStr =
-      getCol("basewholesaleprice", row) ||
-      getCol("wholesaleprice", row) ||
-      getCol("price", row);
+    // 3. Product SKU
+    const rawSku = getCol("sku", row);
+    const sku = rawSku || (name ? generateSku(name, rowNumber) : `URT-${Date.now().toString(36).toUpperCase()}-${rowNumber}`);
+
+    // Duplicate detection in file with symbol / '+' conflict resolution
+    let suggestedSku: string | undefined;
+    let suggestedSlug: string | undefined;
+
+    if (sku) {
+      const lowerSku = sku.toLowerCase();
+      if (skuSeen.has(lowerSku)) {
+        const prev = skuSeen.get(lowerSku)!;
+        const hasPlusInName = name.includes("+");
+        const prevHasPlusInName = prev.name.includes("+");
+        const skuLacksPlus = !sku.toUpperCase().includes("PLUS");
+
+        if ((hasPlusInName || prevHasPlusInName) && skuLacksPlus) {
+          suggestedSku = `${sku.replace(/-+$/, "")}-PLUS`;
+          if (slug && !slug.toLowerCase().includes("plus")) {
+            suggestedSlug = `${slug.replace(/-+$/, "")}-plus`;
+          }
+          errors.push(
+            `Duplicate SKU "${sku}" (conflicts with row #${prev.rowNumber}). Suggested: "${suggestedSku}".`
+          );
+        } else {
+          errors.push(`Duplicate SKU "${sku}" (conflicts with row #${prev.rowNumber}).`);
+        }
+      } else {
+        skuSeen.set(lowerSku, { rowNumber, name });
+      }
+    }
+
+    if (slug) {
+      const lowerSlug = slug.toLowerCase();
+      if (slugSeen.has(lowerSlug)) {
+        const prev = slugSeen.get(lowerSlug)!;
+        errors.push(`Duplicate URL Slug "${slug}" (conflicts with row #${prev.rowNumber}).`);
+      } else {
+        slugSeen.set(lowerSlug, { rowNumber, name });
+      }
+    }
+
+    // 4. Categories & Paths
+    const categoryName = getCol("category", row);
+    const subcategoryName = getCol("subcategory", row);
+    const selectedPath = getCol("selected_path", row);
+
+    // 5. Pricing & MRP
+    const priceStr = getCol("base_price", row);
     const price = parseFloat(priceStr);
     if (isNaN(price) || price < 0) {
       errors.push("Base wholesale price must be a valid number greater than or equal to 0.");
@@ -148,136 +324,210 @@ export function parseSpreadsheetRows(dataLines: string[][]): BulkCatalogParsedRo
       }
     }
 
-    // 4. Stock & MOQ
-    const stockStr = getCol("initialstock", row) || getCol("stock", row) || "0";
-    const stock = parseInt(stockStr, 10);
+    // 6. Stock & Quantities
+    const stockStr = getCol("stock", row);
+    const stock = stockStr === "" ? 0 : parseInt(stockStr, 10);
     if (isNaN(stock) || stock < 0) {
       errors.push("Stock must be an integer greater than or equal to 0.");
     }
 
-    const moqStr = getCol("minorderqty", row) || getCol("moq", row) || "1";
-    const minOrderQty = parseInt(moqStr, 10);
+    const moqStr = getCol("moq", row);
+    const minOrderQty = moqStr === "" ? 1 : parseInt(moqStr, 10);
     if (isNaN(minOrderQty) || minOrderQty < 1) {
       errors.push("Minimum order quantity must be at least 1.");
     }
 
-    // 5. Volume Tiers
-    const baseMinQty = isNaN(minOrderQty) ? 1 : minOrderQty;
-    const baseUnitPrice = isNaN(price) ? 0 : price;
-    const tiers: { min_qty: number; unit_price: number }[] = [
-      { min_qty: baseMinQty, unit_price: baseUnitPrice },
-    ];
+    const stepStr = getCol("order_step", row);
+    const orderQtyStep = stepStr === "" ? 1 : parseInt(stepStr, 10);
+    if (isNaN(orderQtyStep) || orderQtyStep < 1) {
+      errors.push("Order quantity step must be at least 1.");
+    }
 
-    const t2Qty = parseInt(getCol("tier2minqty", row), 10);
-    const t2Price = parseFloat(getCol("tier2unitprice", row));
-    if (!isNaN(t2Qty) && !isNaN(t2Price) && t2Qty > 0 && t2Price > 0) {
-      const tier1 = tiers[0];
-      if (tier1 && t2Qty <= tier1.min_qty) {
-        errors.push(`Tier 2 min qty (${t2Qty}) must be greater than Tier 1 min qty (${tier1.min_qty}).`);
-      } else if (tier1 && t2Price > tier1.unit_price) {
-        errors.push(`Tier 2 unit price (₹${t2Price}) cannot exceed base price (₹${tier1.unit_price}).`);
-      } else {
-        tiers.push({ min_qty: t2Qty, unit_price: t2Price });
+    const lowStockStr = getCol("low_stock_threshold", row);
+    const lowStockThreshold = lowStockStr === "" ? 5 : parseInt(lowStockStr, 10);
+    if (isNaN(lowStockThreshold) || lowStockThreshold < 0) {
+      errors.push("Low stock alert threshold must be greater than or equal to 0.");
+    }
+
+    // 7. Descriptions & Warranty (preserving internal newlines)
+    const tagline = getCol("tagline", row);
+    const description = getCol("description", row);
+    const warrantyStr = getCol("warranty_months", row);
+    const warrantyMonths = warrantyStr ? parseInt(warrantyStr, 10) : 0;
+
+    // 8. Volume Tiers (Preserve all tiers 1 to 5, non-increasing unit prices, strictly increasing quantities)
+    const t1QtyStr = getCol("tier1_min_qty", row);
+    const t1PriceStr = getCol("tier1_price", row);
+    const t1Qty = t1QtyStr ? parseInt(t1QtyStr, 10) : minOrderQty;
+    const t1Price = t1PriceStr ? parseFloat(t1PriceStr) : price;
+
+    const tiers: { min_qty: number; unit_price: number }[] = [];
+    if (!isNaN(t1Qty) && !isNaN(t1Price) && t1Qty > 0 && t1Price >= 0) {
+      tiers.push({ min_qty: t1Qty, unit_price: t1Price });
+    } else {
+      tiers.push({ min_qty: isNaN(minOrderQty) ? 1 : minOrderQty, unit_price: isNaN(price) ? 0 : price });
+    }
+
+    // Tiers 2 through 5
+    for (let t = 2; t <= 5; t++) {
+      const tQtyStr = getCol(`tier${t}_min_qty`, row);
+      const tPriceStr = getCol(`tier${t}_price`, row);
+      if (tQtyStr && tPriceStr) {
+        const tQty = parseInt(tQtyStr, 10);
+        const tPrice = parseFloat(tPriceStr);
+        if (!isNaN(tQty) && !isNaN(tPrice) && tQty > 0 && tPrice >= 0) {
+          const prevTier = tiers[tiers.length - 1];
+          if (prevTier && tQty <= prevTier.min_qty) {
+            errors.push(`Tier ${t} min qty (${tQty}) must be greater than Tier ${t - 1} min qty (${prevTier.min_qty}).`);
+          } else if (prevTier && tPrice > prevTier.unit_price) {
+            errors.push(`Tier ${t} unit price (₹${tPrice}) cannot exceed Tier ${t - 1} unit price (₹${prevTier.unit_price}).`);
+          } else {
+            tiers.push({ min_qty: tQty, unit_price: tPrice });
+          }
+        }
       }
     }
 
-    const t3Qty = parseInt(getCol("tier3minqty", row), 10);
-    const t3Price = parseFloat(getCol("tier3unitprice", row));
-    if (!isNaN(t3Qty) && !isNaN(t3Price) && t3Qty > 0 && t3Price > 0) {
-      const prevTier = tiers[tiers.length - 1];
-      if (prevTier && t3Qty <= prevTier.min_qty) {
-        errors.push(`Tier 3 min qty (${t3Qty}) must be greater than Tier 2 min qty (${prevTier.min_qty}).`);
-      } else if (prevTier && t3Price > prevTier.unit_price) {
-        errors.push(`Tier 3 unit price (₹${t3Price}) cannot exceed Tier 2 unit price (₹${prevTier.unit_price}).`);
-      } else {
-        tiers.push({ min_qty: t3Qty, unit_price: t3Price });
+    // 9. Technical Specs (JSON)
+    const specsJsonStr = getCol("specs_json", row);
+    let specs: Record<string, any> = {};
+    if (specsJsonStr) {
+      try {
+        const parsed = JSON.parse(specsJsonStr);
+        if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+          specs = parsed as Record<string, any>;
+        } else {
+          errors.push("Technical Specs must be a valid JSON object.");
+        }
+      } catch (err: any) {
+        errors.push(`Invalid JSON in Technical Specs: ${err.message || "Parse error"}`);
       }
     }
-
-    // 6. Images (support Image URL 1-10 columns, with fallback to legacy comma/pipe separated column)
-    const images: string[] = [];
-    for (let colIdx = 1; colIdx <= 10; colIdx++) {
-      const url = getCol(`imageurl${colIdx}`, row);
-      if (url) images.push(url);
-    }
-    if (images.length === 0) {
-      const rawImages =
-        getCol("imageurls", row) ||
-        getCol("images", row) ||
-        getCol("imageurlscommaseparated", row) ||
-        "";
-      if (rawImages) {
-        images.push(
-          ...rawImages
-            .split(/[,|]/)
-            .map((url) => url.trim())
-            .filter((url) => url.length > 0)
-        );
-      }
-    }
-
-    // Validate images
-    images.forEach((imgUrl, idx) => {
-      const v = validateCatalogImageUrl(imgUrl);
-      if (!v.valid) {
-        errors.push(`Image URL ${idx + 1}: ${v.errors.join(", ")}`);
-      }
-    });
-
-    // 7. Descriptions & Specs
-    const shortDescription = getCol("shortdescription", row);
-    const description = getCol("fulldescription", row) || getCol("description", row);
-    const warrantyMonths = parseInt(getCol("warrantymonths", row) || "0", 10);
-
-    const specs: Record<string, any> = {};
-    if (warrantyMonths > 0) {
+    if (warrantyMonths > 0 && !specs.warranty) {
       specs.warranty = `${warrantyMonths} Months Manufacturer Warranty`;
     }
 
-    // 8. Search Keywords with limit checks
-    const rawKeywords =
-      getCol("keywords", row) ||
-      getCol("searchkeywords", row) ||
-      getCol("searchkeywordscommaseparated", row);
-
+    // 10. Search Keywords
+    const rawKeywords = getCol("keywords", row);
     let keywords: string[] = [];
-    if (rawKeywords && rawKeywords.trim()) {
-      const rawTokens = rawKeywords.split(/[,;|\n\r]+/).map((t) => t.trim()).filter(Boolean);
-      if (rawTokens.length > 30) {
-        errors.push(`Keywords limit exceeded: maximum 30 keywords allowed (found ${rawTokens.length}).`);
+    if (rawKeywords) {
+      const tokens = rawKeywords.split(/[,;|\n\r]+/).map((t) => t.trim()).filter(Boolean);
+      if (tokens.length > 30) {
+        errors.push(`Keywords limit exceeded: maximum 30 keywords allowed (found ${tokens.length}).`);
       }
-      const longToken = rawTokens.find((t) => t.length > 50);
-      if (longToken) {
-        errors.push(`Keyword "${longToken.slice(0, 20)}..." exceeds 50 character limit (${longToken.length} chars).`);
+      const longKw = tokens.find((t) => t.length > 50);
+      if (longKw) {
+        errors.push(`Keyword "${longKw.slice(0, 20)}..." exceeds 50 character limit.`);
       }
       keywords = normalizeKeywords(rawKeywords);
     }
 
+    // 11. Brand & Attributes
+    const brand = getCol("brand", row) || (specs.brand ? String(specs.brand) : undefined);
+    const compatibilityGroup = getCol("compatibility_group", row) || specs.compatibility_group;
+    const attributes: Record<string, any> = {};
+    if (compatibilityGroup) {
+      attributes.compatibility_group = compatibilityGroup;
+    }
+
+    // 12. Images: read all columns mapped to canonical "images", split on delimiters, trim, deduplicate
+    const rawImageValues = getAllCols("images", row);
+    const images: string[] = [];
+    for (const val of rawImageValues) {
+      if (val) {
+        const splitUrls = val
+          .split(/[|;,]|\s+/)
+          .map((u) => u.trim())
+          .filter(Boolean);
+        images.push(...splitUrls);
+      }
+    }
+    const uniqueImages = Array.from(new Set(images));
+
+    // Validate images
+    uniqueImages.forEach((imgUrl, idx) => {
+      const v = validateBulkImportImageUrl(imgUrl);
+      if (!v.valid) {
+        errors.push(`Image URL ${idx + 1}: ${v.error}`);
+      }
+    });
+
+    // 13. Boolean flags via parseBool (ensure "False" never becomes true)
+    const rawUrbanrat = getCol("is_urbanrat_brand", row);
+    const isUrbanrat = rawUrbanrat === "" ? false : parseBool(rawUrbanrat, false);
+
+    const rawFeatured = getCol("is_featured", row);
+    const isFeatured = rawFeatured === "" ? false : parseBool(rawFeatured, false);
+
+    const rawTrending = getCol("is_trending", row);
+    const isTrending = rawTrending === "" ? false : parseBool(rawTrending, false);
+
+    const rawActive = getCol("is_active", row);
+    const isActive = rawActive === "" ? true : parseBool(rawActive, true);
+
     parsedRows.push({
       rowNumber,
       name,
+      slug,
       sku,
+      suggestedSku,
+      suggestedSlug,
       price: isNaN(price) ? 0 : price,
       mrp,
       stock: isNaN(stock) ? 0 : stock,
       minOrderQty: isNaN(minOrderQty) ? 1 : minOrderQty,
-      description: description || shortDescription || "",
+      orderQtyStep: isNaN(orderQtyStep) ? 1 : orderQtyStep,
+      lowStockThreshold: isNaN(lowStockThreshold) ? 5 : lowStockThreshold,
+      warrantyMonths: isNaN(warrantyMonths) ? 0 : warrantyMonths,
+      tagline: tagline || "",
+      description: description || "",
+      categoryName,
+      subcategoryName,
+      selectedPath,
+      brand: brand || "",
+      attributes,
       keywords,
       specs,
-      images,
+      images: uniqueImages,
       tiers,
+      isUrbanrat,
+      isFeatured,
+      isTrending,
+      isActive,
       isValid: errors.length === 0,
       errors,
     });
   }
 
-  return parsedRows;
+  return {
+    rows: parsedRows,
+    ignoredColumns: Array.from(new Set(ignoredColumns)),
+    duplicateColumns,
+    rawHeaders,
+  };
 }
 
 /**
- * Universal file parser supporting both Excel (.xlsx, .xls) and CSV (.csv, text)
+ * Backward compatibility parser returning parsed rows
  */
-export async function parseCatalogUploadedFile(file: File): Promise<BulkCatalogParsedRow[]> {
+export function parseSpreadsheetRows(dataLines: string[][]): BulkCatalogParsedRow[] {
+  return parseSpreadsheetRowsWithReport(dataLines).rows;
+}
+
+/**
+ * Parses uploaded CSV / Excel file into rows and ignored column reports.
+ */
+export async function parseCatalogUploadedFile(
+  file: File
+): Promise<BulkCatalogParsedRow[]> {
+  const result = await parseCatalogUploadedFileWithReport(file);
+  return result.rows;
+}
+
+export async function parseCatalogUploadedFileWithReport(
+  file: File,
+  customMappings?: Record<string, string>
+): Promise<BulkCatalogParseResult> {
   const isExcel = /\.(xlsx|xls)$/i.test(file.name);
 
   if (isExcel) {
@@ -298,160 +548,49 @@ export async function parseCatalogUploadedFile(file: File): Promise<BulkCatalogP
       defval: "",
       raw: false,
     });
-    return parseSpreadsheetRows(rawData);
+    return parseSpreadsheetRowsWithReport(rawData, customMappings);
   } else {
-    // CSV / text fallback
-    const text = await file.text();
-    const wb = XLSX.read(text, { type: "string" });
-    const firstSheetName = wb.SheetNames[0];
-    if (!firstSheetName) {
-      throw new Error("File contains no data.");
-    }
-    const ws = wb.Sheets[firstSheetName];
-    if (!ws) {
-      throw new Error("Unable to read sheet content.");
-    }
-    const rawData: string[][] = XLSX.utils.sheet_to_json(ws, {
-      header: 1,
-      defval: "",
-      raw: false,
+    // CSV with UTF-8 and BOM handling via PapaParse
+    const rawText = await file.text();
+    const cleanText = rawText.replace(/^\uFEFF/, "");
+    const parsed = Papa.parse<string[]>(cleanText, {
+      skipEmptyLines: "greedy",
+      header: false,
     });
-    return parseSpreadsheetRows(rawData);
+
+    if (parsed.errors && parsed.errors.length > 0) {
+      console.warn("PapaParse encountered CSV parsing warnings:", parsed.errors);
+    }
+
+    return parseSpreadsheetRowsWithReport(parsed.data, customMappings);
   }
 }
 
 /**
- * Backward compatibility helper for raw CSV string
+ * Compatibility helper for raw CSV string
  */
-export function parseCatalogCSV(csvText: string): BulkCatalogParsedRow[] {
-  const wb = XLSX.read(csvText, { type: "string" });
-  const firstSheetName = wb.SheetNames[0];
-  if (!firstSheetName) {
-    throw new Error("CSV contains no data.");
-  }
-  const ws = wb.Sheets[firstSheetName];
-  if (!ws) {
-    throw new Error("Unable to read CSV content.");
-  }
-  const rawData: string[][] = XLSX.utils.sheet_to_json(ws, {
-    header: 1,
-    defval: "",
-    raw: false,
+export function parseCatalogCSV(csvText: string, customMappings?: Record<string, string>): BulkCatalogParsedRow[] {
+  const cleanText = (csvText || "").replace(/^\uFEFF/, "");
+  const parsed = Papa.parse<string[]>(cleanText, {
+    skipEmptyLines: "greedy",
+    header: false,
   });
-  return parseSpreadsheetRows(rawData);
+  return parseSpreadsheetRowsWithReport(parsed.data, customMappings).rows;
 }
 
 /**
- * Asynchronously verifies image links in bulk uploaded rows:
- * 1. Links from 'catalog-images' bucket are checked against catalog_images table.
- * 2. External links are probed for reachability and valid image headers/loading.
- * 3. Any failures are appended as row errors and invalidate the row in the preview table.
+ * Light asynchronous verifier for image links (validates URLs without hanging UI)
  */
 export async function validateUploadedImageLinks(
   rows: BulkCatalogParsedRow[]
 ): Promise<BulkCatalogParsedRow[]> {
-  const allUrls = new Set<string>();
-  for (const r of rows) {
-    if (r.images && r.images.length > 0) {
-      for (const u of r.images) {
-        if (u && u.trim()) allUrls.add(u.trim());
-      }
-    }
-  }
-
-  if (allUrls.size === 0) return rows;
-
-  const urlErrors = new Map<string, string>();
-  const ownBucketUrls: string[] = [];
-  const externalUrls: string[] = [];
-
-  for (const url of allUrls) {
-    const val = validateCatalogImageUrl(url);
-    if (!val.valid) {
-      urlErrors.set(url, val.errors.join("; "));
-    } else if (val.isCatalogBucketUrl) {
-      ownBucketUrls.push(url);
-    } else {
-      externalUrls.push(url);
-    }
-  }
-
-  // 1. Check own bucket URLs in catalog_images table
-  if (ownBucketUrls.length > 0) {
-    try {
-      const { data, error } = await supabase
-        .from("catalog_images")
-        .select("public_url")
-        .in("public_url", ownBucketUrls)
-        .is("deleted_at", null);
-
-      if (error) {
-        console.warn("Could not query catalog_images table:", error);
-      } else {
-        const foundSet = new Set((data || []).map((d) => d.public_url));
-        for (const u of ownBucketUrls) {
-          if (!foundSet.has(u)) {
-            urlErrors.set(
-              u,
-              "Image URL belongs to catalog-images bucket but does not exist in the Image Library"
-            );
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Error validating bucket images:", e);
-    }
-  }
-
-  // 2. Probe external URLs for reachability
-  if (externalUrls.length > 0 && typeof window !== "undefined" && typeof Image !== "undefined") {
-    const probe = (url: string): Promise<void> =>
-      new Promise((resolve) => {
-        const img = new Image();
-        let settled = false;
-        const timer = setTimeout(() => {
-          if (!settled) {
-            settled = true;
-            urlErrors.set(url, "Image link timed out or is unreachable");
-            resolve();
-          }
-        }, 3500);
-
-        img.onload = () => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            resolve();
-          }
-        };
-
-        img.onerror = () => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            urlErrors.set(url, "Image link is unreachable or not a valid image");
-            resolve();
-          }
-        };
-
-        img.src = url;
-      });
-
-    const concurrency = 6;
-    for (let i = 0; i < externalUrls.length; i += concurrency) {
-      const batch = externalUrls.slice(i, i + concurrency);
-      await Promise.all(batch.map((u) => probe(u)));
-    }
-  }
-
-  // Apply errors to rows
   return rows.map((row) => {
     const newErrors = [...row.errors];
     if (row.images && row.images.length > 0) {
       row.images.forEach((imgUrl, idx) => {
-        const err = urlErrors.get(imgUrl.trim());
-        if (err && !newErrors.some((e) => e.includes(err))) {
-          newErrors.push(`Image ${idx + 1}: ${err}`);
+        const v = validateBulkImportImageUrl(imgUrl);
+        if (!v.valid && !newErrors.some((e) => e.includes(v.error || ""))) {
+          newErrors.push(`Image ${idx + 1}: ${v.error}`);
         }
       });
     }
@@ -463,4 +602,3 @@ export async function validateUploadedImageLinks(
     };
   });
 }
-

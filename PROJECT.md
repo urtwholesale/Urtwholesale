@@ -109,7 +109,10 @@ urbanrat-store/
 │   │   ├── 007_policies_and_dealers.sql # Store policies, dealer applications, audit events & RPCs
 │   │   ├── 008_catalog_uploads.sql    # Catalog upload batches, items & recursive get_category_descendant_ids
 │   │   ├── 009_category_attributes.sql# Category specification schemas & attribute inheritance
-│   │   └── 009_catalog_keywords.sql   # Products keywords text[], GIN index, normalize_keywords_array & search RPC
+│   │   ├── 009_catalog_keywords.sql   # Products keywords text[], GIN index, normalize_keywords_array & search RPC
+│   │   ├── 010_catalog_images.sql     # Catalog images bucket, metadata table & RLS
+│   │   ├── 016_admin_submit_catalog_images.sql # Image validation for bulk upload batches
+│   │   └── 019_bulk_product_ops.sql   # Bulk product operations auditing, dry-run RPCs, and 1-click undo
 │   └── seed.sql                       # 12 categories, 18 subcategories, products & volume tiers
 │
 ├── .env.example                       # Template for Supabase credentials
@@ -777,3 +780,79 @@ Deploy each application as an independent Vercel project on separate subdomains 
     - `parseImageIndex(filename)`: extracts numeric image order.
     - `validateCatalogImageUrl(url, supabaseUrl)`: validates protocol, extensions, and bucket paths.
     - **32 unit tests** in `catalogImages.test.ts` (all 88 tests passing across workspace).
+
+### Touchpoint 10 — Bulk Product Operations & Drawer (`019_bulk_product_ops.sql`)
+- **Category Counts Rollup Engine (`categoryTree.ts`)**:
+  - Implemented post-order hierarchical rollup in `buildCategoryTree`, attributing both direct product counts and recursive descendant category counts to parent/root cards.
+  - Corrected catalog header and sidebar badge alignment across 1195+ catalog products.
+- **Sticky Bulk Actions Bar & Scope Selection (`ProductList.tsx`)**:
+  - Selection banner: "Select all N products in this category" querying `admin_list_product_ids` (capped at 5,000 with user-facing warning).
+  - Sticky bottom action bar (`N selected | Clear | Bulk Edit | Move to category | Activate | Deactivate | Delete`).
+  - Active scope banner dynamically displayed in drawer header (e.g. *"Applying to 202 products in Tempered Glass & UV GLASS > membrane"*).
+- **Bulk Edit Drawer Shell (`BulkEditDrawer.tsx`)**:
+  - Mobile full-screen sheet with bottom clearance (`pb-32`) ensuring zero overlap with `AdminNavigationDock`.
+  - Desktop right drawer (max width 672px / `max-w-2xl`) with backdrop blur and fluid tab transitions.
+  - Four operational tabs: **Details**, **Price Tiers**, **Stock**, **Images**.
+- **Details Management Tab (`BulkDetailsTab.tsx`)**:
+  - Selective field-level checkboxes with tri-state status toggles (`Active`, `Featured`, `Trending`, `Urbanrat`).
+  - Dual-mode description editing: *Replace completely* vs *Append text with newline*.
+  - Dual-mode MRP updates: *Set exact value* vs *Percentage/Flat delta calculations* with MRP $\ge$ Price validation.
+  - Interactive Keywords management: Add keywords, Remove keywords, or Replace all.
+- **Price Tiers Management Tab (`BulkTiersTab.tsx`)**:
+  - 5 operational tier modes: *Replace with new tiers*, *Adjust existing tiers (+/- % or flat ₹)*, *Generate from base wholesale price*, *Copy from existing product*, and *Clear all tiers*.
+  - Strict volume tier validations: strictly increasing quantities, non-increasing prices, prices $\le$ MRP, and tier 1 vs wholesale price warnings.
+- **Stock Management Tab (`BulkStockTab.tsx`)**:
+  - 4 stock modes: *Add (+)*, *Subtract (-)*, *Set exact quantity*, *Set to zero (destructive out-of-stock)*.
+  - Required "Adjustment Reason" input (placeholder `"e.g. Warehouse batch arrival #402"`) with quick chips (*Restock*, *Damaged*, *Audit correction*).
+  - Negative stock prevention (skips with error message) and low stock threshold alerts.
+  - **Spreadsheet Batch Ingestion (`SheetJS`)**:
+    - Download pre-filled template (`.xlsx`) for selected scope: `SKU`, `Product Name`, `Current Stock`, `New Stock`, `Reason`.
+    - Upload spreadsheet (`.xlsx`, `.xls`, `.csv`, max 5 MB, up to 5,000 rows): matches rows by SKU, accepts `New Stock` or `Delta` columns, diagnoses unmatched/invalid/duplicate SKUs.
+    - Every change writes individual audit records to `stock_movements` linked to the bulk operation UUID.
+- **Images Management Tab (`BulkImagesTab.tsx`)**:
+  - Image sourcing: centralized Image Library (`ImagePickerModal`) or direct file upload (auto-compressed to WebP via `imageCompressor.ts` and indexed in library).
+  - 6 action modes: *Add to end*, *Add as primary (first)*, *Replace all images*, *Make existing image primary*, *Remove one image URL*, *Remove all images (destructive)*.
+  - **Match Images by SKU**: scans catalog library for images matching product SKU (using `parseSkuFromFilename` order `_1, _2...`), with preview showing matched thumbnails and list of unmatched products.
+  - Thumbnail strips in preview showing before $\rightarrow$ after thumbnail states.
+  - Non-destructive image handling: removing images unlinks them from products but never deletes files from storage.
+  - Selection $>100$ products safety advisory when applying direct uploads.
+- **Unified Dry-Run Preview & Chunked Apply Panel (`BulkPreviewPanel.tsx`)**:
+  - Non-destructive server-side dry run simulation with summary chips (*Will Change*, *Skipped Errors*).
+  - Preview table displaying first 50 rows with expandable error/warning diagnostic pills.
+  - Export dry-run preview to Excel (`.xlsx`).
+  - Resilient 200-ID batch chunking with real-time progress bar, individual chunk retry, and confirmation modal requiring typing `APPLY` for destructive operations.
+- **Bulk History & Rollback Modal (`BulkHistoryModal.tsx`)**:
+  - "Bulk history" button in the Products catalog header.
+  - History log table: timestamp, operation type, summary, affected product count, status, and Undo action.
+  - Interactive Undo preview dialog showing proposed rollback values and identifying unrestorable products (e.g. subsequent stock movements after operation timestamp).
+  - 1-click Undo restoring previous attribute snapshots and generating reversal stock audit movements.
+- **Vitest Suite**:
+  - 140 automated tests across 11 test suites passing cleanly (`bulkOps.test.ts`, `keywords.test.ts`, `catalogImages.test.ts`, `orders.test.ts`, `returns.test.ts`, `pricing.test.ts`, `categoryTree.test.ts`, etc.).
+
+---
+
+### Touchpoint 11 — Marketplace Subcategories, Categories Department Overhaul & Catalog Product Count Alignment
+
+- **Marketplace Subcategory Quick-Access Navigation (`MarketplacePage.tsx`)**:
+  - **Dedicated Subcategory Strip**: Added a second horizontal scrolling chip row directly beneath the parent category strip. Appears dynamically when browsing a parent category (or displays all subcategories across the store when "All Products" is active), styled with the Urbanrat cyan-blue gradient (`linear-gradient(to bottom, #5ADBE5, #0A82A8)`), haptic feedback, and an "All in Category" reset pill.
+  - **Desktop Controls Bar Subcategory Dropdown**: Integrated a `<select>` dropdown with a `Layers` icon into the desktop search & filter bar alongside Search, Sort, and Price Range. Automatically groups subcategories into parent category `<optgroup>` tags when browsing all categories, or shows direct subcategories when a parent is selected.
+  - **Active Filters Bar**: Displays individual dismissible pills for both `Category` and `Subcategory` with `(X)` buttons and a `Reset All` button. Fully synchronizes with URL query parameters (`?category=<slug>&subcategory=<sub_slug>`).
+  - **Mobile Slide-Up Filter Drawer**: Embedded an interactive Subcategories chip section in the mobile filter drawer with instant active state updates and a quick clear trigger.
+  - **Tailwind CSS v4 Token Standardization**: Refactored all arbitrary hex color classes and bracket dimensions to `@theme` design tokens (`bg-surface/90`, `text-brand-dark`, `bg-brand-light/20`, `border-brand-light/30`, `text-brand-light`, `focus:border-brand-dark`, `max-w-35`, `min-w-4.5`, `h-4.5`).
+
+- **Categories Page Overhaul (`CategoriesPage.tsx`)**:
+  - **Recursive Parent Product Loading**: Resolved catalog loading behavior where selecting a parent category previously left the product array empty. The page now automatically queries all products under the active category and all its descendant subcategories recursively via `getCategoryAndDescendantIds` (e.g., all 1,195 items under *Tempered Glass & UV GLASS*).
+  - **Interactive Subcategory Filter Strip**: Added an interactive subcategory pill strip at the top of the right pane (`All Products ({totalCount})`, `super x`, `UV GLASS`, `membrane`), allowing shoppers to switch between all category products and specific subcategories in 1 tap without leaving the two-pane view.
+  - **Pagination & "Load More Products"**: Replaced hardcoded `limit: 20` with full pagination (`PAGE_SIZE = 24`) and an interactive `Load More Products (Showing X of Y items)` button, unlocking seamless browsing of large subcategories (e.g. 820+ products).
+  - **Marketplace Deep Link**: Enhanced `Open in Marketplace →` link to preserve active category and subcategory slugs.
+  - **Design Token & Layout Polish**: Upgraded container heights to standard Tailwind v4 utilities (`min-h-145 sm:min-h-160`) and brand tokens throughout.
+
+- **Admin PostgREST Range Pagination & Category Count Parity (`adminService.ts`)**:
+  - **Discrepancy Identification**: Identified the root cause of the count mismatch where `membrane` displayed `8` products in the left Category sidebar badge while the table breadcrumb displayed `202 products`, and the parent category was capped at `1000`.
+  - **Root Cause Analysis**: Supabase PostgREST default maximum limit of 1,000 rows truncated unpaginated queries in the `fetchCategoryCounts` client fallback at row 1,000 (`super x` [820] + `UV GLASS` [172] + `membrane` [8] = 1,000), omitting rows 1,001–1,195. Meanwhile, the table header breadcrumb queried with `{ count: "exact" }`, correctly displaying all 202 items.
+  - **Chunked Range Fetch**: Upgraded `fetchCategoryCounts()` in `adminService.ts` to fetch all products across all chunks using an automated `.range(from, from + CHUNK_SIZE - 1)` loop, ensuring 100% count accuracy and parity across all sidebar badges and breadcrumb headers regardless of catalog size.
+
+- **Validation & Build Stability**:
+  - **Unit Tests**: 140/140 unit tests passing across 11 test suites (`npm test`).
+  - **Build**: Both `apps/store` and `apps/admin` compile with 0 TypeScript/CSS errors (`npm run build`).
+

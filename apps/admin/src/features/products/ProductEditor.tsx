@@ -49,6 +49,10 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [orderQtyStep, setOrderQtyStep] = useState<number>(product?.order_qty_step || 1);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(product?.low_stock_threshold || 5);
   const [warrantyMonths, setWarrantyMonths] = useState<number>(product?.warranty_months || 0);
+  const [brand, setBrand] = useState<string>(product?.brand || "");
+  const [compatibilityGroup, setCompatibilityGroup] = useState<string>(
+    product?.attributes?.compatibility_group || ""
+  );
 
   // Toggles
   const [isUrbanrat, setIsUrbanrat] = useState<boolean>(product?.is_urbanrat_brand ?? true);
@@ -338,6 +342,10 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
         images,
         short_description: shortDesc.trim(),
         description: desc.trim(),
+        brand: brand.trim() || undefined,
+        attributes: compatibilityGroup.trim()
+          ? { ...(product?.attributes || {}), compatibility_group: compatibilityGroup.trim() }
+          : (product?.attributes || {}),
         keywords,
         specs: specsObject,
         warranty_months: warrantyMonths,
@@ -547,6 +555,32 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   value={warrantyMonths}
                   onChange={(e) => setWarrantyMonths(Number(e.target.value))}
                   placeholder="e.g. 12"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">
+                  Brand
+                </label>
+                <input
+                  type="text"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="e.g. Motorola, Realme, Apple"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">
+                  Compatibility Group
+                </label>
+                <input
+                  type="text"
+                  value={compatibilityGroup}
+                  onChange={(e) => setCompatibilityGroup(e.target.value)}
+                  placeholder="e.g. GRP-01 (Universal Waterdrop 6.5-6.6 Inch)"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
                 />
               </div>

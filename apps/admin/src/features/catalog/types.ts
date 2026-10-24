@@ -71,16 +71,33 @@ export interface SingleCatalogFormData {
 export interface BulkCatalogParsedRow {
   rowNumber: number;
   name: string;
+  slug: string;
   sku: string;
+  suggestedSku?: string;
+  suggestedSlug?: string;
   price: number;
   mrp?: number | null;
   stock: number;
   minOrderQty: number;
+  orderQtyStep: number;
+  lowStockThreshold: number;
+  warrantyMonths?: number;
+  tagline?: string;
   description?: string;
+  categoryName?: string;
+  subcategoryName?: string;
+  selectedPath?: string;
+  brand?: string;
+  attributes?: Record<string, any>;
   keywords?: string[];
   specs?: Record<string, any>;
   images: string[];
   tiers: { min_qty: number; unit_price: number }[];
+  isUrbanrat: boolean;
+  isFeatured: boolean;
+  isTrending: boolean;
+  isActive: boolean;
   isValid: boolean;
   errors: string[];
 }
+

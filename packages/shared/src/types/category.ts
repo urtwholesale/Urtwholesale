@@ -30,3 +30,39 @@ export interface InheritedCategoryAttribute extends CategoryAttribute {
   inherited_from_category_id: string;
   inherited_from_category_name: string;
 }
+
+export interface CategoryProductCounts {
+  category_id: string | null;
+  direct_count: number;
+  total_count: number;
+  active_count: number;
+}
+
+export interface CategoryNode extends Category {
+  level: number;
+  fullPath?: string;
+  direct_count: number;
+  total_count: number;
+  active_count: number;
+  children: CategoryNode[];
+}
+
+export interface ProductListFilters {
+  categoryId?: string | null;
+  includeDescendants?: boolean;
+  uncategorizedOnly?: boolean;
+  search?: string;
+  isUrbanrat?: boolean;
+  lowStock?: boolean;
+  status?: "all" | "active" | "inactive";
+  sort?:
+    | "updated_at_desc"
+    | "name_asc"
+    | "name_desc"
+    | "price_asc"
+    | "price_desc"
+    | "stock_asc"
+    | "stock_desc";
+  page?: number;
+  pageSize?: number;
+}

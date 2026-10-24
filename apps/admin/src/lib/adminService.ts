@@ -12,6 +12,8 @@ import type {
   Banner,
   StoreSettings,
   Category,
+  CategoryProductCounts,
+  ProductListFilters,
   CategoryAttribute,
   InheritedCategoryAttribute,
   ReturnRequest,
@@ -20,8 +22,24 @@ import type {
   AdminUpdateReturnStatusInput,
   AdminUpdateReturnClaimInput,
   CatalogImage,
+  BulkOperationRecord,
+  BulkProductPatch,
+  BulkTierMode,
+  BulkTierPayload,
+  BulkStockMode,
+  BulkStockItemPayload,
+  BulkImageMode,
+  BulkOpResult,
 } from "@urbanrat/shared";
-import { sanitizeFileName, parseSkuFromFilename } from "@urbanrat/shared";
+import {
+  sanitizeFileName,
+  parseSkuFromFilename,
+  computeTierAdjustment,
+  computeTiersFromBase,
+  validateTiers,
+  computeStockResult,
+  computeImageUpdate,
+} from "@urbanrat/shared";
 import { compressImage, type CompressionResult } from "../utils/imageCompressor";
 
 export interface DashboardStats {
@@ -190,6 +208,1039 @@ export async function fetchAdminProducts(options?: {
   return products;
 }
 
+export interface ProductsPageResult {
+  products: Product[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function fetchCategoryCounts(): Promise<{
+  countsMap: Record<string, CategoryProductCounts>;
+  uncategorized: CategoryProductCounts;
+  allCounts: CategoryProductCounts[];
+}> {
+  try {
+    const { data, error } = await supabase.rpc("admin_category_product_counts");
+    if (error) throw error;
+
+    const list = (data || []) as CategoryProductCounts[];
+    const countsMap: Record<string, CategoryProductCounts> = {};
+    let uncategorized: CategoryProductCounts = {
+      category_id: null,
+      direct_count: 0,
+      total_count: 0,
+      active_count: 0,
+    };
+
+    for (const item of list) {
+      if (item.category_id) {
+        countsMap[item.category_id] = {
+          category_id: item.category_id,
+          direct_count: Number(item.direct_count || 0),
+          total_count: Number(item.total_count || 0),
+          active_count: Number(item.active_count || 0),
+        };
+      } else {
+        uncategorized = {
+          category_id: null,
+          direct_count: Number(item.direct_count || 0),
+          total_count: Number(item.total_count || 0),
+          active_count: Number(item.active_count || 0),
+        };
+      }
+    }
+
+    return { countsMap, uncategorized, allCounts: list };
+  } catch (err) {
+    console.warn("admin_category_product_counts RPC failed or not deployed, falling back:", err);
+    const { data: cats } = await supabase.from("categories").select("id");
+
+    // Fetch all products across all pages in chunks to prevent PostgREST default 1,000-row limit truncation
+    const prods: { id: string; category_id: string | null; is_active: boolean }[] = [];
+    const CHUNK_SIZE = 1000;
+    let from = 0;
+    while (true) {
+      const { data: chunk, error: chunkErr } = await supabase
+        .from("products")
+        .select("id, category_id, is_active")
+        .range(from, from + CHUNK_SIZE - 1);
+      if (chunkErr || !chunk || chunk.length === 0) break;
+      prods.push(...chunk);
+      if (chunk.length < CHUNK_SIZE) break;
+      from += CHUNK_SIZE;
+    }
+
+    const validCatIds = new Set((cats || []).map((c) => c.id));
+    const countsMap: Record<string, CategoryProductCounts> = {};
+
+    // Initialize all existing categories with 0 counts
+    if (cats) {
+      for (const c of cats) {
+        countsMap[c.id] = {
+          category_id: c.id,
+          direct_count: 0,
+          total_count: 0,
+          active_count: 0,
+        };
+      }
+    }
+
+    let uncategorizedCount = 0;
+    let uncategorizedActive = 0;
+
+    if (prods) {
+      for (const p of prods) {
+        if (!p.category_id || !validCatIds.has(p.category_id)) {
+          uncategorizedCount++;
+          if (p.is_active) uncategorizedActive++;
+        } else {
+          const cId = p.category_id;
+          if (!countsMap[cId]) {
+            countsMap[cId] = {
+              category_id: cId,
+              direct_count: 0,
+              total_count: 0,
+              active_count: 0,
+            };
+          }
+          const item = countsMap[cId]!;
+          item.direct_count++;
+          item.total_count++;
+          if (p.is_active) item.active_count++;
+        }
+      }
+    }
+
+    const uncategorized: CategoryProductCounts = {
+      category_id: null,
+      direct_count: uncategorizedCount,
+      total_count: uncategorizedCount,
+      active_count: uncategorizedActive,
+    };
+
+    return { countsMap, uncategorized, allCounts: Object.values(countsMap).concat(uncategorized) };
+  }
+}
+
+export async function fetchProductsPage(
+  filters: ProductListFilters = {}
+): Promise<ProductsPageResult> {
+  const page = Math.max(1, filters.page || 1);
+  const pageSize = Math.max(1, filters.pageSize || 25);
+  const offset = (page - 1) * pageSize;
+
+  try {
+    const { data, error } = await supabase.rpc("admin_list_products", {
+      p_category_id: filters.categoryId || null,
+      p_include_descendants: filters.includeDescendants !== false,
+      p_uncategorized_only: Boolean(filters.uncategorizedOnly),
+      p_search: filters.search?.trim() || null,
+      p_urbanrat_only: Boolean(filters.isUrbanrat),
+      p_low_stock_only: Boolean(filters.lowStock),
+      p_status: filters.status || "all",
+      p_sort: filters.sort || "updated_at_desc",
+      p_limit: pageSize,
+      p_offset: offset,
+    });
+
+    if (error) throw error;
+
+    const rows = (data || []) as any[];
+    const totalCount = rows.length > 0 ? Number(rows[0].total_count || 0) : 0;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+    const products = rows.map((p) => ({
+      ...p,
+      price_tiers: Array.isArray(p.price_tiers)
+        ? p.price_tiers.sort((a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty)
+        : [],
+    })) as Product[];
+
+    return {
+      products,
+      totalCount,
+      page,
+      pageSize,
+      totalPages,
+    };
+  } catch (err) {
+    console.warn("admin_list_products RPC failed, falling back to direct table query:", err);
+    let query = supabase
+      .from("products")
+      .select("*, price_tiers:product_price_tiers(*)", { count: "exact" });
+
+    if (filters.uncategorizedOnly) {
+      query = query.is("category_id", null);
+    } else if (filters.categoryId) {
+      query = query.eq("category_id", filters.categoryId);
+    }
+
+    if (filters.search?.trim()) {
+      query = query.ilike("name", `%${filters.search.trim()}%`);
+    }
+
+    if (filters.isUrbanrat !== undefined) {
+      query = query.eq("is_urbanrat_brand", filters.isUrbanrat);
+    }
+
+    if (filters.status === "active") {
+      query = query.eq("is_active", true);
+    } else if (filters.status === "inactive") {
+      query = query.eq("is_active", false);
+    }
+
+    if (filters.sort === "name_asc") query = query.order("name", { ascending: true });
+    else if (filters.sort === "name_desc") query = query.order("name", { ascending: false });
+    else if (filters.sort === "price_asc") query = query.order("price", { ascending: true });
+    else if (filters.sort === "price_desc") query = query.order("price", { ascending: false });
+    else if (filters.sort === "stock_asc") query = query.order("stock", { ascending: true });
+    else if (filters.sort === "stock_desc") query = query.order("stock", { ascending: false });
+    else query = query.order("updated_at", { ascending: false });
+
+    query = query.range(offset, offset + pageSize - 1);
+
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    let products = (data || []).map((p: any) => ({
+      ...p,
+      price_tiers: (p.price_tiers || []).sort(
+        (a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty
+      ),
+    })) as Product[];
+
+    if (filters.lowStock) {
+      products = products.filter((p) => p.stock <= (p.low_stock_threshold || 5));
+    }
+
+    const totalCount = count ?? products.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+    return {
+      products,
+      totalCount,
+      page,
+      pageSize,
+      totalPages,
+    };
+  }
+}
+
+export async function bulkMoveProducts(
+  productIds: string[],
+  categoryId: string | null
+): Promise<number> {
+  if (!productIds || productIds.length === 0) return 0;
+
+  try {
+    const { data, error } = await supabase.rpc("admin_bulk_move_products", {
+      p_product_ids: productIds,
+      p_category_id: categoryId,
+    });
+    if (error) throw error;
+    return typeof data === "number" ? data : productIds.length;
+  } catch (err) {
+    console.warn("admin_bulk_move_products RPC error, falling back to update:", err);
+    const { error } = await supabase
+      .from("products")
+      .update({ category_id: categoryId, updated_at: new Date().toISOString() })
+      .in("id", productIds);
+    if (error) throw error;
+    return productIds.length;
+  }
+}
+
+export async function bulkUpdateProductStatus(
+  productIds: string[],
+  isActive: boolean
+): Promise<number> {
+  if (!productIds || productIds.length === 0) return 0;
+
+  try {
+    const { data, error } = await supabase.rpc("admin_bulk_update_product_status", {
+      p_product_ids: productIds,
+      p_is_active: isActive,
+    });
+    if (error) throw error;
+    return typeof data === "number" ? data : productIds.length;
+  } catch (err) {
+    console.warn("admin_bulk_update_product_status RPC error, falling back to update:", err);
+    const { error } = await supabase
+      .from("products")
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .in("id", productIds);
+    if (error) throw error;
+    return productIds.length;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// BULK OPERATIONS WRAPPERS (Details, Tiers, Stock, Images, Filter, Undo)
+// ----------------------------------------------------------------------------
+
+export async function fetchProductIdsForFilter(
+  filters: ProductListFilters = {},
+  limit: number = 5000
+): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.rpc("admin_list_product_ids", {
+      p_filters: filters,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return (data || []).map((row: any) => row.product_id);
+  } catch (err) {
+    console.warn("admin_list_product_ids RPC error, falling back to query:", err);
+    let query = supabase.from("products").select("id").limit(limit);
+
+    if (filters.uncategorizedOnly) {
+      query = query.is("category_id", null);
+    } else if (filters.categoryId) {
+      query = query.eq("category_id", filters.categoryId);
+    }
+    if (filters.isUrbanrat) {
+      query = query.eq("is_urbanrat_brand", true);
+    }
+    if (filters.status === "active") {
+      query = query.eq("is_active", true);
+    } else if (filters.status === "inactive") {
+      query = query.eq("is_active", false);
+    }
+    if (filters.search) {
+      query = query.ilike("name", `%${filters.search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []).map((row: any) => row.id);
+  }
+}
+
+export async function bulkUpdateProducts(
+  productIds: string[],
+  patch: BulkProductPatch,
+  dryRun: boolean = false
+): Promise<BulkOpResult> {
+  try {
+    const { data, error } = await supabase.rpc("admin_bulk_update_products", {
+      p_product_ids: productIds,
+      p_patch: patch,
+      p_dry_run: dryRun,
+    });
+    if (error) throw error;
+    return data as BulkOpResult;
+  } catch (rpcErr) {
+    console.warn("admin_bulk_update_products RPC unavailable, running client fallback:", rpcErr);
+    const { data: prods, error: pErr } = await supabase
+      .from("products")
+      .select("*")
+      .in("id", productIds);
+
+    if (pErr) throw pErr;
+
+    const items: any[] = [];
+    let affectedCount = 0;
+
+    for (const prod of (prods || [])) {
+      const before: Record<string, any> = {};
+      const after: Record<string, any> = {};
+      const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+      const errors: string[] = [];
+
+      if (patch.category_id !== undefined) {
+        before.category_id = prod.category_id;
+        after.category_id = patch.category_id;
+        updateData.category_id = patch.category_id;
+      }
+      if (patch.brand !== undefined) {
+        before.brand = prod.brand;
+        after.brand = patch.brand;
+        updateData.brand = patch.brand;
+      }
+      if (patch.tagline !== undefined) {
+        before.tagline = prod.short_tagline;
+        after.tagline = patch.tagline;
+        updateData.short_tagline = patch.tagline;
+      }
+      if (patch.description !== undefined) {
+        before.description = prod.description;
+        let finalDesc = patch.description;
+        if (typeof patch.description === "string" && patch.description.startsWith("__APPEND__")) {
+          const appendText = patch.description.replace("__APPEND__", "");
+          finalDesc = prod.description ? `${prod.description}\n${appendText}` : appendText;
+        }
+        after.description = finalDesc;
+        updateData.description = finalDesc;
+      }
+      if (patch.warranty_months !== undefined) {
+        before.warranty_months = prod.warranty_months;
+        after.warranty_months = patch.warranty_months;
+        updateData.warranty_months = patch.warranty_months;
+      }
+      if (patch.mrp !== undefined) {
+        before.mrp = prod.mrp;
+        let calculatedMrp = prod.mrp;
+        if (typeof patch.mrp === "number") {
+          calculatedMrp = patch.mrp;
+        } else if (typeof patch.mrp === "object") {
+          const { mode, value } = patch.mrp;
+          if (mode === "set") calculatedMrp = value;
+          else if (mode === "increase_pct") calculatedMrp = Math.round((prod.mrp || prod.price) * (1 + value / 100) * 100) / 100;
+          else if (mode === "decrease_pct") calculatedMrp = Math.max(0, Math.round((prod.mrp || prod.price) * (1 - value / 100) * 100) / 100);
+          else if (mode === "increase_amt") calculatedMrp = (prod.mrp || prod.price) + value;
+          else if (mode === "decrease_amt") calculatedMrp = Math.max(0, (prod.mrp || prod.price) - value);
+        }
+        if (calculatedMrp !== null && calculatedMrp < prod.price) {
+          errors.push(`MRP (₹${calculatedMrp}) cannot be lower than price (₹${prod.price}).`);
+        }
+        after.mrp = calculatedMrp;
+        updateData.mrp = calculatedMrp;
+      }
+      if (patch.moq !== undefined) {
+        before.moq = prod.min_order_qty;
+        after.moq = patch.moq;
+        updateData.min_order_qty = patch.moq;
+      }
+      if (patch.order_step !== undefined) {
+        before.order_step = prod.order_qty_step;
+        after.order_step = patch.order_step;
+        updateData.order_qty_step = patch.order_step;
+      }
+      if (patch.low_stock_threshold !== undefined) {
+        before.low_stock_threshold = prod.low_stock_threshold;
+        after.low_stock_threshold = patch.low_stock_threshold;
+        updateData.low_stock_threshold = patch.low_stock_threshold;
+      }
+      if (patch.is_active !== undefined) {
+        before.is_active = prod.is_active;
+        after.is_active = patch.is_active;
+        updateData.is_active = patch.is_active;
+      }
+      if (patch.is_featured !== undefined) {
+        before.is_featured = prod.is_featured;
+        after.is_featured = patch.is_featured;
+        updateData.is_featured = patch.is_featured;
+      }
+      if (patch.is_trending !== undefined) {
+        before.is_trending = prod.is_trending;
+        after.is_trending = patch.is_trending;
+        updateData.is_trending = patch.is_trending;
+      }
+      if (patch.is_urbanrat_brand !== undefined) {
+        before.is_urbanrat_brand = prod.is_urbanrat_brand;
+        after.is_urbanrat_brand = patch.is_urbanrat_brand;
+        updateData.is_urbanrat_brand = patch.is_urbanrat_brand;
+      }
+
+      // Keywords handling
+      if (patch.keywords_replace !== undefined) {
+        before.keywords = prod.keywords;
+        after.keywords = patch.keywords_replace;
+        updateData.keywords = patch.keywords_replace;
+      } else if (patch.keywords_add || patch.keywords_remove) {
+        before.keywords = prod.keywords;
+        let kwList = [...(prod.keywords || [])];
+        if (patch.keywords_remove) {
+          kwList = kwList.filter((k) => !patch.keywords_remove?.includes(k));
+        }
+        if (patch.keywords_add) {
+          for (const k of patch.keywords_add) {
+            if (!kwList.includes(k)) kwList.push(k);
+          }
+        }
+        after.keywords = kwList;
+        updateData.keywords = kwList;
+      }
+
+      if (errors.length === 0) {
+        affectedCount++;
+      }
+
+      items.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before,
+        after,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+
+      if (!dryRun && errors.length === 0) {
+        await supabase.from("products").update(updateData).eq("id", prod.id);
+      }
+    }
+
+    return {
+      success: true,
+      dry_run: dryRun,
+      op_id: crypto.randomUUID(),
+      affected_count: affectedCount,
+      total_count: productIds.length,
+      items,
+    };
+  }
+}
+
+export async function bulkSaveTiers(
+  productIds: string[],
+  mode: BulkTierMode,
+  payload: BulkTierPayload,
+  dryRun: boolean = false
+): Promise<BulkOpResult> {
+  try {
+    const { data, error } = await supabase.rpc("admin_bulk_save_tiers", {
+      p_product_ids: productIds,
+      p_mode: mode,
+      p_payload: payload,
+      p_dry_run: dryRun,
+    });
+    if (error) throw error;
+    return data as BulkOpResult;
+  } catch (rpcErr) {
+    console.warn("admin_bulk_save_tiers RPC unavailable, running client fallback:", rpcErr);
+
+    const { data: prods, error: pErr } = await supabase
+      .from("products")
+      .select("id, name, sku, price, mrp, price_tiers:product_price_tiers(*)")
+      .in("id", productIds);
+
+    if (pErr) throw pErr;
+
+    // If mode is copy_from, fetch source product tiers
+    let copySourceTiers: Array<{ min_qty: number; price: number }> = [];
+    if (mode === "copy_from" && typeof payload === "string") {
+      const { data: src } = await supabase
+        .from("product_price_tiers")
+        .select("min_qty, unit_price")
+        .eq("product_id", payload)
+        .order("min_qty", { ascending: true });
+      copySourceTiers = (src || []).map((t: any) => ({
+        min_qty: t.min_qty,
+        price: Number(t.unit_price),
+      }));
+    }
+
+    const items: any[] = [];
+    let affectedCount = 0;
+
+    for (const prod of (prods || [])) {
+      const currentTiers: Array<{ min_qty: number; price: number }> = (
+        prod.price_tiers || []
+      )
+        .sort((a: any, b: any) => a.min_qty - b.min_qty)
+        .map((t: any) => ({
+          min_qty: t.min_qty,
+          price: Number(t.unit_price),
+        }));
+
+      let newTiers: Array<{ min_qty: number; price: number }> = [];
+
+      if (mode === "replace") {
+        newTiers = (payload as Array<{ min_qty: number; price: number }>) || [];
+      } else if (mode === "adjust") {
+        newTiers = computeTierAdjustment(currentTiers, payload as any);
+      } else if (mode === "from_base") {
+        newTiers = computeTiersFromBase(prod.price, payload as any);
+      } else if (mode === "copy_from") {
+        newTiers = copySourceTiers;
+      } else if (mode === "clear") {
+        newTiers = [];
+      }
+
+      const val = validateTiers(newTiers, prod.mrp, prod.price);
+      const hasErrors = val.errors.length > 0;
+
+      if (!hasErrors) {
+        affectedCount++;
+      }
+
+      items.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before: currentTiers,
+        after: newTiers,
+        errors: hasErrors ? val.errors : undefined,
+        warnings: val.warnings.length > 0 ? val.warnings : undefined,
+      });
+
+      // Apply changes if not dry run
+      if (!dryRun && !hasErrors) {
+        await supabase
+          .from("product_price_tiers")
+          .delete()
+          .eq("product_id", prod.id);
+
+        if (newTiers.length > 0) {
+          const insertPayload = newTiers.map((t) => ({
+            product_id: prod.id,
+            min_qty: t.min_qty,
+            unit_price: t.price,
+          }));
+          await supabase.from("product_price_tiers").insert(insertPayload);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      dry_run: dryRun,
+      op_id: crypto.randomUUID(),
+      affected_count: affectedCount,
+      total_count: productIds.length,
+      items,
+    };
+  }
+}
+
+export async function bulkAdjustStock(
+  productIds: string[],
+  mode: BulkStockMode | "sheet",
+  qty: number,
+  reason: string,
+  dryRun: boolean = false,
+  sheetItems?: BulkStockItemPayload[]
+): Promise<BulkOpResult> {
+  // If not sheet mode and RPC is available, attempt RPC first
+  if (mode !== "sheet") {
+    try {
+      const { data, error } = await supabase.rpc("admin_bulk_adjust_stock", {
+        p_product_ids: productIds,
+        p_mode: mode,
+        p_qty: qty,
+        p_reason: reason,
+        p_dry_run: dryRun,
+      });
+      if (error) throw error;
+      return data as BulkOpResult;
+    } catch (rpcErr) {
+      console.warn("admin_bulk_adjust_stock RPC unavailable, running client fallback:", rpcErr);
+    }
+  }
+
+  // Client Fallback (and sheet handling)
+  const { data: prods, error: pErr } = await supabase
+    .from("products")
+    .select("id, name, sku, stock, low_stock_threshold")
+    .in("id", productIds);
+
+  if (pErr) throw pErr;
+
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session?.session?.user?.id || null;
+  const opId = crypto.randomUUID();
+
+  const items: any[] = [];
+  const beforeSnapshot: any[] = [];
+  let affectedCount = 0;
+
+  const sheetItemMap = new Map<string, BulkStockItemPayload>();
+  if (sheetItems) {
+    for (const item of sheetItems) {
+      sheetItemMap.set(item.product_id, item);
+    }
+  }
+
+  for (const prod of (prods || [])) {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    let newStock = prod.stock;
+    let change = 0;
+    let finalReason = reason;
+
+    if (mode === "sheet" || sheetItemMap.has(prod.id)) {
+      const item = sheetItemMap.get(prod.id);
+      if (!item) {
+        errors.push("No update data for this product in uploaded sheet.");
+      } else {
+        finalReason = item.reason?.trim() || reason;
+        if (item.mode === "delta") {
+          newStock = prod.stock + item.qty;
+          change = item.qty;
+        } else if (item.mode === "set") {
+          newStock = item.qty;
+          change = newStock - prod.stock;
+        } else {
+          const comp = computeStockResult(prod.stock, item.mode as BulkStockMode, item.qty);
+          newStock = comp.newStock;
+          change = comp.change;
+          if (!comp.isValid && comp.error) errors.push(comp.error);
+        }
+      }
+    } else {
+      const comp = computeStockResult(prod.stock, mode as BulkStockMode, qty);
+      newStock = comp.newStock;
+      change = comp.change;
+      if (!comp.isValid && comp.error) {
+        errors.push(comp.error);
+      }
+    }
+
+    if (newStock < 0) {
+      errors.push(`Stock cannot drop below 0 (current: ${prod.stock}, change: ${change}).`);
+    }
+
+    const threshold = prod.low_stock_threshold ?? 5;
+    if (newStock <= threshold && newStock >= 0) {
+      warnings.push(`Stock (${newStock}) is at or below low stock threshold (${threshold}).`);
+    }
+
+    const isValid = errors.length === 0;
+    if (isValid) {
+      affectedCount++;
+      beforeSnapshot.push({
+        product_id: prod.id,
+        previous_stock: prod.stock,
+        new_stock: newStock,
+        change,
+      });
+
+      if (!dryRun) {
+        await supabase
+          .from("products")
+          .update({ stock: newStock, updated_at: new Date().toISOString() })
+          .eq("id", prod.id);
+
+        await supabase.from("stock_movements").insert({
+          product_id: prod.id,
+          change,
+          reason: `${finalReason} [Bulk Op: ${opId}]`,
+          admin_id: userId,
+        });
+      }
+    }
+
+    items.push({
+      product_id: prod.id,
+      product_name: prod.name,
+      sku: prod.sku,
+      before: { stock: prod.stock },
+      after: { stock: newStock, change },
+      errors: errors.length > 0 ? errors : undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    });
+  }
+
+  if (!dryRun && affectedCount > 0) {
+    try {
+      await supabase.from("bulk_operations").insert({
+        id: opId,
+        op_type: "stock",
+        params: { mode, qty, reason },
+        product_ids: productIds,
+        before_snapshot: beforeSnapshot,
+        affected_count: affectedCount,
+        status: "applied",
+        created_by: userId,
+      });
+    } catch (opErr) {
+      console.warn("Could not insert bulk_operations record:", opErr);
+    }
+  }
+
+  return {
+    success: true,
+    dry_run: dryRun,
+    op_id: !dryRun ? opId : undefined,
+    total_count: productIds.length,
+    affected_count: affectedCount,
+    items,
+  };
+}
+
+export async function bulkUpdateImages(
+  productIds: string[],
+  mode: BulkImageMode,
+  urls: string[] = [],
+  dryRun: boolean = false
+): Promise<BulkOpResult> {
+  try {
+    const { data, error } = await supabase.rpc("admin_bulk_update_images", {
+      p_product_ids: productIds,
+      p_mode: mode,
+      p_urls: urls,
+      p_dry_run: dryRun,
+    });
+    if (error) throw error;
+    return data as BulkOpResult;
+  } catch (rpcErr) {
+    console.warn("admin_bulk_update_images RPC unavailable, running client fallback:", rpcErr);
+
+    const { data: prods, error: pErr } = await supabase
+      .from("products")
+      .select("id, name, sku, images")
+      .in("id", productIds);
+
+    if (pErr) throw pErr;
+
+    const { data: session } = await supabase.auth.getSession();
+    const userId = session?.session?.user?.id || null;
+    const opId = crypto.randomUUID();
+
+    const items: any[] = [];
+    const beforeSnapshot: any[] = [];
+    let affectedCount = 0;
+
+    for (const prod of (prods || [])) {
+      const currentImages = prod.images || [];
+      const comp = computeImageUpdate(currentImages, mode, urls);
+      const errors: string[] = comp.error ? [comp.error] : [];
+
+      if (errors.length === 0) {
+        affectedCount++;
+        beforeSnapshot.push({
+          product_id: prod.id,
+          images: currentImages,
+        });
+
+        if (!dryRun) {
+          await supabase
+            .from("products")
+            .update({ images: comp.newImages, updated_at: new Date().toISOString() })
+            .eq("id", prod.id);
+        }
+      }
+
+      items.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before: { images: currentImages },
+        after: { images: comp.newImages },
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    }
+
+    if (!dryRun && affectedCount > 0) {
+      try {
+        await supabase.from("bulk_operations").insert({
+          id: opId,
+          op_type: "images",
+          params: { mode, urls },
+          product_ids: productIds,
+          before_snapshot: beforeSnapshot,
+          affected_count: affectedCount,
+          status: "applied",
+          created_by: userId,
+        });
+      } catch (opErr) {
+        console.warn("Could not insert bulk_operations record:", opErr);
+      }
+    }
+
+    return {
+      success: true,
+      dry_run: dryRun,
+      op_id: !dryRun ? opId : undefined,
+      total_count: productIds.length,
+      affected_count: affectedCount,
+      items,
+    };
+  }
+}
+
+export async function previewUndoBulkOperation(op: BulkOperationRecord): Promise<{
+  canUndo: boolean;
+  unrestorableCount: number;
+  unrestorableItems: Array<{
+    product_id: string;
+    product_name?: string;
+    sku?: string;
+    reason: string;
+  }>;
+  items: Array<{
+    product_id: string;
+    product_name: string;
+    sku?: string;
+    before: any;
+    after: any;
+  }>;
+}> {
+  const unrestorableItems: Array<{
+    product_id: string;
+    product_name?: string;
+    sku?: string;
+    reason: string;
+  }> = [];
+
+  const { data: prods } = await supabase
+    .from("products")
+    .select("id, name, sku, stock, images")
+    .in("id", op.product_ids);
+
+  const prodMap = new Map((prods || []).map((p) => [p.id, p]));
+  const previewItems: any[] = [];
+
+  for (const snapshotItem of op.before_snapshot || []) {
+    const prodId = snapshotItem.product_id;
+    const prod = prodMap.get(prodId);
+
+    if (!prod) {
+      unrestorableItems.push({
+        product_id: prodId,
+        reason: "Product was deleted and cannot be restored.",
+      });
+      continue;
+    }
+
+    if (op.op_type === "stock") {
+      // Check subsequent stock movements
+      const { data: movements } = await supabase
+        .from("stock_movements")
+        .select("id")
+        .eq("product_id", prodId)
+        .gt("created_at", op.created_at)
+        .limit(1);
+
+      if (movements && movements.length > 0) {
+        unrestorableItems.push({
+          product_id: prodId,
+          product_name: prod.name,
+          sku: prod.sku,
+          reason: "Stock was modified by another operation after this one.",
+        });
+      }
+
+      previewItems.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before: { stock: prod.stock },
+        after: { stock: snapshotItem.previous_stock },
+      });
+    } else if (op.op_type === "images") {
+      previewItems.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before: { images: prod.images || [] },
+        after: { images: snapshotItem.images || [] },
+      });
+    } else if (op.op_type === "tiers") {
+      previewItems.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before: "Current Tiers",
+        after: snapshotItem.tiers || [],
+      });
+    } else {
+      // details
+      previewItems.push({
+        product_id: prod.id,
+        product_name: prod.name,
+        sku: prod.sku,
+        before: "Current Attributes",
+        after: snapshotItem.before || snapshotItem,
+      });
+    }
+  }
+
+  return {
+    canUndo: unrestorableItems.length === 0,
+    unrestorableCount: unrestorableItems.length,
+    unrestorableItems,
+    items: previewItems,
+  };
+}
+
+export async function undoBulkOperation(
+  opId: string
+): Promise<{ success: boolean; undone_count: number; op_id: string; status: string }> {
+  try {
+    const { data, error } = await supabase.rpc("admin_undo_bulk_operation", {
+      p_op_id: opId,
+    });
+    if (error) throw error;
+    return data;
+  } catch (rpcErr) {
+    console.warn("admin_undo_bulk_operation RPC failed, running client fallback:", rpcErr);
+
+    const { data: op, error: opErr } = await supabase
+      .from("bulk_operations")
+      .select("*")
+      .eq("id", opId)
+      .single();
+
+    if (opErr || !op) throw opErr || new Error("Operation not found");
+    if (op.status !== "applied") throw new Error(`Operation status is ${op.status}, must be applied`);
+
+    const { data: session } = await supabase.auth.getSession();
+    const userId = session?.session?.user?.id || null;
+    let undoneCount = 0;
+
+    for (const snap of op.before_snapshot || []) {
+      const prodId = snap.product_id;
+      if (op.op_type === "stock") {
+        await supabase
+          .from("products")
+          .update({ stock: snap.previous_stock, updated_at: new Date().toISOString() })
+          .eq("id", prodId);
+
+        await supabase.from("stock_movements").insert({
+          product_id: prodId,
+          change: -snap.change,
+          reason: `Undo bulk stock adjustment [Op: ${opId}]`,
+          admin_id: userId,
+        });
+        undoneCount++;
+      } else if (op.op_type === "images") {
+        await supabase
+          .from("products")
+          .update({ images: snap.images, updated_at: new Date().toISOString() })
+          .eq("id", prodId);
+        undoneCount++;
+      } else if (op.op_type === "tiers") {
+        await supabase.from("product_price_tiers").delete().eq("product_id", prodId);
+        if (snap.tiers && snap.tiers.length > 0) {
+          const insertRows = snap.tiers.map((t: any) => ({
+            product_id: prodId,
+            min_qty: t.min_qty,
+            unit_price: t.unit_price || t.price,
+          }));
+          await supabase.from("product_price_tiers").insert(insertRows);
+        }
+        undoneCount++;
+      } else if (op.op_type === "details") {
+        const patchData = snap.before || snap;
+        const cleanPatch = { ...patchData };
+        delete cleanPatch.product_id;
+        delete cleanPatch.id;
+        cleanPatch.updated_at = new Date().toISOString();
+        await supabase.from("products").update(cleanPatch).eq("id", prodId);
+        undoneCount++;
+      }
+    }
+
+    await supabase
+      .from("bulk_operations")
+      .update({ status: "undone", undone_at: new Date().toISOString() })
+      .eq("id", opId);
+
+    return {
+      success: true,
+      undone_count: undoneCount,
+      op_id: opId,
+      status: "undone",
+    };
+  }
+}
+
+export async function listBulkOperations(
+  limit: number = 20
+): Promise<BulkOperationRecord[]> {
+  const { data, error } = await supabase
+    .from("bulk_operations")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []) as BulkOperationRecord[];
+}
+
 export async function fetchAdminCategories(): Promise<{ id: string; name: string }[]> {
   const { data, error } = await supabase
     .from("categories")
@@ -205,6 +1256,7 @@ export async function fetchAdminCategories(): Promise<{ id: string; name: string
  * Price, stock, and tiers are synced through RPCs/triggers.
  */
 let _supportsKeywordsColumn: boolean | null = null;
+let _supportsBrandAndAttributes: boolean | null = null;
 
 export async function saveProductMetadata(
   productData: Partial<Product> & { id?: string }
@@ -221,17 +1273,22 @@ export async function saveProductMetadata(
     description: productData.description || "",
     short_description: productData.short_description || "",
     specs: productData.specs || {},
-    warranty_months: productData.warranty_months || 0,
+    warranty_months: productData.warranty_months !== undefined ? productData.warranty_months : 0,
     tags: productData.tags || [],
-    is_urbanrat_brand: Boolean(productData.is_urbanrat_brand),
+    is_urbanrat_brand: productData.is_urbanrat_brand !== undefined ? Boolean(productData.is_urbanrat_brand) : true,
     is_featured: Boolean(productData.is_featured),
     is_trending: Boolean(productData.is_trending),
-    is_active: productData.is_active !== undefined ? productData.is_active : true,
-    low_stock_threshold: productData.low_stock_threshold || 5,
-    min_order_qty: productData.min_order_qty || 1,
-    order_qty_step: productData.order_qty_step || 1,
+    is_active: productData.is_active !== undefined ? Boolean(productData.is_active) : true,
+    low_stock_threshold: productData.low_stock_threshold !== undefined ? productData.low_stock_threshold : 5,
+    min_order_qty: productData.min_order_qty !== undefined ? productData.min_order_qty : 1,
+    order_qty_step: productData.order_qty_step !== undefined ? productData.order_qty_step : 1,
     updated_at: new Date().toISOString(),
   };
+
+  if (_supportsBrandAndAttributes !== false) {
+    if (productData.brand !== undefined) payload.brand = productData.brand || null;
+    if (productData.attributes !== undefined) payload.attributes = productData.attributes || {};
+  }
 
   // Only attach keywords if the schema supports it or hasn't been tested yet
   if (_supportsKeywordsColumn !== false) {
@@ -240,8 +1297,8 @@ export async function saveProductMetadata(
 
   if (isNew) {
     // When creating product, provide initial price and stock
-    payload.price = productData.price || 0;
-    payload.stock = productData.stock || 0;
+    payload.price = productData.price !== undefined ? productData.price : 0;
+    payload.stock = productData.stock !== undefined ? productData.stock : 0;
 
     let { data, error } = await supabase
       .from("products")
@@ -249,11 +1306,27 @@ export async function saveProductMetadata(
       .select()
       .single();
 
-    // If keywords column is not yet migrated in Supabase, retry without keywords
+    // If keywords/brand/attributes columns are not yet migrated in Supabase, retry without them
+    if (error && (error.message?.includes("brand") || error.message?.includes("attributes") || (error as any).details?.includes("brand") || (error as any).details?.includes("attributes"))) {
+      _supportsBrandAndAttributes = false;
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.brand;
+      delete fallbackPayload.attributes;
+      const retry = await supabase
+        .from("products")
+        .insert(fallbackPayload)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error && (error.message?.includes("'keywords'") || (error as any).details?.includes("keywords"))) {
       _supportsKeywordsColumn = false;
       const fallbackPayload = { ...payload };
       delete fallbackPayload.keywords;
+      delete fallbackPayload.brand;
+      delete fallbackPayload.attributes;
       const retry = await supabase
         .from("products")
         .insert(fallbackPayload)
@@ -262,13 +1335,33 @@ export async function saveProductMetadata(
       data = retry.data;
       error = retry.error;
     } else if (!error) {
-      _supportsKeywordsColumn = true;
+      if (_supportsKeywordsColumn === null) _supportsKeywordsColumn = true;
+      if (_supportsBrandAndAttributes === null) _supportsBrandAndAttributes = true;
     }
 
     if (error) throw error;
+
+    // Log opening stock movement if stock was provided
+    if (data?.id && (data.stock > 0 || (payload.stock && payload.stock > 0))) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        await supabase.from("stock_movements").insert({
+          product_id: data.id,
+          change: data.stock || payload.stock,
+          reason: "Opening inventory batch upload",
+          admin_id: authData?.user?.id || null,
+        });
+      } catch (smErr) {
+        console.warn("Could not insert opening stock movement:", smErr);
+      }
+    }
+
     return data as Product;
   } else {
-    // Update existing product metadata (stock and tiers updated via RPCs)
+    // When updating, also update price and stock if explicitly passed
+    if (productData.price !== undefined) payload.price = productData.price;
+    if (productData.stock !== undefined) payload.stock = productData.stock;
+
     let { data, error } = await supabase
       .from("products")
       .update(payload)
@@ -276,11 +1369,29 @@ export async function saveProductMetadata(
       .select()
       .single();
 
+    // If brand or attributes columns are missing, retry without them
+    if (error && (error.message?.includes("brand") || error.message?.includes("attributes") || (error as any).details?.includes("brand") || (error as any).details?.includes("attributes"))) {
+      _supportsBrandAndAttributes = false;
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.brand;
+      delete fallbackPayload.attributes;
+      const retry = await supabase
+        .from("products")
+        .update(fallbackPayload)
+        .eq("id", productData.id!)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     // If keywords column is not yet migrated in Supabase, retry without keywords
     if (error && (error.message?.includes("'keywords'") || (error as any).details?.includes("keywords"))) {
       _supportsKeywordsColumn = false;
       const fallbackPayload = { ...payload };
       delete fallbackPayload.keywords;
+      delete fallbackPayload.brand;
+      delete fallbackPayload.attributes;
       const retry = await supabase
         .from("products")
         .update(fallbackPayload)
@@ -290,7 +1401,8 @@ export async function saveProductMetadata(
       data = retry.data;
       error = retry.error;
     } else if (!error) {
-      _supportsKeywordsColumn = true;
+      if (_supportsKeywordsColumn === null) _supportsKeywordsColumn = true;
+      if (_supportsBrandAndAttributes === null) _supportsBrandAndAttributes = true;
     }
 
     if (error) throw error;

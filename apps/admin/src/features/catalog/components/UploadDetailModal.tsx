@@ -33,9 +33,23 @@ export function UploadDetailModal({
   const [fixingItem, setFixingItem] = useState<CatalogUploadItem | null>(null);
   const [fixTitle, setFixTitle] = useState("");
   const [fixSku, setFixSku] = useState("");
+  const [fixSlug, setFixSlug] = useState("");
   const [fixPrice, setFixPrice] = useState<number | "">("");
+  const [fixMrp, setFixMrp] = useState<number | "">("");
   const [fixStock, setFixStock] = useState<number | "">("");
+  const [fixMoq, setFixMoq] = useState<number>(1);
+  const [fixOrderStep, setFixOrderStep] = useState<number>(1);
+  const [fixLowStock, setFixLowStock] = useState<number>(5);
+  const [fixTagline, setFixTagline] = useState("");
+  const [fixDescription, setFixDescription] = useState("");
+  const [fixBrand, setFixBrand] = useState("");
+  const [fixCompatibility, setFixCompatibility] = useState("");
+  const [fixIsUrbanrat, setFixIsUrbanrat] = useState(true);
+  const [fixIsFeatured, setFixIsFeatured] = useState(false);
+  const [fixIsTrending, setFixIsTrending] = useState(false);
+  const [fixIsActive, setFixIsActive] = useState(true);
   const [fixKeywords, setFixKeywords] = useState<string[]>([]);
+  const [fixImages, setFixImages] = useState<string[]>([]);
   const [fixSaving, setFixSaving] = useState(false);
   const [fixError, setFixError] = useState<string | null>(null);
 
@@ -72,11 +86,26 @@ export function UploadDetailModal({
 
   function startFixItem(item: CatalogUploadItem) {
     setFixingItem(item);
-    setFixTitle(item.title || item.payload?.name || "");
-    setFixSku(item.sku || item.payload?.sku || "");
-    setFixPrice(item.payload?.price ?? 100);
-    setFixStock(item.payload?.stock ?? 10);
-    setFixKeywords(item.payload?.keywords || []);
+    const p = item.payload || {};
+    setFixTitle(item.title || p.name || "");
+    setFixSku(item.sku || p.sku || "");
+    setFixSlug(p.slug || "");
+    setFixPrice(p.price ?? 100);
+    setFixMrp(p.mrp ?? "");
+    setFixStock(p.stock ?? 10);
+    setFixMoq(p.min_order_qty || p.minOrderQty || 1);
+    setFixOrderStep(p.order_qty_step || p.orderQtyStep || 1);
+    setFixLowStock(p.low_stock_threshold || p.lowStockThreshold || 5);
+    setFixTagline(p.tagline || p.short_description || "");
+    setFixDescription(p.description || "");
+    setFixBrand(p.brand || "");
+    setFixCompatibility(p.attributes?.compatibility_group || "");
+    setFixIsUrbanrat(p.is_urbanrat_brand !== undefined ? Boolean(p.is_urbanrat_brand) : true);
+    setFixIsFeatured(Boolean(p.is_featured || p.isFeatured));
+    setFixIsTrending(Boolean(p.is_trending || p.isTrending));
+    setFixIsActive(p.is_active !== undefined ? Boolean(p.is_active) : true);
+    setFixKeywords(p.keywords || []);
+    setFixImages(p.images || []);
     setFixError(null);
     triggerHaptic("selection");
   }
@@ -89,10 +118,12 @@ export function UploadDetailModal({
     setFixError(null);
 
     try {
-      const slug = `${fixTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "")}-${Date.now().toString(36).substring(4)}`;
+      const slug =
+        fixSlug.trim() ||
+        `${fixTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")}-${Date.now().toString(36).substring(4)}`;
 
       // 1. Save or update product metadata
       const createdProduct = await saveProductMetadata({
@@ -102,10 +133,22 @@ export function UploadDetailModal({
         sku: fixSku.trim() || undefined,
         category_id: upload.category_id || undefined,
         price: Number(fixPrice) || 0,
+        mrp: fixMrp !== "" ? Number(fixMrp) : undefined,
         stock: Number(fixStock) || 0,
+        min_order_qty: fixMoq,
+        order_qty_step: fixOrderStep,
+        low_stock_threshold: fixLowStock,
+        short_description: fixTagline.trim(),
+        description: fixDescription.trim(),
+        brand: fixBrand.trim() || undefined,
+        attributes: fixCompatibility.trim() ? { compatibility_group: fixCompatibility.trim() } : {},
         keywords: fixKeywords,
-        is_urbanrat_brand: true,
-        is_active: true,
+        images: fixImages,
+        specs: fixingItem.payload?.specs || {},
+        is_urbanrat_brand: fixIsUrbanrat,
+        is_featured: fixIsFeatured,
+        is_trending: fixIsTrending,
+        is_active: fixIsActive,
       });
 
       // 2. Update catalog_upload_items
@@ -113,9 +156,23 @@ export function UploadDetailModal({
         ...(fixingItem.payload || {}),
         name: fixTitle.trim(),
         sku: fixSku.trim(),
+        slug,
         price: Number(fixPrice) || 0,
+        mrp: fixMrp !== "" ? Number(fixMrp) : null,
         stock: Number(fixStock) || 0,
+        min_order_qty: fixMoq,
+        order_qty_step: fixOrderStep,
+        low_stock_threshold: fixLowStock,
+        tagline: fixTagline.trim(),
+        description: fixDescription.trim(),
+        brand: fixBrand.trim(),
+        attributes: fixCompatibility.trim() ? { compatibility_group: fixCompatibility.trim() } : {},
         keywords: fixKeywords,
+        images: fixImages,
+        is_urbanrat_brand: fixIsUrbanrat,
+        is_featured: fixIsFeatured,
+        is_trending: fixIsTrending,
+        is_active: fixIsActive,
       };
 
       const { error: updateErr } = await supabase
@@ -423,14 +480,110 @@ export function UploadDetailModal({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
+                      URL Slug
+                    </label>
+                    <input
+                      type="text"
+                      value={fixSlug}
+                      onChange={(e) => setFixSlug(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
                       Wholesale Price (₹)*
                     </label>
                     <input
                       type="number"
                       required
                       min={0}
+                      step="any"
                       value={fixPrice}
                       onChange={(e) => setFixPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      MRP (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={fixMrp}
+                      onChange={(e) => setFixMrp(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={fixStock}
+                      onChange={(e) => setFixStock(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Min Order
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={fixMoq}
+                      onChange={(e) => setFixMoq(Number(e.target.value) || 1)}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Low Stock Alert
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={fixLowStock}
+                      onChange={(e) => setFixLowStock(Number(e.target.value) || 0)}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Brand
+                    </label>
+                    <input
+                      type="text"
+                      value={fixBrand}
+                      onChange={(e) => setFixBrand(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Compatibility Group
+                    </label>
+                    <input
+                      type="text"
+                      value={fixCompatibility}
+                      onChange={(e) => setFixCompatibility(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
                     />
                   </div>
@@ -438,15 +591,69 @@ export function UploadDetailModal({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Initial Stock
+                    Short Tagline
                   </label>
                   <input
-                    type="number"
-                    min={0}
-                    value={fixStock}
-                    onChange={(e) => setFixStock(e.target.value === "" ? "" : Number(e.target.value))}
+                    type="text"
+                    value={fixTagline}
+                    onChange={(e) => setFixTagline(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Detailed Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={fixDescription}
+                    onChange={(e) => setFixDescription(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
+                  />
+                </div>
+
+                {/* Flags */}
+                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={fixIsUrbanrat}
+                      onChange={(e) => setFixIsUrbanrat(e.target.checked)}
+                      className="rounded accent-slate-900"
+                    />
+                    <span className="font-semibold text-slate-800">Urbanrat Brand</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={fixIsActive}
+                      onChange={(e) => setFixIsActive(e.target.checked)}
+                      className="rounded accent-slate-900"
+                    />
+                    <span className="font-semibold text-slate-800">Active</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={fixIsFeatured}
+                      onChange={(e) => setFixIsFeatured(e.target.checked)}
+                      className="rounded accent-slate-900"
+                    />
+                    <span className="font-semibold text-slate-800">Featured</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={fixIsTrending}
+                      onChange={(e) => setFixIsTrending(e.target.checked)}
+                      className="rounded accent-slate-900"
+                    />
+                    <span className="font-semibold text-slate-800">Trending</span>
+                  </label>
                 </div>
 
                 {/* Reusable KeywordsInput in Error-Fix Drawer */}
