@@ -131,6 +131,7 @@ export {
   buildCategoryTree,
   getCategoryPath,
   getCategoryBreadcrumbs,
+  getCategoryAndDescendantIds,
 } from "./categoryTree";
 
 export type {

@@ -480,6 +480,36 @@ Deploy each application as an independent Vercel project on separate subdomains 
 
 ## 9. Recent Changelog
 
+- **Bulk Upload Header Aliasing & Pricing Ingestion Fix (`packages/shared/src/catalogHeaders.ts`, `catalogParser.ts`)**:
+  - **The Root Cause**: During bulk CSV/Excel uploads, MRP values under headers such as `mrp_inr` were unmapped by `resolveCanonicalHeader` because `CANONICAL_FIELD_ALIASES.mrp` previously only accepted `["mrp", "maximumretailprice", "maxretailprice"]`. This resulted in `mrp` being silently dropped as `null`, leaving the "Maximum Retail Price (MRP ₹)" field empty in the product editor and storefront.
+  - **Expanded MRP Aliases**: Added `mrpinr`, `mrprs`, `mrprupees`, `mrpprice`, `retailprice`, `retailmrp`, `mrpamount`, `mrpval`, `mrpvalue`, `originalprice`, `listprice`, and `standardmrp` to `CANONICAL_FIELD_ALIASES.mrp`.
+  - **Volume Price Tiers JSON Ingestion (`tiers_json`)**: Added canonical field `tiers_json` (`volumepricetiersjson`, `volumetiersjson`, `pricetiersjson`, `tiersjson`, `tiers`, etc.) in `catalogHeaders.ts`. In `catalogParser.ts`, added native parsing for serialized JSON tier arrays (e.g. `[{"min_qty": 1, "unit_price": 13.0}, {"min_qty": 60, "unit_price": 11.0}]`), sorting by `min_qty` and validating non-increasing prices.
+  - **Image & Flag Normalization**: Added `primary_image_url`, `mainimage`, `thumbnail`, etc. to `images` aliases, and added `flag_urbanrat_brand`, `flag_featured`, `flag_trending`, `flag_active` to their corresponding boolean canonical fields.
+  - **Test Suite**: Added 4 new Vitest unit tests in `catalogHeaders.test.ts` and `catalogParser.test.ts`, with all 150 unit tests passing cleanly.
+
+- **Storefront & Admin Catalog Hierarchy: Description Positioned Below Specifications (`ProductDetailPage.tsx`, `SingleCatalogWizard.tsx`)**:
+  - **Storefront PDP Layout**: Moved the detailed narrative description from the top of the product page (beneath title) to directly below the **Specifications** card. The top section now remains uncluttered with the title, single-line tagline, warranty badge, and volume pricing.
+  - **Dedicated Description Card**: Structured inside a rounded card (`bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs`) with `whitespace-pre-line` formatting to preserve paragraph and line break formatting for all 1,000 catalog products.
+  - **Single Catalog Wizard Step 2 Reorder**: Placed the *Product Specifications* builder immediately above the *Full Technical Description* input, ensuring full administrative and storefront consistency.
+
+- **Customer-Facing Stock Status Privacy ("In Stock" Only) (`ProductDetailPage.tsx`)**:
+  - Replaced detailed live inventory counts (e.g., `In Stock (5500 units ready to ship)` and `Low Stock (X units remaining)`) with a clean status indicator showing simply **`In Stock`** (emerald dot) when items are available, or **`Out of Stock`** (rose dot) when stock is zero.
+  - Ensures proprietary warehouse and supplier inventory counts are kept private from customers while retaining stock-aware buying controls and quantity bounds.
+
+- **Recursive Subcategory Product Inclusion When Browsing Categories (`ProductList.tsx`, `adminService.ts`, `categoryTree.ts`)**:
+  - **The Root Cause**: Clicking on a parent category in the Admin *Products & Inventory* sidebar (e.g. "Mobile chargers") displayed `0 products found` and an empty state, even though the category count badge displayed 17 and clicking on the subcategory ("Single USB charger") showed all 17 products. This happened because `fetchProductsPage` fallback queries used an exact equality filter (`query.eq("category_id", filters.categoryId)`), which only matched products directly assigned to the parent category and ignored products filed under subcategories.
+  - **Shared Tree Algorithm (`getCategoryAndDescendantIds`)**: Added and exported `getCategoryAndDescendantIds(treeOrFlat, targetId)` in `packages/shared/src/categoryTree.ts`. It works both on hierarchical `CategoryNode[]` trees and flat `Category[]` arrays to recursively resolve all child, grandchild, and leaf category IDs. Validated with 6 new Vitest test cases (now 146 passing tests).
+  - **Admin UI Integration (`ProductList.tsx`)**: In `loadProducts` and `handleSelectAllAcrossPages`, when a category is selected and `includeDescendants` is active (default), target category IDs are synchronously resolved from the in-memory `categoryTree` and passed via `categoryIds: string[]` in `ProductListFilters`.
+  - **Robust Fallback Engine (`adminService.ts`)**: Updated `fetchProductsPage` and `fetchProductIdsForFilter` to accept `filters.categoryIds` and query via `.in("category_id", matchedCategoryIds)`. If `categoryIds` is omitted, `adminService` dynamically resolves descendant IDs using `getCategoryAndDescendantIdsForAdmin` with a 15-second cache to prevent redundant queries.
+  - Selecting any category now instantly loads all products belonging to all of its subcategories, matching the count badge and honoring the "Include subcategories" toggle.
+
+- **Direct Image URL Link Paste in Single Product Upload & Editor (`ProductEditor.tsx` & `SingleCatalogWizard.tsx`)**:
+  - Added interactive **"Paste Link"** option alongside "Upload & Auto-Compress" in the `ProductEditor` modal (`apps/admin/src/features/products/ProductEditor.tsx`), directly matching admin single product workflows.
+  - **Inline URL Input & 1-Click Clipboard**: Expandable URL bar with one-click clipboard pasting (`navigator.clipboard.readText()`), automatic HTTP/HTTPS URL validation, duplicate URL suppression, and support for pasting multiple comma/newline/space-separated URLs in one go.
+  - **Dashed Dropzone Integration**: Upgraded the empty state dropzone to feature both "Upload & Auto-Compress" and "Paste Link" action buttons, plus direct `Ctrl+V` paste event listeners on the dropzone for instant image link or clipboard image file insertion.
+  - **Single Catalog Wizard Parity (`SingleCatalogWizard.tsx`)**: Extended "Paste Link" support to the multi-step Single Catalog Wizard for both Step 1 Front Image and Step 2 Gallery Images.
+  - Full mobile responsiveness, light theme fidelity, Urbanrat design tokens, and Web Vibration API haptics (`triggerHaptic("selection")` & `triggerHaptic("success")`).
+
 - **Search Keywords System & Reusable `KeywordsInput` Across All Catalog Touchpoints (`apps/admin/src/features/catalog/components/KeywordsInput.tsx`)**: Built a complete manual "Search Keywords" feature to boost catalog product discovery across admin workflows and the customer storefront:
   - **Reusable Chip Component (`KeywordsInput.tsx`)**: Mobile-first tag input with brand design tokens (`bg-brand-light/20`, `text-brand-dark`), live counter (`"X / 30"`), dynamic red inline error alerts, keyboard navigation, `aria-label`, remove buttons, and Web Vibration API haptics (`triggerHaptic("heavy")` on error/duplicate, `"selection"` on add/remove).
   - **Delimited & Pasted Text Parsing**: Adds keywords on `Enter`, comma (`,`), or `blur`. Pasting comma, semicolon, pipe, or newline-delimited strings automatically parses and distributes them into distinct chips.
@@ -853,6 +883,51 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - **Chunked Range Fetch**: Upgraded `fetchCategoryCounts()` in `adminService.ts` to fetch all products across all chunks using an automated `.range(from, from + CHUNK_SIZE - 1)` loop, ensuring 100% count accuracy and parity across all sidebar badges and breadcrumb headers regardless of catalog size.
 
 - **Validation & Build Stability**:
-  - **Unit Tests**: 140/140 unit tests passing across 11 test suites (`npm test`).
+  - **Unit Tests**: 146/146 unit tests passing across 11 test suites (`npm test`).
   - **Build**: Both `apps/store` and `apps/admin` compile with 0 TypeScript/CSS errors (`npm run build`).
+
+---
+
+### Touchpoint 12 — Single Product Link Uploads, Stock Privacy, Specifications-First PDP, and Automatic Volume 1 Tier 1 MOQ Synchronization
+
+- **Automatic Minimum Order Quantity (MOQ) & Volume 1 Tier 1 Synchronization (`ProductEditor.tsx`, `SingleCatalogWizard.tsx`)**:
+  - **Bi-directional Automatic Sync**: Synchronized Volume 1 Tier #1's `Minimum Quantity (pcs)` with the `Min Order Qty` input under *Inventory & Ordering Rules*. Editing either value automatically and immediately adjusts the other so both visible fields always remain aligned.
+  - **Form State Initialization**: Fixed initialization in `ProductEditor.tsx` where an existing product with tiered volume pricing (e.g. Tier 1 MOQ = 5, Unit Price = ₹230) previously loaded `min_order_qty = 1` into the inventory rules section, triggering a validation error (`First tier min_qty must match Minimum Order Quantity`). `minOrderQty` now automatically initializes to `product.price_tiers[0].min_qty`.
+  - **Tier Deletion Compensation**: If Tier #1 is removed from the tiers list, `minOrderQty` automatically recalculates and binds to the newly promoted Tier #1.
+  - **Single Catalog Wizard Alignment (`SingleCatalogWizard.tsx`)**: Removed the `disabled` lock on Tier 1 in the Volume Price Tiers card and wired two-way reactive state updates so edits to Tier 1 min_qty seamlessly update MOQ throughout multi-product drafts.
+
+- **Direct Image Link Ingestion (`ProductEditor.tsx`, `SingleCatalogWizard.tsx`)**:
+  - Added "Paste Image Link" toggle button with URL validator (`http://` / `https://`) allowing merchants to import product image URLs directly without downloading and re-uploading files.
+  - Supports comma/newline-separated multi-link ingestion with preview thumbnails.
+
+- **Storefront Stock Privacy & PDP Layout Refinement (`ProductDetailPage.tsx`)**:
+  - **Customer Stock Privacy**: Concealed raw warehouse stock unit counts from customer view across all product detail pages. Display now purely indicates `"In Stock"` (or `"Out of Stock"` / `"Discontinued"`) to protect commercial inventory levels.
+  - **Specifications-First Hierarchy**: Reorganized the product detail layout so technical specifications are highlighted immediately beneath pricing and actions, with the extended narrative description positioned gracefully below specifications.
+
+- **Admin Category Descendant Product Aggregation (`ProductList.tsx`, `adminService.ts`, `categoryTree.ts`)**:
+  - Upgraded admin category filtering so clicking any top-level department or parent category retrieves all products belonging to that category and any of its descendant subcategories recursively via `getCategoryAndDescendantIds`.
+
+- **Automated Test Suite**:
+  - 146 unit tests passing across 11 test suites with 0 failures (`packages/shared/src/categoryTree.test.ts`, `catalogImages.test.ts`, `bulkOps.test.ts`, etc.).
+  - Both `apps/admin` and `apps/store` build cleanly with 0 TypeScript errors.
+
+---
+
+### Touchpoint 13 — Universal Bulk Catalog Header Aliasing, JSON Volume Tiers Ingestion, and Specifications-First Catalog Alignment
+
+- **Bulk Upload MRP & Pricing Normalization (`packages/shared/src/catalogHeaders.ts`, `catalogParser.ts`)**:
+  - **The Root Cause**: During bulk CSV/Excel uploads, MRP values under headers such as `mrp_inr` were unmapped by `resolveCanonicalHeader` because `CANONICAL_FIELD_ALIASES.mrp` previously only accepted `["mrp", "maximumretailprice", "maxretailprice"]`. This resulted in `mrp` being silently dropped as `null`, leaving the "Maximum Retail Price (MRP ₹)" field empty in the product editor and storefront.
+  - **Expanded MRP Aliases**: Added `mrpinr`, `mrprs`, `mrprupees`, `mrpprice`, `retailprice`, `retailmrp`, `mrpamount`, `mrpval`, `mrpvalue`, `originalprice`, `listprice`, and `standardmrp` to `CANONICAL_FIELD_ALIASES.mrp`.
+  - **Volume Price Tiers JSON Ingestion (`tiers_json`)**: Added canonical field `tiers_json` (`volumepricetiersjson`, `volumetiersjson`, `pricetiersjson`, `tiersjson`, `tiers`, etc.) in `catalogHeaders.ts`. In `catalogParser.ts`, added native parsing for serialized JSON tier arrays (e.g. `[{"min_qty": 1, "unit_price": 13.0}, {"min_qty": 60, "unit_price": 11.0}]`), sorting by `min_qty` and validating non-increasing prices.
+  - **Image & Flag Normalization**: Added `primary_image_url`, `mainimage`, `thumbnail`, etc. to `images` aliases, and added `flag_urbanrat_brand`, `flag_featured`, `flag_trending`, `flag_active` to their corresponding boolean canonical fields.
+
+- **Storefront & Admin Catalog Hierarchy: Description Positioned Below Specifications (`ProductDetailPage.tsx`, `SingleCatalogWizard.tsx`)**:
+  - **Storefront PDP Layout**: Moved the detailed narrative description from the top of the product page (beneath title) to directly below the **Specifications** card. The top section now remains uncluttered with the title, single-line tagline, warranty badge, and volume pricing.
+  - **Dedicated Description Card**: Structured inside a rounded card (`bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs`) with `whitespace-pre-line` formatting to preserve paragraph and line break formatting for all 1,000 catalog products.
+  - **Single Catalog Wizard Step 2 Reorder**: Placed the *Product Specifications* builder immediately above the *Full Technical Description* input, ensuring full administrative and storefront consistency.
+
+- **Automated Test Suite & Verification**:
+  - **150 automated unit tests** passing across 11 test suites with 0 failures (`catalogHeaders.test.ts`, `catalogParser.test.ts`, `categoryTree.test.ts`, etc.).
+  - Both `apps/admin` and `apps/store` compile cleanly with 0 TypeScript/CSS errors (`npm run build`).
+
 

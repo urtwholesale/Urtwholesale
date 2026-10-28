@@ -400,12 +400,6 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               </p>
             )}
 
-            {product.description && (
-              <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed">
-                {product.description}
-              </p>
-            )}
-
             {/* Warranty Badge */}
             {Boolean(product.warranty_months && product.warranty_months > 0) && (
               <div className="mt-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
@@ -518,19 +512,11 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             <div className="flex items-center space-x-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  stock > (product.low_stock_threshold || 10)
-                    ? "bg-emerald-500"
-                    : stock > 0
-                    ? "bg-amber-500"
-                    : "bg-rose-500"
+                  stock > 0 ? "bg-emerald-500" : "bg-rose-500"
                 }`}
               />
               <span className="text-xs font-bold text-slate-700">
-                {stock > (product.low_stock_threshold || 10)
-                  ? `In Stock (${stock} units ready to ship)`
-                  : stock > 0
-                  ? `Low Stock (${stock} units remaining)`
-                  : "Out of Stock"}
+                {stock > 0 ? "In Stock" : "Out of Stock"}
               </span>
             </div>
 
@@ -666,6 +652,18 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Product Description (below Specifications) */}
+          {product.description && (
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-2.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                Description
+              </h3>
+              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal whitespace-pre-line">
+                {product.description}
               </div>
             </div>
           )}

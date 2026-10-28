@@ -150,3 +150,66 @@ export function getCategoryPath(
   if (crumbs.length === 0) return "";
   return crumbs.map((c) => c.name).join(" > ");
 }
+
+/**
+ * Recursively collects the given category ID and all its descendant subcategory IDs
+ * from the CategoryNode tree or flat Category array.
+ * If targetId is not found or null, returns an empty array (or [targetId] if targetId provided).
+ */
+export function getCategoryAndDescendantIds(
+  treeOrFlat: (CategoryNode | Category)[],
+  targetId: string | null | undefined
+): string[] {
+  if (!targetId || !treeOrFlat || treeOrFlat.length === 0) {
+    return targetId ? [targetId] : [];
+  }
+
+  // Check if collection is composed of CategoryNode (has children array)
+  const isTreeNode = (item: any): item is CategoryNode => Array.isArray(item?.children);
+
+  if (isTreeNode(treeOrFlat[0])) {
+    const nodes = treeOrFlat as CategoryNode[];
+
+    function collect(node: CategoryNode): string[] {
+      const ids = [node.id];
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          ids.push(...collect(child));
+        }
+      }
+      return ids;
+    }
+
+    function findAndCollect(list: CategoryNode[]): string[] | null {
+      for (const node of list) {
+        if (node.id === targetId) {
+          return collect(node);
+        }
+        if (node.children && node.children.length > 0) {
+          const res = findAndCollect(node.children);
+          if (res) return res;
+        }
+      }
+      return null;
+    }
+
+    const found = findAndCollect(nodes);
+    return found || [targetId];
+  }
+
+  // Otherwise flat Category[]: traverse parent_id relationships
+  const flat = treeOrFlat as Category[];
+  const result = new Set<string>([targetId]);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const cat of flat) {
+      if (cat.parent_id && result.has(cat.parent_id) && !result.has(cat.id)) {
+        result.add(cat.id);
+        added = true;
+      }
+    }
+  }
+  return Array.from(result);
+}
+

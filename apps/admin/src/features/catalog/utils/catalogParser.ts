@@ -355,34 +355,81 @@ export function parseSpreadsheetRowsWithReport(
     const warrantyStr = getCol("warranty_months", row);
     const warrantyMonths = warrantyStr ? parseInt(warrantyStr, 10) : 0;
 
-    // 8. Volume Tiers (Preserve all tiers 1 to 5, non-increasing unit prices, strictly increasing quantities)
-    const t1QtyStr = getCol("tier1_min_qty", row);
-    const t1PriceStr = getCol("tier1_price", row);
-    const t1Qty = t1QtyStr ? parseInt(t1QtyStr, 10) : minOrderQty;
-    const t1Price = t1PriceStr ? parseFloat(t1PriceStr) : price;
-
+    // 8. Volume Tiers (Preserve JSON tiers or all tiers 1 to 5, non-increasing unit prices, strictly increasing quantities)
     const tiers: { min_qty: number; unit_price: number }[] = [];
-    if (!isNaN(t1Qty) && !isNaN(t1Price) && t1Qty > 0 && t1Price >= 0) {
-      tiers.push({ min_qty: t1Qty, unit_price: t1Price });
-    } else {
-      tiers.push({ min_qty: isNaN(minOrderQty) ? 1 : minOrderQty, unit_price: isNaN(price) ? 0 : price });
+    const tiersJsonStr = getCol("tiers_json", row);
+    let parsedJsonTiers: { min_qty: number; unit_price: number }[] | null = null;
+
+    if (tiersJsonStr) {
+      try {
+        const rawJson = JSON.parse(tiersJsonStr);
+        if (Array.isArray(rawJson)) {
+          const list: { min_qty: number; unit_price: number }[] = [];
+          for (const item of rawJson) {
+            if (typeof item === "object" && item !== null) {
+              const q = parseInt(
+                String(item.min_qty ?? item.minQty ?? item.min_quantity ?? item.qty ?? item.quantity ?? ""),
+                10
+              );
+              const p = parseFloat(
+                String(item.unit_price ?? item.unitPrice ?? item.price ?? item.wholesale_price ?? "")
+              );
+              if (!isNaN(q) && !isNaN(p) && q > 0 && p >= 0) {
+                list.push({ min_qty: q, unit_price: p });
+              }
+            }
+          }
+          if (list.length > 0) {
+            list.sort((a, b) => a.min_qty - b.min_qty);
+            parsedJsonTiers = list;
+          }
+        }
+      } catch (err: any) {
+        errors.push(`Invalid JSON in Volume Tiers: ${err?.message || "Parse error"}`);
+      }
     }
 
-    // Tiers 2 through 5
-    for (let t = 2; t <= 5; t++) {
-      const tQtyStr = getCol(`tier${t}_min_qty`, row);
-      const tPriceStr = getCol(`tier${t}_price`, row);
-      if (tQtyStr && tPriceStr) {
-        const tQty = parseInt(tQtyStr, 10);
-        const tPrice = parseFloat(tPriceStr);
-        if (!isNaN(tQty) && !isNaN(tPrice) && tQty > 0 && tPrice >= 0) {
-          const prevTier = tiers[tiers.length - 1];
-          if (prevTier && tQty <= prevTier.min_qty) {
-            errors.push(`Tier ${t} min qty (${tQty}) must be greater than Tier ${t - 1} min qty (${prevTier.min_qty}).`);
-          } else if (prevTier && tPrice > prevTier.unit_price) {
-            errors.push(`Tier ${t} unit price (₹${tPrice}) cannot exceed Tier ${t - 1} unit price (₹${prevTier.unit_price}).`);
-          } else {
-            tiers.push({ min_qty: tQty, unit_price: tPrice });
+    if (parsedJsonTiers && parsedJsonTiers.length > 0) {
+      for (let t = 0; t < parsedJsonTiers.length; t++) {
+        const curr = parsedJsonTiers[t]!;
+        if (t > 0) {
+          const prev = parsedJsonTiers[t - 1]!;
+          if (curr.min_qty <= prev.min_qty) {
+            errors.push(`Tier ${t + 1} min qty (${curr.min_qty}) must be greater than Tier ${t} min qty (${prev.min_qty}).`);
+          } else if (curr.unit_price > prev.unit_price) {
+            errors.push(`Tier ${t + 1} unit price (₹${curr.unit_price}) cannot exceed Tier ${t} unit price (₹${prev.unit_price}).`);
+          }
+        }
+        tiers.push(curr);
+      }
+    } else {
+      const t1QtyStr = getCol("tier1_min_qty", row);
+      const t1PriceStr = getCol("tier1_price", row);
+      const t1Qty = t1QtyStr ? parseInt(t1QtyStr, 10) : minOrderQty;
+      const t1Price = t1PriceStr ? parseFloat(t1PriceStr) : price;
+
+      if (!isNaN(t1Qty) && !isNaN(t1Price) && t1Qty > 0 && t1Price >= 0) {
+        tiers.push({ min_qty: t1Qty, unit_price: t1Price });
+      } else {
+        tiers.push({ min_qty: isNaN(minOrderQty) ? 1 : minOrderQty, unit_price: isNaN(price) ? 0 : price });
+      }
+
+      // Tiers 2 through 5
+      for (let t = 2; t <= 5; t++) {
+        const tQtyStr = getCol(`tier${t}_min_qty`, row);
+        const tPriceStr = getCol(`tier${t}_price`, row);
+        if (tQtyStr && tPriceStr) {
+          const tQty = parseInt(tQtyStr, 10);
+          const tPrice = parseFloat(tPriceStr);
+          if (!isNaN(tQty) && !isNaN(tPrice) && tQty > 0 && tPrice >= 0) {
+            const prevTier = tiers[tiers.length - 1];
+            if (prevTier && tQty <= prevTier.min_qty) {
+              errors.push(`Tier ${t} min qty (${tQty}) must be greater than Tier ${t - 1} min qty (${prevTier.min_qty}).`);
+            } else if (prevTier && tPrice > prevTier.unit_price) {
+              errors.push(`Tier ${t} unit price (₹${tPrice}) cannot exceed Tier ${t - 1} unit price (₹${prevTier.unit_price}).`);
+            } else {
+              tiers.push({ min_qty: tQty, unit_price: tPrice });
+            }
           }
         }
       }

@@ -22,6 +22,8 @@ import {
   AlertCircle,
   Image as ImageIcon,
   Zap,
+  Link2,
+  Clipboard,
 } from "lucide-react";
 
 interface ProductEditorProps {
@@ -45,7 +47,17 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [mrp, setMrp] = useState<number | string>(product?.mrp ?? "");
   const [shortDesc, setShortDesc] = useState(product?.short_description || "");
   const [desc, setDesc] = useState(product?.description || "");
-  const [minOrderQty, setMinOrderQty] = useState<number>(product?.min_order_qty || 1);
+  // Determine initial tiers and MOQ (Volume 1 tier 1 takes precedence so both stay aligned)
+  const initialSortedTiers = useMemo(() => {
+    if (product?.price_tiers && product.price_tiers.length > 0) {
+      return [...product.price_tiers].sort((a, b) => a.min_qty - b.min_qty);
+    }
+    return null;
+  }, [product?.price_tiers]);
+
+  const initialMinOrderQty = initialSortedTiers?.[0]?.min_qty || product?.min_order_qty || 1;
+
+  const [minOrderQty, setMinOrderQty] = useState<number>(initialMinOrderQty);
   const [orderQtyStep, setOrderQtyStep] = useState<number>(product?.order_qty_step || 1);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(product?.low_stock_threshold || 5);
   const [warrantyMonths, setWarrantyMonths] = useState<number>(product?.warranty_months || 0);
@@ -65,6 +77,9 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
   const [images, setImages] = useState<string[]>(product?.images || []);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadStats, setUploadStats] = useState<string | null>(null);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkInputText, setLinkInputText] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Initial stock for new product
   const [initialStock, setInitialStock] = useState<number>(product?.stock || 0);
@@ -88,11 +103,11 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
 
   // Price Tiers [{ min_qty, unit_price }]
   const [tiers, setTiers] = useState<PriceTier[]>(() => {
-    if (product?.price_tiers && product.price_tiers.length > 0) {
-      return [...product.price_tiers].sort((a, b) => a.min_qty - b.min_qty);
+    if (initialSortedTiers && initialSortedTiers.length > 0) {
+      return initialSortedTiers;
     }
     // Default tier
-    return [{ min_qty: product?.min_order_qty || 1, unit_price: product?.price || 100 }];
+    return [{ min_qty: initialMinOrderQty, unit_price: product?.price || 100 }];
   });
 
   const [saving, setSaving] = useState(false);
@@ -180,11 +195,15 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
     }
   }
 
-  // Upload image to 'product-images' bucket
+  // Upload image file to 'product-images' bucket
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    await handleUploadFile(file);
+    e.target.value = "";
+  }
 
+  async function handleUploadFile(file: File) {
     setUploadingImage(true);
     setError(null);
     try {
@@ -195,11 +214,112 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
         }
       });
       setImages((prev) => [...prev, publicUrl]);
+      triggerHaptic("success");
     } catch (err: any) {
       console.error("Image upload error:", err);
       setError(err?.message || "Failed to upload image to product-images bucket.");
     } finally {
       setUploadingImage(false);
+    }
+  }
+
+  // Parse and validate pasted image URLs
+  function validateAndParseUrls(input: string): { valid: string[]; invalid: string[] } {
+    const parts = input
+      .split(/[\n,\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const valid: string[] = [];
+    const invalid: string[] = [];
+
+    for (const part of parts) {
+      try {
+        const u = new URL(part);
+        if (u.protocol === "http:" || u.protocol === "https:") {
+          valid.push(u.href);
+        } else {
+          invalid.push(part);
+        }
+      } catch {
+        invalid.push(part);
+      }
+    }
+
+    return { valid, invalid };
+  }
+
+  // Add one or more image links to product images
+  function handleAddLinks(rawText?: string) {
+    const textToProcess = (rawText ?? linkInputText).trim();
+    if (!textToProcess) {
+      setLinkError("Please enter or paste an image link.");
+      return;
+    }
+
+    setLinkError(null);
+    const { valid, invalid } = validateAndParseUrls(textToProcess);
+
+    if (invalid.length > 0 && valid.length === 0) {
+      setLinkError("Please enter a valid HTTP or HTTPS image URL.");
+      return;
+    }
+
+    const existingSet = new Set(images);
+    const newUrls = valid.filter((u) => !existingSet.has(u));
+
+    if (newUrls.length === 0) {
+      setLinkError("All entered URLs are already added to this product.");
+      return;
+    }
+
+    setImages((prev) => [...prev, ...newUrls]);
+    triggerHaptic("success");
+    setLinkInputText("");
+    setShowLinkInput(false);
+    setUploadStats(`🔗 Added ${newUrls.length} image link${newUrls.length > 1 ? "s" : ""}!`);
+    setTimeout(() => setUploadStats(null), 5000);
+  }
+
+  // Quick 1-click paste from clipboard
+  async function handlePasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        const trimmed = text.trim();
+        setLinkInputText(trimmed);
+        setLinkError(null);
+        const { valid } = validateAndParseUrls(trimmed);
+        if (valid.length > 0) {
+          handleAddLinks(trimmed);
+        }
+      } else {
+        setLinkError("Clipboard is empty or does not contain text.");
+      }
+    } catch {
+      setLinkError("Unable to access clipboard. Please paste manually into the box.");
+    }
+  }
+
+  // Keyboard paste handler on the images section
+  function handleContainerPaste(e: React.ClipboardEvent) {
+    const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+    if (targetTag === "input" || targetTag === "textarea") return;
+
+    const files = e.clipboardData?.files;
+    if (files && files.length > 0) {
+      const imgFile = Array.from(files).find((f) => f.type.startsWith("image/"));
+      if (imgFile) {
+        e.preventDefault();
+        handleUploadFile(imgFile);
+        return;
+      }
+    }
+
+    const pastedText = e.clipboardData?.getData("text")?.trim();
+    if (pastedText && (pastedText.startsWith("http://") || pastedText.startsWith("https://"))) {
+      e.preventDefault();
+      handleAddLinks(pastedText);
     }
   }
 
@@ -271,11 +391,23 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
     setTiers((prev) =>
       prev.map((t, i) => (i === index ? { ...t, [field]: value } : t))
     );
+    // Automatically adjust Minimum Order Quantity when Volume 1 Tier 1 minimum quantity changes
+    if (index === 0 && field === "min_qty") {
+      const sanitized = Math.max(1, value || 1);
+      setMinOrderQty(sanitized);
+    }
   }
 
   function handleRemoveTier(index: number) {
     if (tiers.length <= 1) return; // Must have at least 1 tier
-    setTiers((prev) => prev.filter((_, i) => i !== index));
+    setTiers((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      // If the top tier was removed, automatically adjust Min Order Qty to new Tier #1
+      if (index === 0 && updated[0]) {
+        setMinOrderQty(updated[0].min_qty);
+      }
+      return updated;
+    });
   }
 
   // Form Save
@@ -613,8 +745,11 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
             </div>
           </div>
 
-          {/* ── 2. Product Images (text[] with drag-reorder & product-images bucket) ── */}
-          <div className="space-y-3 pt-4 border-t border-slate-100">
+          {/* ── 2. Product Images (text[] with drag-reorder, paste links & product-images bucket) ── */}
+          <div
+            className="space-y-3 pt-4 border-t border-slate-100"
+            onPaste={handleContainerPaste}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <div className="flex items-center space-x-2">
@@ -629,22 +764,117 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   )}
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  First image is always primary. Images are auto-compressed to WebP for instant storefront loading.
+                  First image is always primary. Upload image files or paste image URLs directly.
                 </p>
               </div>
 
-              <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-brand-dark text-xs font-bold hover:bg-sky-100 transition cursor-pointer shrink-0">
-                <Upload className="w-3.5 h-3.5" />
-                <span>{uploadingImage ? "Compressing & Uploading..." : "Upload & Auto-Compress"}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={uploadingImage}
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
+              <div className="flex items-center space-x-2 shrink-0">
+                {/* Paste Link Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("selection");
+                    setShowLinkInput((prev) => !prev);
+                    setLinkError(null);
+                  }}
+                  className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                    showLinkInput
+                      ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 shadow-2xs"
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5 text-brand-dark" />
+                  <span>{showLinkInput ? "Close Link Input" : "Paste Link"}</span>
+                </button>
+
+                {/* Upload & Auto-Compress */}
+                <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-brand-dark text-xs font-bold hover:bg-sky-100 transition cursor-pointer shrink-0">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingImage ? "Compressing & Uploading..." : "Upload & Auto-Compress"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingImage}
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
+
+            {/* Inline Link Input Box */}
+            {showLinkInput && (
+              <div className="p-3 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span className="flex items-center space-x-1.5">
+                    <Link2 className="w-3.5 h-3.5 text-brand-dark" />
+                    <span>Paste Image Link</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">
+                    Accepts single URL or multiple URLs separated by comma/spaces
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="url"
+                      value={linkInputText}
+                      onChange={(e) => {
+                        setLinkInputText(e.target.value);
+                        setLinkError(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddLinks();
+                        }
+                      }}
+                      placeholder="https://... (paste direct image URL)"
+                      className="w-full pl-3 pr-20 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark transition font-medium text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePasteFromClipboard}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition active:scale-95"
+                      title="Paste from clipboard"
+                    >
+                      <Clipboard className="w-3 h-3 text-slate-500" />
+                      <span>Paste</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddLinks()}
+                    className="px-3.5 py-2 rounded-xl text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs shrink-0"
+                    style={{ background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }}
+                  >
+                    Add Image
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLinkInput(false);
+                      setLinkInputText("");
+                      setLinkError(null);
+                    }}
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 cursor-pointer shrink-0"
+                    title="Cancel"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {linkError && (
+                  <p className="text-[11px] font-semibold text-rose-500 flex items-center space-x-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{linkError}</span>
+                  </p>
+                )}
+              </div>
+            )}
 
             {images.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -696,9 +926,40 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 ))}
               </div>
             ) : (
-              <div className="p-6 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                <ImageIcon className="w-6 h-6 mx-auto mb-1 text-slate-300" />
-                <span>No images uploaded yet. Upload images to product-images bucket.</span>
+              <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 text-center text-xs text-slate-400 space-y-3 bg-slate-50/40">
+                <ImageIcon className="w-7 h-7 mx-auto text-slate-300" />
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-700 text-xs">No images uploaded yet</p>
+                  <p className="text-[11px] text-slate-400">
+                    Upload from your device or paste an image URL directly
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center space-x-2 pt-1">
+                  <label className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-brand-dark text-xs font-bold hover:bg-sky-100 transition cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload &amp; Auto-Compress</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingImage}
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("selection");
+                      setShowLinkInput(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-brand-dark" />
+                    <span>Paste Link</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -805,7 +1066,13 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                     type="number"
                     min="1"
                     value={minOrderQty}
-                    onChange={(e) => setMinOrderQty(Math.max(1, Number(e.target.value)))}
+                    onChange={(e) => {
+                      const val = Math.max(1, Number(e.target.value) || 1);
+                      setMinOrderQty(val);
+                      setTiers((prev) =>
+                        prev.map((t, i) => (i === 0 ? { ...t, min_qty: val } : t))
+                      );
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>
@@ -887,7 +1154,13 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                       type="number"
                       min="1"
                       value={minOrderQty}
-                      onChange={(e) => setMinOrderQty(Math.max(1, Number(e.target.value)))}
+                      onChange={(e) => {
+                        const val = Math.max(1, Number(e.target.value) || 1);
+                        setMinOrderQty(val);
+                        setTiers((prev) =>
+                          prev.map((t, i) => (i === 0 ? { ...t, min_qty: val } : t))
+                        );
+                      }}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                     />
                   </div>

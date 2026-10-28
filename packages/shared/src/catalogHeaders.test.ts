@@ -24,7 +24,11 @@ describe("catalogHeaders", () => {
     expect(resolveCanonicalHeader("short_tagline")).toBe("tagline");
     expect(resolveCanonicalHeader("detailed_description")).toBe("description");
     expect(resolveCanonicalHeader("product_images")).toBe("images");
+    expect(resolveCanonicalHeader("primary_image_url")).toBe("images");
     expect(resolveCanonicalHeader("mrp")).toBe("mrp");
+    expect(resolveCanonicalHeader("mrp_inr")).toBe("mrp");
+    expect(resolveCanonicalHeader("MRP (INR)")).toBe("mrp");
+    expect(resolveCanonicalHeader("volume_price_tiers_json")).toBe("tiers_json");
     expect(resolveCanonicalHeader("base_wholesale_price")).toBe("base_price");
     expect(resolveCanonicalHeader("warranty_months")).toBe("warranty_months");
     expect(resolveCanonicalHeader("tier1_min_qty")).toBe("tier1_min_qty");
@@ -38,9 +42,13 @@ describe("catalogHeaders", () => {
     expect(resolveCanonicalHeader("order_qty_step")).toBe("order_step");
     expect(resolveCanonicalHeader("search_keywords")).toBe("keywords");
     expect(resolveCanonicalHeader("is_urbanrat_brand")).toBe("is_urbanrat_brand");
+    expect(resolveCanonicalHeader("flag_urbanrat_brand")).toBe("is_urbanrat_brand");
     expect(resolveCanonicalHeader("is_featured")).toBe("is_featured");
+    expect(resolveCanonicalHeader("flag_featured")).toBe("is_featured");
     expect(resolveCanonicalHeader("is_trending")).toBe("is_trending");
+    expect(resolveCanonicalHeader("flag_trending")).toBe("is_trending");
     expect(resolveCanonicalHeader("is_active")).toBe("is_active");
+    expect(resolveCanonicalHeader("flag_active")).toBe("is_active");
   });
 
   it("resolves canonical fields from SuperX / Editor template style headers", () => {

@@ -49,6 +49,7 @@ export interface CategoryNode extends Category {
 
 export interface ProductListFilters {
   categoryId?: string | null;
+  categoryIds?: string[];
   includeDescendants?: boolean;
   uncategorizedOnly?: boolean;
   search?: string;

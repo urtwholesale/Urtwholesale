@@ -324,6 +324,44 @@ export async function fetchCategoryCounts(): Promise<{
   }
 }
 
+let _cachedCategories: { id: string; parent_id: string | null }[] | null = null;
+let _cachedCategoriesTime = 0;
+
+/**
+ * Resolves category ID and all its recursive descendant subcategory IDs.
+ * Ensures products filed under Level 2/3/4 categories appear when browsing parent categories.
+ */
+export async function getCategoryAndDescendantIdsForAdmin(targetId: string): Promise<string[]> {
+  const now = Date.now();
+  if (!_cachedCategories || now - _cachedCategoriesTime > 15000) {
+    try {
+      const { data } = await supabase.from("categories").select("id, parent_id");
+      if (data) {
+        _cachedCategories = data;
+        _cachedCategoriesTime = now;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch category hierarchy for descendants:", e);
+    }
+  }
+
+  const cats = _cachedCategories;
+  if (!cats || cats.length === 0) return [targetId];
+
+  const result = new Set<string>([targetId]);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const cat of cats) {
+      if (cat.parent_id && result.has(cat.parent_id) && !result.has(cat.id)) {
+        result.add(cat.id);
+        added = true;
+      }
+    }
+  }
+  return Array.from(result);
+}
+
 export async function fetchProductsPage(
   filters: ProductListFilters = {}
 ): Promise<ProductsPageResult> {
@@ -371,8 +409,26 @@ export async function fetchProductsPage(
       .from("products")
       .select("*, price_tiers:product_price_tiers(*)", { count: "exact" });
 
+    // Category filter: support categoryIds array or auto-resolve descendants
+    let matchedCategoryIds: string[] | null = null;
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      matchedCategoryIds = filters.categoryIds;
+    } else if (filters.categoryId) {
+      if (filters.includeDescendants !== false) {
+        matchedCategoryIds = await getCategoryAndDescendantIdsForAdmin(filters.categoryId);
+      } else {
+        matchedCategoryIds = [filters.categoryId];
+      }
+    }
+
     if (filters.uncategorizedOnly) {
       query = query.is("category_id", null);
+    } else if (matchedCategoryIds && matchedCategoryIds.length > 0) {
+      if (matchedCategoryIds.length === 1) {
+        query = query.eq("category_id", matchedCategoryIds[0]);
+      } else {
+        query = query.in("category_id", matchedCategoryIds);
+      }
     } else if (filters.categoryId) {
       query = query.eq("category_id", filters.categoryId);
     }
@@ -495,8 +551,26 @@ export async function fetchProductIdsForFilter(
     console.warn("admin_list_product_ids RPC error, falling back to query:", err);
     let query = supabase.from("products").select("id").limit(limit);
 
+    // Category filter: support categoryIds array or auto-resolve descendants
+    let matchedCategoryIds: string[] | null = null;
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      matchedCategoryIds = filters.categoryIds;
+    } else if (filters.categoryId) {
+      if (filters.includeDescendants !== false) {
+        matchedCategoryIds = await getCategoryAndDescendantIdsForAdmin(filters.categoryId);
+      } else {
+        matchedCategoryIds = [filters.categoryId];
+      }
+    }
+
     if (filters.uncategorizedOnly) {
       query = query.is("category_id", null);
+    } else if (matchedCategoryIds && matchedCategoryIds.length > 0) {
+      if (matchedCategoryIds.length === 1) {
+        query = query.eq("category_id", matchedCategoryIds[0]);
+      } else {
+        query = query.in("category_id", matchedCategoryIds);
+      }
     } else if (filters.categoryId) {
       query = query.eq("category_id", filters.categoryId);
     }

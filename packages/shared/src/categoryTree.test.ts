@@ -4,6 +4,7 @@ import {
   buildCategoryTree,
   getCategoryPath,
   getCategoryBreadcrumbs,
+  getCategoryAndDescendantIds,
 } from "./categoryTree";
 
 describe("categoryTree helpers", () => {
@@ -272,5 +273,54 @@ describe("categoryTree helpers", () => {
     const uncategorizedCount = 1;
     const totalStoreProducts = uncategorizedCount + tree.reduce((acc, r) => acc + r.total_count, 0);
     expect(totalStoreProducts).toBe(1195);
+  });
+
+  describe("getCategoryAndDescendantIds", () => {
+    it("returns root and all recursive descendants from a CategoryNode tree", () => {
+      const tree = buildCategoryTree(mockCategories4Levels);
+      // Root Electronics (cat-l1) has cat-l2, cat-l3, cat-l4, and cat-l2-cables
+      const ids = getCategoryAndDescendantIds(tree, "cat-l1");
+      expect(ids).toContain("cat-l1");
+      expect(ids).toContain("cat-l2");
+      expect(ids).toContain("cat-l3");
+      expect(ids).toContain("cat-l4");
+      expect(ids).toContain("cat-l2-cables");
+      expect(ids.length).toBe(5);
+    });
+
+    it("returns intermediate node and its subcategories only", () => {
+      const tree = buildCategoryTree(mockCategories4Levels);
+      // cat-l2 (Mobile Accessories) has cat-l3 and cat-l4
+      const ids = getCategoryAndDescendantIds(tree, "cat-l2");
+      expect(ids).toEqual(["cat-l2", "cat-l3", "cat-l4"]);
+    });
+
+    it("returns only the leaf node ID when target is a leaf", () => {
+      const tree = buildCategoryTree(mockCategories4Levels);
+      const ids = getCategoryAndDescendantIds(tree, "cat-l4");
+      expect(ids).toEqual(["cat-l4"]);
+    });
+
+    it("returns targetId when targetId is not found in tree", () => {
+      const tree = buildCategoryTree(mockCategories4Levels);
+      const ids = getCategoryAndDescendantIds(tree, "non-existent-id");
+      expect(ids).toEqual(["non-existent-id"]);
+    });
+
+    it("returns empty array when targetId or tree is empty", () => {
+      expect(getCategoryAndDescendantIds([], "cat-1")).toEqual(["cat-1"]);
+      expect(getCategoryAndDescendantIds([], null)).toEqual([]);
+      expect(getCategoryAndDescendantIds([], undefined)).toEqual([]);
+    });
+
+    it("works correctly on flat Category array", () => {
+      const ids = getCategoryAndDescendantIds(mockCategories4Levels, "cat-l1");
+      expect(ids).toContain("cat-l1");
+      expect(ids).toContain("cat-l2");
+      expect(ids).toContain("cat-l3");
+      expect(ids).toContain("cat-l4");
+      expect(ids).toContain("cat-l2-cables");
+      expect(ids.length).toBe(5);
+    });
   });
 });

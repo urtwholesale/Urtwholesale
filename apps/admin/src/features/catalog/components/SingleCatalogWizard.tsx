@@ -15,6 +15,9 @@ import {
   Sparkles,
   Copy,
   Save,
+  Link2,
+  Clipboard,
+  X,
 } from "lucide-react";
 import { CategoryCascader } from "./CategoryCascader";
 import { KeywordsInput } from "./KeywordsInput";
@@ -103,9 +106,59 @@ export function SingleCatalogWizard({
   const [uploadingFront, setUploadingFront] = useState(false);
   const [frontSavingsBadge, setFrontSavingsBadge] = useState<string | null>(null);
 
-  // Image Library integration state
+  // Image Library & Link Paste integration state
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [imagePickerTarget, setImagePickerTarget] = useState<"front" | "gallery">("front");
+  const [showLinkInputFor, setShowLinkInputFor] = useState<"front" | "gallery" | null>(null);
+  const [pastedLinkText, setPastedLinkText] = useState("");
+  const [pastedLinkError, setPastedLinkError] = useState<string | null>(null);
+
+  function handleAddPastedLink() {
+    const raw = pastedLinkText.trim();
+    if (!raw) {
+      setPastedLinkError("Please enter or paste an image URL.");
+      return;
+    }
+    const parts = raw.split(/[\n,\s]+/).map((s) => s.trim()).filter(Boolean);
+    const valid: string[] = [];
+    for (const p of parts) {
+      try {
+        const u = new URL(p);
+        if (u.protocol === "http:" || u.protocol === "https:") {
+          valid.push(u.href);
+        }
+      } catch {}
+    }
+    if (valid.length === 0) {
+      setPastedLinkError("Please enter a valid HTTP or HTTPS image URL.");
+      return;
+    }
+
+    triggerHaptic("success");
+    if (showLinkInputFor === "front") {
+      setFrontImage(valid[0]!);
+      updateCurrentProduct({ frontImage: valid[0]! });
+    } else if (showLinkInputFor === "gallery") {
+      updateCurrentProduct({
+        galleryImages: [...currentProduct.galleryImages, ...valid],
+      });
+    }
+    setPastedLinkText("");
+    setPastedLinkError(null);
+    setShowLinkInputFor(null);
+  }
+
+  async function handlePasteFromClipboardToWizard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        setPastedLinkText(text.trim());
+        setPastedLinkError(null);
+      }
+    } catch {
+      setPastedLinkError("Unable to access clipboard. Please paste manually into the box.");
+    }
+  }
 
   function handleImagePickerSelect(selected: CatalogImage[]) {
     if (selected.length === 0) return;
@@ -275,15 +328,21 @@ export function SingleCatalogWizard({
   function handleRemoveTier(index: number) {
     triggerHaptic("selection");
     if (currentProduct.tiers.length <= 1) return;
-    updateCurrentProduct({
-      tiers: currentProduct.tiers.filter((_, idx) => idx !== index),
-    });
+    const remaining = currentProduct.tiers.filter((_, idx) => idx !== index);
+    const updates: Partial<SingleProductDraft> = { tiers: remaining };
+    if (index === 0 && remaining[0]) {
+      updates.minOrderQty = remaining[0].min_qty;
+    }
+    updateCurrentProduct(updates);
   }
 
   function handleTierChange(index: number, field: "min_qty" | "unit_price", val: number) {
-    updateCurrentProduct({
-      tiers: currentProduct.tiers.map((t, idx) => (idx === index ? { ...t, [field]: val } : t)),
-    });
+    const nextTiers = currentProduct.tiers.map((t, idx) => (idx === index ? { ...t, [field]: val } : t));
+    const updates: Partial<SingleProductDraft> = { tiers: nextTiers };
+    if (index === 0 && field === "min_qty") {
+      updates.minOrderQty = Math.max(1, val || 1);
+    }
+    updateCurrentProduct(updates);
   }
 
   // Specs Management
@@ -686,18 +745,97 @@ export function SingleCatalogWizard({
                       />
                     </label>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic("selection");
-                        setImagePickerTarget("front");
-                        setShowImagePicker(true);
-                      }}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs shadow-2xs hover:bg-slate-50 flex items-center space-x-1 cursor-pointer"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5 text-brand" />
-                      <span>Add from Library</span>
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic("selection");
+                          setImagePickerTarget("front");
+                          setShowImagePicker(true);
+                        }}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs shadow-2xs hover:bg-slate-50 flex items-center space-x-1 cursor-pointer"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-brand" />
+                        <span>Add from Library</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic("selection");
+                          setShowLinkInputFor(showLinkInputFor === "front" ? null : "front");
+                          setPastedLinkError(null);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl border font-bold text-xs shadow-2xs flex items-center space-x-1 cursor-pointer transition ${
+                          showLinkInputFor === "front"
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Link2 className="w-3.5 h-3.5 text-brand" />
+                        <span>Paste Link</span>
+                      </button>
+                    </div>
+
+                    {showLinkInputFor === "front" && (
+                      <div className="w-full max-w-md p-3 bg-white border border-slate-200 rounded-2xl space-y-2 text-left shadow-2xs animate-fade-in">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                          <span className="flex items-center space-x-1">
+                            <Link2 className="w-3 h-3 text-brand" />
+                            <span>Paste Image Link</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowLinkInputFor(null);
+                              setPastedLinkText("");
+                              setPastedLinkError(null);
+                            }}
+                            className="text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="flex items-center space-x-1.5">
+                          <div className="relative flex-1">
+                            <input
+                              type="url"
+                              value={pastedLinkText}
+                              onChange={(e) => {
+                                setPastedLinkText(e.target.value);
+                                pastedLinkError && setPastedLinkError(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddPastedLink();
+                                }
+                              }}
+                              placeholder="https://... (image URL)"
+                              className="w-full pl-2.5 pr-16 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark transition text-slate-800"
+                            />
+                            <button
+                              type="button"
+                              onClick={handlePasteFromClipboardToWizard}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 text-[10px] font-bold flex items-center space-x-1"
+                            >
+                              <Clipboard className="w-2.5 h-2.5 text-slate-400" />
+                              <span>Paste</span>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleAddPastedLink}
+                            className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs hover:shadow-md cursor-pointer shrink-0"
+                          >
+                            Set Front
+                          </button>
+                        </div>
+                        {pastedLinkError && (
+                          <p className="text-[10px] font-semibold text-rose-500">{pastedLinkError}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -954,7 +1092,7 @@ export function SingleCatalogWizard({
                 </div>
               </div>
 
-              {/* Descriptions */}
+              {/* Short Description */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Short Description
@@ -965,28 +1103,6 @@ export function SingleCatalogWizard({
                   onChange={(e) => updateCurrentProduct({ shortDesc: e.target.value })}
                   placeholder="Quick 1-liner summary for listings"
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Full Technical Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={currentProduct.description}
-                  onChange={(e) => updateCurrentProduct({ description: e.target.value })}
-                  placeholder="Detailed specifications, compatibility, and wholesale packaging details"
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand shadow-2xs resize-none"
-                />
-              </div>
-
-              {/* ── Search & Discovery Section with KeywordsInput ── */}
-              <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
-                <KeywordsInput
-                  value={currentProduct.keywords || []}
-                  onChange={(newKeywords) => updateCurrentProduct({ keywords: newKeywords })}
-                  label={`Search Keywords (Product #${activeProductIndex + 1})`}
                 />
               </div>
 
@@ -1045,6 +1161,29 @@ export function SingleCatalogWizard({
                   ))}
                 </div>
               </div>
+
+              {/* Full Technical Description (Below Specifications) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Full Technical Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={currentProduct.description}
+                  onChange={(e) => updateCurrentProduct({ description: e.target.value })}
+                  placeholder="Detailed specifications, compatibility, and wholesale packaging details"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand shadow-2xs resize-none"
+                />
+              </div>
+
+              {/* ── Search & Discovery Section with KeywordsInput ── */}
+              <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                <KeywordsInput
+                  value={currentProduct.keywords || []}
+                  onChange={(newKeywords) => updateCurrentProduct({ keywords: newKeywords })}
+                  label={`Search Keywords (Product #${activeProductIndex + 1})`}
+                />
+              </div>
             </div>
 
             {/* Right 5 Columns: Volume Tiers & Additional Images */}
@@ -1078,11 +1217,10 @@ export function SingleCatalogWizard({
                         <input
                           type="number"
                           value={tier.min_qty}
-                          disabled={idx === 0}
                           onChange={(e) =>
                             handleTierChange(idx, "min_qty", parseInt(e.target.value, 10) || 1)
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 disabled:bg-slate-100"
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
                         />
                       </div>
                       <div className="flex-1">
@@ -1146,8 +1284,84 @@ export function SingleCatalogWizard({
                         className="hidden"
                       />
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic("selection");
+                        setShowLinkInputFor(showLinkInputFor === "gallery" ? null : "gallery");
+                        setPastedLinkError(null);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center space-x-1 cursor-pointer transition ${
+                        showLinkInputFor === "gallery"
+                          ? "bg-slate-900 text-white"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      }`}
+                    >
+                      <Link2 className="w-3 h-3 text-brand" />
+                      <span>Paste Link</span>
+                    </button>
                   </div>
                 </div>
+
+                {showLinkInputFor === "gallery" && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-left shadow-2xs animate-fade-in mb-3">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                      <span className="flex items-center space-x-1">
+                        <Link2 className="w-3 h-3 text-brand" />
+                        <span>Paste Image Links</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowLinkInputFor(null);
+                          setPastedLinkText("");
+                          setPastedLinkError(null);
+                        }}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <div className="relative flex-1">
+                        <input
+                          type="url"
+                          value={pastedLinkText}
+                          onChange={(e) => {
+                            setPastedLinkText(e.target.value);
+                            pastedLinkError && setPastedLinkError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddPastedLink();
+                            }
+                          }}
+                          placeholder="https://... (single URL or comma separated)"
+                          className="w-full pl-2.5 pr-16 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark transition text-slate-800"
+                        />
+                        <button
+                          type="button"
+                          onClick={handlePasteFromClipboardToWizard}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold flex items-center space-x-1"
+                        >
+                          <Clipboard className="w-2.5 h-2.5 text-slate-400" />
+                          <span>Paste</span>
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddPastedLink}
+                        className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs hover:shadow-md cursor-pointer shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {pastedLinkError && (
+                      <p className="text-[10px] font-semibold text-rose-500">{pastedLinkError}</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-4 gap-2">
                   {(currentProduct.frontImage || frontImage) && (

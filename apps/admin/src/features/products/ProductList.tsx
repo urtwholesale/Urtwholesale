@@ -10,6 +10,7 @@ import {
   buildCategoryTree,
   getCategoryPath,
   getCategoryBreadcrumbs,
+  getCategoryAndDescendantIds,
 } from "@urbanrat/shared";
 import {
   fetchCategories,
@@ -231,8 +232,16 @@ export function ProductList() {
     setLoading(true);
     setError(null);
     try {
+      const targetCategoryIds =
+        selectedCategoryId && includeDescendants
+          ? getCategoryAndDescendantIds(categoryTree, selectedCategoryId)
+          : selectedCategoryId
+          ? [selectedCategoryId]
+          : undefined;
+
       const filters: ProductListFilters = {
         categoryId: uncategorizedOnly ? null : selectedCategoryId,
+        categoryIds: uncategorizedOnly ? undefined : targetCategoryIds,
         uncategorizedOnly,
         includeDescendants,
         search: debouncedSearch.trim() || undefined,
@@ -258,6 +267,7 @@ export function ProductList() {
     selectedCategoryId,
     uncategorizedOnly,
     includeDescendants,
+    categoryTree,
     debouncedSearch,
     urbanratOnly,
     lowStockOnly,
@@ -358,8 +368,16 @@ export function ProductList() {
     triggerHaptic("selection");
     setIsFetchingAllCategoryIds(true);
     try {
+      const targetCategoryIds =
+        selectedCategoryId && includeDescendants
+          ? getCategoryAndDescendantIds(categoryTree, selectedCategoryId)
+          : selectedCategoryId
+          ? [selectedCategoryId]
+          : undefined;
+
       const filters: ProductListFilters = {
         categoryId: selectedCategoryId || undefined,
+        categoryIds: targetCategoryIds,
         uncategorizedOnly: uncategorizedOnly || undefined,
         includeDescendants,
         search: debouncedSearch.trim() || undefined,

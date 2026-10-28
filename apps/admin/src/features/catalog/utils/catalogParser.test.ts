@@ -153,3 +153,41 @@ describe("Bulk CSV Catalog Parser — G-TEL UV Glass 6-row Fixture", () => {
     expect(row5.suggestedSku).toBe("UV-MOTOROLA-MOTOROLA-EDGE-70-PRO-PLUS");
   });
 });
+
+describe("Bulk CSV Catalog Parser — Mobile Accessories with mrp_inr & volume_price_tiers_json", () => {
+  const CSV_FIXTURE_MOBILE_ACCESSORIES = `product_name,url_slug,product_sku,category,subcategory,mrp_inr,base_wholesale_price,wholesale_price,volume_price_tiers_json,warranty_months,brand,compatibility_group,short_tagline,primary_image_url,product_images,detailed_description,initial_stock,min_order_qty,order_qty_step,technical_specs_json,search_keywords,flag_urbanrat_brand,flag_featured,flag_trending,flag_active
+"Fresh Pyramid Multi-Angle Stackable Mobile Stand (Series 38, 20-Piece Bulk Poly Pack)",fresh-pyramid-multi-angle-stackable-mobile-stand-s38,HLD-DSK-PYRAMID-S38-20P,Mobile Accessories,Mobile Stands & Docks,129,13,13,"[{""min_qty"": 1, ""unit_price"": 13.0}, {""min_qty"": 60, ""unit_price"": 11.0}, {""min_qty"": 300, ""unit_price"": 9.0}]",0,Generic / Fresh Pyramid,Universal Mobile Phones,"Stable. Stylish. Stackable",https://mmuuqzgclrdhcvrcavgi.supabase.co/storage/v1/object/public/product-images/catalog/2026/10/d0eeb02a.webp,https://mmuuqzgclrdhcvrcavgi.supabase.co/storage/v1/object/public/product-images/catalog/2026/10/d0eeb02a.webp,"Detailed pyramid description",2000,1,1,"{""model"": ""Series 38""}","fresh pyramid, mobile stand",False,True,True,True`;
+
+  const parsed = Papa.parse<string[]>(CSV_FIXTURE_MOBILE_ACCESSORIES, { skipEmptyLines: "greedy", header: false });
+  const result = parseSpreadsheetRowsWithReport(parsed.data);
+  const rows = result.rows;
+
+  it("parses mrp_inr into mrp accurately", () => {
+    expect(rows).toHaveLength(1);
+    const row = rows[0]!;
+    expect(row.mrp).toBe(129);
+    expect(row.price).toBe(13);
+  });
+
+  it("parses volume_price_tiers_json into 3 volume tiers", () => {
+    const row = rows[0]!;
+    expect(row.tiers).toHaveLength(3);
+    expect(row.tiers[0]).toEqual({ min_qty: 1, unit_price: 13 });
+    expect(row.tiers[1]).toEqual({ min_qty: 60, unit_price: 11 });
+    expect(row.tiers[2]).toEqual({ min_qty: 300, unit_price: 9 });
+  });
+
+  it("parses boolean flags flag_featured, flag_trending, flag_active, flag_urbanrat_brand", () => {
+    const row = rows[0]!;
+    expect(row.isUrbanrat).toBe(false);
+    expect(row.isFeatured).toBe(true);
+    expect(row.isTrending).toBe(true);
+    expect(row.isActive).toBe(true);
+  });
+
+  it("deduplicates primary_image_url and product_images into unique images", () => {
+    const row = rows[0]!;
+    expect(row.images).toHaveLength(1);
+    expect(row.images[0]).toContain("product-images/catalog");
+  });
+});
