@@ -4,6 +4,7 @@ import {
   parseSkuFromFilename,
   CANONICAL_FIELD_OPTIONS,
   resolveCanonicalHeader,
+  extractColorFromHeader,
 } from "@urbanrat/shared";
 import {
   X,
@@ -556,6 +557,7 @@ export function BulkCatalogModal({
         { field: "Brand", filled: parsedRows.filter((r) => r.brand?.trim()).length, empty: parsedRows.filter((r) => !r.brand?.trim()).length },
         { field: "Compatibility Group", filled: parsedRows.filter((r) => r.attributes?.compatibility_group).length, empty: parsedRows.filter((r) => !r.attributes?.compatibility_group).length },
         { field: "Image URL", filled: parsedRows.filter((r) => r.images && r.images.length > 0).length, empty: parsedRows.filter((r) => !r.images || r.images.length === 0).length },
+        { field: "Color Variants", filled: parsedRows.filter((r) => r.hasColors && r.colors && r.colors.length > 0).length, empty: parsedRows.filter((r) => !r.hasColors || !r.colors || r.colors.length === 0).length },
       ];
 
       setImportReport({
@@ -927,13 +929,21 @@ export function BulkCatalogModal({
                           <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl">
                             {rawHeaders.map((hdr) => {
                               const detected = resolveCanonicalHeader(hdr);
+                              const colorName = extractColorFromHeader(hdr);
                               const currentSelected =
-                                customMappings[hdr] !== undefined ? customMappings[hdr] : (detected || "ignore");
+                                customMappings[hdr] !== undefined
+                                  ? customMappings[hdr]
+                                  : (detected || (colorName ? "color_variant" : "ignore"));
 
                               return (
                                 <div key={hdr} className="px-3 py-2 flex items-center justify-between gap-3 text-xs">
                                   <div className="min-w-0 flex items-center space-x-2">
                                     <span className="font-mono font-medium text-slate-800 truncate">{hdr}</span>
+                                    {colorName && (
+                                      <span className="px-1.5 py-0.2 rounded bg-sky-100 text-sky-700 text-[10px] font-bold">
+                                        Color: {colorName}
+                                      </span>
+                                    )}
                                     {ignoredColumns.includes(hdr) && (
                                       <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 text-[10px] font-bold">
                                         Unmapped
@@ -948,6 +958,9 @@ export function BulkCatalogModal({
                                     }}
                                     className="px-2 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white"
                                   >
+                                    {colorName && (
+                                      <option value="color_variant">🎨 Color Variant: {colorName} (Boolean)</option>
+                                    )}
                                     <option value="ignore">❌ Ignore Column</option>
                                     {CANONICAL_FIELD_OPTIONS.map((opt) => (
                                       <option key={opt.key} value={opt.key}>

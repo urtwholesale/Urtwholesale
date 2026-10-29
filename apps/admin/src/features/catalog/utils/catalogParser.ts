@@ -6,6 +6,8 @@ import {
   resolveCanonicalHeader,
   parseBool,
   parseColorString,
+  extractColorFromHeader,
+  cleanColorArray,
 } from "@urbanrat/shared";
 
 export interface BulkCatalogParseResult {
@@ -13,6 +15,7 @@ export interface BulkCatalogParseResult {
   ignoredColumns: string[];
   duplicateColumns?: { canonical: string; headers: string[] }[];
   rawHeaders: string[];
+  colorVariantColumns?: { colorName: string; rawHeader: string }[];
 }
 
 /**
@@ -198,9 +201,33 @@ export function parseSpreadsheetRowsWithReport(
   const headerMap = new Map<string, number[]>(); // canonical -> array of column indices
   const canonicalToRawHeaders = new Map<string, string[]>();
   const ignoredColumns: string[] = [];
+  const colorVariantColumns: { colorName: string; index: number; rawHeader: string }[] = [];
 
   rawHeaders.forEach((rawTrimmed, idx) => {
-    const canonical = resolveCanonicalHeader(rawTrimmed, customMappings);
+    // 1. Check custom overrides
+    if (customMappings && customMappings[rawTrimmed] !== undefined) {
+      const custom = customMappings[rawTrimmed];
+      if (custom === "ignore") {
+        ignoredColumns.push(rawTrimmed);
+        return;
+      }
+      if (custom === "color_variant") {
+        const colorName = extractColorFromHeader(rawTrimmed) || rawTrimmed;
+        colorVariantColumns.push({ colorName, index: idx, rawHeader: rawTrimmed });
+        return;
+      }
+      const indices = headerMap.get(custom) || [];
+      indices.push(idx);
+      headerMap.set(custom, indices);
+
+      const headers = canonicalToRawHeaders.get(custom) || [];
+      headers.push(rawTrimmed);
+      canonicalToRawHeaders.set(custom, headers);
+      return;
+    }
+
+    // 2. Check canonical dictionary alias
+    const canonical = resolveCanonicalHeader(rawTrimmed);
     if (canonical) {
       const indices = headerMap.get(canonical) || [];
       indices.push(idx);
@@ -209,9 +236,18 @@ export function parseSpreadsheetRowsWithReport(
       const headers = canonicalToRawHeaders.get(canonical) || [];
       headers.push(rawTrimmed);
       canonicalToRawHeaders.set(canonical, headers);
-    } else {
-      ignoredColumns.push(rawTrimmed);
+      return;
     }
+
+    // 3. Check dynamic color variant column (e.g. "Color - Black", "Color: Silver")
+    const colorName = extractColorFromHeader(rawTrimmed);
+    if (colorName) {
+      colorVariantColumns.push({ colorName, index: idx, rawHeader: rawTrimmed });
+      return;
+    }
+
+    // 4. Truly unrecognized column
+    ignoredColumns.push(rawTrimmed);
   });
 
   const duplicateColumns: { canonical: string; headers: string[] }[] = [];
@@ -525,7 +561,33 @@ export function parseSpreadsheetRowsWithReport(
     const rawColors = getCol("colors", row);
     const parsedColors = rawColors ? parseColorString(rawColors) : [];
     const specsColors = Array.isArray(specs.colors) ? specs.colors : [];
-    const colors = parsedColors.length > 0 ? parsedColors : specsColors;
+    const specsAvailableColors = Array.isArray(specs.available_colors) ? specs.available_colors : [];
+
+    // Harvest colors from dynamic color variant columns (e.g. "Color - Black": Yes)
+    const harvestedDynamicColors: string[] = [];
+    if (colorVariantColumns.length > 0) {
+      for (const col of colorVariantColumns) {
+        if (col.index < row.length) {
+          const cellVal = row[col.index];
+          const isTruthy =
+            parseBool(cellVal, false) ||
+            ["available", "in stock", "instock"].includes(String(cellVal || "").trim().toLowerCase());
+          if (isTruthy) {
+            harvestedDynamicColors.push(col.colorName);
+          }
+        }
+      }
+    }
+
+    const baseColors =
+      parsedColors.length > 0
+        ? parsedColors
+        : specsAvailableColors.length > 0
+        ? specsAvailableColors
+        : specsColors;
+
+    const mergedColors = cleanColorArray([...baseColors, ...harvestedDynamicColors]);
+    const colors = mergedColors;
 
     const rawHasColors = getCol("has_colors", row);
     let hasColors = false;
@@ -582,6 +644,10 @@ export function parseSpreadsheetRowsWithReport(
     ignoredColumns: Array.from(new Set(ignoredColumns)),
     duplicateColumns,
     rawHeaders,
+    colorVariantColumns: colorVariantColumns.map((c) => ({
+      colorName: c.colorName,
+      rawHeader: c.rawHeader,
+    })),
   };
 }
 

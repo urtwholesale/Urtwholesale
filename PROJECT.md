@@ -970,4 +970,24 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - Both `apps/store` and `apps/admin` compile with 0 TypeScript/CSS errors (`npm run build`).
   - Dev servers running live on ports 5173 (storefront) and 5174 (admin).
 
+---
+
+### Touchpoint 15 — Dynamic Per-Color Matrix Column Recognition & Bulk Catalog Parser Enhancement
+
+- **Dynamic Per-Color Column Recognition (`catalogHeaders.ts`, `catalogParser.ts`)**:
+  - **The Root Cause**: Supplier spreadsheets (such as AR+AF Lens Rings, cases, and tempered glass catalogs) often feature dynamic matrix columns formatted as `Color - Black`, `Color - Silver`, `Color - Gold`, `Color - Titanium Grey`, `Color - Sea Blue`, etc. with values like `Yes` / `No`. Because these dynamic headers did not match static aliases in `CANONICAL_FIELD_ALIASES`, the spreadsheet parser previously pushed all of them into `ignoredColumns`, displaying an alarming post-import warning banner: *"The following columns were not recognized by alias dictionary and were ignored: Color - Black, Color - Silver..."*.
+  - **Pattern Extraction (`extractColorFromHeader`, `isColorVariantHeader`)**: Implemented dynamic header detection matching delimiters like `Color - <Name>`, `Colour - <Name>`, `Color: <Name>`, `Color_<Name>`, `Color (<Name>)`, and `Color / <Name>`. Safely excludes general reserved keywords (`options`, `variants`, `enabled`, `selection`, `list`, `names`, `picker`, `none`, etc.).
+  - **Zero False-Positive Ignored Columns**: Excluded recognized dynamic color columns from `ignoredColumns`, eliminating the post-upload warning banner for valid supplier color matrices.
+  - **Active Color Harvesting**: In `catalogParser.ts`, dynamic color columns are scanned per row. Cells with truthy values (`Yes`, `Y`, `True`, `1`, `Available`, `In Stock`) are dynamically harvested and merged with any existing `Available Colors` or `specs.available_colors`, deduplicating seamlessly using `cleanColorArray()`.
+  - **Automatic Color Variant Activation**: If a row has truthy values in any color columns, `hasColors` is automatically set to `true`, and both `colors` and `specs.colors` are populated with the active color palette.
+
+- **Bulk Upload Modal & Column Mapper Integration (`BulkCatalogModal.tsx`)**:
+  - **Field Statistics Table**: Added **Color Variants** metric to the post-import report screen showing how many rows have active color variants populated (`14/14 filled`).
+  - **Intelligent Column Mapper**: In the customizable column mapper modal, recognized per-color columns display an informative `Color: <ColorName>` pill and pre-select `🎨 Color Variant: <ColorName> (Boolean)`. Merchants can still manually override or ignore specific color columns if desired.
+
+- **Automated Verification & Test Suite**:
+  - **174 automated unit tests** passing across 12 test suites with 0 failures (`catalogHeaders.test.ts`, `catalogParser.test.ts`, `colors.test.ts`, etc.).
+  - Tested directly against the user's uploaded 14-row AR+AF Lens Ring catalog fixture (`media_1793271256007_95a23165.csv`), confirming 0 ignored columns and 100% color preservation across all rows (Black, Silver, Gold, Titanium Grey, Sea Blue, Orange, Pink, Purple, Green, Blue).
+  - Both `apps/admin` and `apps/store` compile cleanly with 0 TypeScript/CSS errors (`npm run build`).
+
 

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { normalizeHeaderKey, resolveCanonicalHeader, parseBool } from "./catalogHeaders";
+import {
+  normalizeHeaderKey,
+  resolveCanonicalHeader,
+  parseBool,
+  extractColorFromHeader,
+  isColorVariantHeader,
+} from "./catalogHeaders";
 
 describe("catalogHeaders", () => {
   it("normalizes headers by stripping BOM, parens, and non-alphanumerics", () => {
@@ -101,5 +107,40 @@ describe("catalogHeaders", () => {
     expect(parseBool("", false)).toBe(false);
     expect(parseBool("", true)).toBe(true);
     expect(parseBool(null, false)).toBe(false);
+  });
+
+  it("extractColorFromHeader extracts color names from dynamic color column headers", () => {
+    expect(extractColorFromHeader("Color - Black")).toBe("Black");
+    expect(extractColorFromHeader("Color - Silver")).toBe("Silver");
+    expect(extractColorFromHeader("Color - Titanium Grey")).toBe("Titanium Grey");
+    expect(extractColorFromHeader("Color - Sea Blue")).toBe("Sea Blue");
+    expect(extractColorFromHeader("Colour - Midnight")).toBe("Midnight");
+    expect(extractColorFromHeader("Color: Deep Blue")).toBe("Deep Blue");
+    expect(extractColorFromHeader("Color_Gold")).toBe("Gold");
+    expect(extractColorFromHeader("Color (Pink)")).toBe("Pink");
+    expect(extractColorFromHeader("Colour (Rose Gold)")).toBe("Rose Gold");
+    expect(extractColorFromHeader("Color / Forest Green")).toBe("Forest Green");
+    expect(extractColorFromHeader("color - black")).toBe("Black");
+    expect(extractColorFromHeader("COLOR - TITANIUM GREY")).toBe("Titanium Grey");
+
+    // Reserved words should NOT be recognized as color variants
+    expect(extractColorFromHeader("Color Options")).toBe(null);
+    expect(extractColorFromHeader("Color Variants")).toBe(null);
+    expect(extractColorFromHeader("Color Enabled")).toBe(null);
+    expect(extractColorFromHeader("Color Selection")).toBe(null);
+    expect(extractColorFromHeader("Color List")).toBe(null);
+    expect(extractColorFromHeader("Available Colors")).toBe(null);
+    expect(extractColorFromHeader("Product Name")).toBe(null);
+    expect(extractColorFromHeader("Color")).toBe(null);
+    expect(extractColorFromHeader("")).toBe(null);
+  });
+
+  it("isColorVariantHeader identifies dynamic color variant headers accurately", () => {
+    expect(isColorVariantHeader("Color - Black")).toBe(true);
+    expect(isColorVariantHeader("Color - Titanium Grey")).toBe(true);
+    expect(isColorVariantHeader("Colour: Navy")).toBe(true);
+    expect(isColorVariantHeader("Product Name")).toBe(false);
+    expect(isColorVariantHeader("Color Options")).toBe(false);
+    expect(isColorVariantHeader("Available Colors")).toBe(false);
   });
 });

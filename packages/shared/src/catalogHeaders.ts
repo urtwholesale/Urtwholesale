@@ -256,3 +256,77 @@ export function parseBool(val: any, defaultVal: boolean = false): boolean {
 
   return defaultVal;
 }
+
+/**
+ * Detects whether a header represents a per-color boolean column
+ * (e.g., "Color - Black", "Color: Silver", "Colour_Deep Blue", "Color - Titanium Grey").
+ * Returns the extracted, cleanly formatted color name or null if not a color variant header.
+ */
+export function extractColorFromHeader(header: string): string | null {
+  if (!header || typeof header !== "string") return null;
+  const trimmed = header.trim();
+  if (!trimmed) return null;
+
+  // Reserved keywords that indicate general color settings rather than a specific color
+  const reservedKeywords = new Set([
+    "options",
+    "option",
+    "variants",
+    "variant",
+    "selection",
+    "enabled",
+    "enable",
+    "list",
+    "names",
+    "name",
+    "picker",
+    "pickers",
+    "flag",
+    "flags",
+    "code",
+    "codes",
+    "ways",
+    "way",
+    "specs",
+    "spec",
+    "json",
+    "header",
+    "column",
+    "none",
+    "na",
+    "n/a",
+    "null",
+  ]);
+
+  // Match: "Color - Black", "Color: Black", "Color_Black", "Colour - Black", "Color / Black"
+  let match = trimmed.match(/^(?:color|colour)[\s_.:\/-]+(.+)$/i);
+  if (!match) {
+    // Match: "Color (Black)" or "Colour(Black)"
+    match = trimmed.match(/^(?:color|colour)[\s_.:\/-]*\(([^)]+)\)$/i);
+  }
+
+  if (!match || !match[1]) return null;
+
+  const rawCandidate = match[1].trim();
+  const candidate = rawCandidate.replace(/^\((.+)\)$/, "$1").trim();
+  if (!candidate || reservedKeywords.has(candidate.toLowerCase())) {
+    return null;
+  }
+
+  // Format nicely (e.g. "black" -> "Black", "SEA BLUE" -> "Sea Blue")
+  if (candidate === candidate.toLowerCase() || (candidate === candidate.toUpperCase() && candidate.length > 2)) {
+    return candidate
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  return candidate;
+}
+
+/**
+ * Returns true if the header is recognized as an individual color variant column.
+ */
+export function isColorVariantHeader(header: string): boolean {
+  return extractColorFromHeader(header) !== null;
+}

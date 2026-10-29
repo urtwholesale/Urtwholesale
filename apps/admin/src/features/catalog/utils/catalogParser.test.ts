@@ -236,3 +236,85 @@ describe("Bulk CSV Catalog Parser — Selective Color Configuration", () => {
     expect(row.specs?.has_colors).toBe(false);
   });
 });
+
+describe("Bulk CSV Catalog Parser — Dynamic Per-Color Boolean Columns (e.g. Lens Ring)", () => {
+  const CSV_FIXTURE_DYNAMIC_COLORS = `Product Name,Product SKU,Category,Maximum Retail Price (MRP ₹),Base Wholesale Price,Current Stock,Available Colors,Color - Black,Color - Silver,Color - Gold,Color - Blue,Color - Green,Color - Purple,Color - Pink,Color - Yellow,Color - Titanium Grey,Color - Sea Blue,Color - Orange
+iPhone 11 / 12 / 12 Mini AR+AF Lens Ring,LR-APP-IP11-12,Tempered Glass,35.0,35.0,993,"Purple, Green, Gold, Blue, Black, Silver",Yes,Yes,Yes,Yes,Yes,Yes,No,No,No,No,No
+iPhone 11 Pro / 12 Pro AR+AF Lens Ring,LR-APP-IP11P-12P,Tempered Glass,35.0,35.0,993,"Black, Silver, Gold, Green",Yes,Yes,Yes,No,Yes,No,No,No,No,No,No
+iPhone 16 Pro Max Lens Ring,LR-APP-IP16PM,Tempered Glass,45.0,45.0,500,,Yes,No,No,No,No,No,No,No,Yes,Yes,No
+Plain Adapter No Colors,ADP-01,Charger,199.0,99.0,100,,No,No,No,No,No,No,No,No,No,No,No`;
+
+  const parsed = Papa.parse<string[]>(CSV_FIXTURE_DYNAMIC_COLORS, { skipEmptyLines: "greedy", header: false });
+  const result = parseSpreadsheetRowsWithReport(parsed.data);
+  const rows = result.rows;
+
+  it("recognizes dynamic Color - <ColorName> columns and has 0 ignored columns", () => {
+    expect(result.ignoredColumns).toEqual([]);
+    expect(result.colorVariantColumns).toHaveLength(11);
+  });
+
+  it("parses 4 product rows correctly", () => {
+    expect(rows).toHaveLength(4);
+  });
+
+  it("merges Available Colors and dynamic color columns for Row 1", () => {
+    const row = rows[0]!;
+    expect(row.hasColors).toBe(true);
+    expect(row.colors).toContain("Purple");
+    expect(row.colors).toContain("Black");
+    expect(row.colors).toContain("Silver");
+    expect(row.colors).toContain("Gold");
+    expect(row.colors).toContain("Blue");
+    expect(row.colors).toContain("Green");
+    expect(row.colors).not.toContain("Pink");
+    expect(row.colors).not.toContain("Orange");
+    expect(row.specs?.colors).toEqual(row.colors);
+    expect(row.specs?.has_colors).toBe(true);
+  });
+
+  it("correctly restricts Row 2 to active Yes colors", () => {
+    const row = rows[1]!;
+    expect(row.hasColors).toBe(true);
+    expect(row.colors).toEqual(["Black", "Silver", "Gold", "Green"]);
+    expect(row.colors).not.toContain("Blue");
+    expect(row.colors).not.toContain("Purple");
+  });
+
+  it("harvests colors from dynamic columns when Available Colors column is empty (Row 3)", () => {
+    const row = rows[2]!;
+    expect(row.hasColors).toBe(true);
+    expect(row.colors).toEqual(["Black", "Titanium Grey", "Sea Blue"]);
+    expect(row.specs?.colors).toEqual(["Black", "Titanium Grey", "Sea Blue"]);
+    expect(row.specs?.has_colors).toBe(true);
+  });
+
+  it("sets hasColors to false when all dynamic color columns are No and no other colors provided (Row 4)", () => {
+    const row = rows[3]!;
+    expect(row.hasColors).toBe(false);
+    expect(row.colors).toEqual([]);
+    expect(row.specs?.has_colors).toBe(false);
+  });
+
+  it("supports custom override to ignore a specific color column", () => {
+    const customResult = parseSpreadsheetRowsWithReport(parsed.data, {
+      "Color - Black": "ignore",
+    });
+    expect(customResult.ignoredColumns).toContain("Color - Black");
+  });
+
+  it("processes user's 14-row AR+AF Lens Ring CSV with 0 ignored columns and full color preservation", () => {
+    const lensRingRow15 = `Product Name,URL Slug,Product SKU,Category,Subcategory,Selected Path,Maximum Retail Price (MRP ₹),Warranty (Months),Short Tagline / Subtitle,Detailed Description,Base Wholesale Price,Tier 1 Min Qty,Tier 1 Wholesale Price (₹/pc),Tier 2 Min Qty,Tier 2 Wholesale Price (₹/pc),Tier 3 Min Qty,Tier 3 Wholesale Price (₹/pc),Current Stock,Min Order Qty,Order Qty Step,Low Stock Alert,Technical Specs (JSON),Search Keywords,Urbanrat Brand,Featured,Trending,Active,Brand,Compatibility Group,Image URL,Available Colors,Color - Black,Color - Silver,Color - Gold,Color - Blue,Color - Green,Color - Purple,Color - Pink,Color - Yellow,Color - Titanium Grey,Color - Sea Blue,Color - Orange
+iPhone 17 Pro / 17 Pro Max AR+AF Lens Ring,iphone-17pro-17promax-ar-af-lens-ring,LR-APP-IP17P-17PM,Tempered Glass,lens ring,Tempered Glass > lens ring > iPhone 17 Pro / 17 Pro Max AR+AF Lens Ring (Product),35.0,0,,AR+AF 95%+ Transparency Round Shape Camera Lens Ring Protector with Lens Removal Tool,35.0,5,35.0,,,,,993,5,1,200,"{""material"": ""Alloy Metal Ring + AR+AF Tempered Glass"", ""finish"": ""95%+ Transparency AR+AF Coating"", ""shape"": ""Round Shape"", ""glue"": ""Full Glue Adhesion"", ""brand_compatibility"": ""Apple"", ""compatibility_group"": ""Label: IPHONE 17 PRO / 17 PRO MAX"", ""included_accessories"": ""Lens Removal Tool"", ""available_colors"": [""Black"", ""Silver"", ""Blue"", ""Orange"", ""Titanium Grey""]}","iphone 17 pro / 17 pro max, apple, iphone, ar+af, lens ring, camera protector, round shape, black, silver, blue, orange, titanium grey",False,False,False,True,Apple,Label: IPHONE 17 PRO / 17 PRO MAX,https://mmuuqzgclrdhcvrcavgi.supabase.co/storage/v1/object/public/product-images/catalog/2026/10/ac5821ff-7c59-44df-8d3c-4fedcefc8578-p0ut-t3glbbyqfusol4.jpg.webp,"Black, Silver, Blue, Orange, Titanium Grey",Yes,Yes,No,Yes,No,No,No,No,Yes,No,Yes`;
+
+    const parsed15 = Papa.parse<string[]>(lensRingRow15, { skipEmptyLines: "greedy", header: false });
+    const res = parseSpreadsheetRowsWithReport(parsed15.data);
+    expect(res.ignoredColumns).toHaveLength(0);
+    expect(res.colorVariantColumns).toHaveLength(11);
+
+    const r = res.rows[0]!;
+    expect(r.hasColors).toBe(true);
+    expect(r.colors).toEqual(["Black", "Silver", "Blue", "Orange", "Titanium Grey"]);
+    expect(r.specs?.has_colors).toBe(true);
+    expect(r.specs?.colors).toEqual(["Black", "Silver", "Blue", "Orange", "Titanium Grey"]);
+  });
+});

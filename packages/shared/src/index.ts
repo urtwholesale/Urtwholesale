@@ -125,6 +125,8 @@ export {
   CANONICAL_FIELD_OPTIONS,
   resolveCanonicalHeader,
   parseBool,
+  extractColorFromHeader,
+  isColorVariantHeader,
 } from "./catalogHeaders";
 
 export {
