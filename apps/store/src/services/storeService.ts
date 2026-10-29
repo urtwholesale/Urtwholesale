@@ -231,8 +231,13 @@ export async function fetchProducts(
   }
 
   if (search && search.trim()) {
-    const s = search.trim();
-    query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,keywords.cs.{${s.toLowerCase()}}`);
+    // Sanitize search string so commas/parentheses don't break PostgREST .or() filter syntax
+    const cleanSearch = search.trim().replace(/[,()]/g, " ").replace(/\s+/g, " ").trim();
+    if (cleanSearch) {
+      query = query.or(
+        `name.ilike.%${cleanSearch}%,sku.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,specs->>brand_compatibility.ilike.%${cleanSearch}%,specs->>compatibility_group.ilike.%${cleanSearch}%`
+      );
+    }
   }
 
   // Sorting based on products.price (starting price) or created_at

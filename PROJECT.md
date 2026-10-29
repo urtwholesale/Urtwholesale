@@ -990,4 +990,16 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - Tested directly against the user's uploaded 14-row AR+AF Lens Ring catalog fixture (`media_1793271256007_95a23165.csv`), confirming 0 ignored columns and 100% color preservation across all rows (Black, Silver, Gold, Titanium Grey, Sea Blue, Orange, Pink, Purple, Green, Blue).
   - Both `apps/admin` and `apps/store` compile cleanly with 0 TypeScript/CSS errors (`npm run build`).
 
+---
+
+### Touchpoint 16 — Storefront Search Resiliency & Live Schema Alignment
+
+- **Storefront Marketplace Search Fix (`apps/store/src/services/storeService.ts`)**:
+  - **The Root Cause**: When searching for brands or models in the customer storefront (e.g., `infinix`, `boat`, `apple`), `fetchProducts` previously formed a PostgREST filter including `keywords.cs.{<query>}`. Because the remote Supabase PostgreSQL `products` table does not contain a `keywords` column (as keywords are stored in specs and upload payloads), PostgreSQL threw error `42703: column products.keywords does not exist`. This caused the storefront to fail and display the *"Failed to load products"* error card.
+  - **Universal Schema Alignment**: Upgraded `fetchProducts` search clause to query live, verified database columns:
+    `name.ilike.%${cleanSearch}%,sku.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,specs->>brand_compatibility.ilike.%${cleanSearch}%,specs->>compatibility_group.ilike.%${cleanSearch}%`
+  - **PostgREST Query Sanitization**: Added input sanitization stripping commas and parentheses from search terms to ensure PostgREST `.or(...)` filter syntax remains valid and never crashes on user input.
+  - **Instant Search Recovery**: Confirmed that searching for `"infinix"` immediately returns all 87 matching Infinix products (`infinix gt 50 pro`, `infinix gt 30/ 30 pro`, `infinix note 50s 5g`, `infinix hot 10i`, etc.) without errors.
+
+
 
