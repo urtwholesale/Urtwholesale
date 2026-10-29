@@ -421,13 +421,13 @@ export function CategoryProductSlider({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: -direction * 50, scale: 0.98 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative bg-white dark:bg-[#0D131F] rounded-3xl p-3.5 border ${currentTheme.cardBorder} ${currentTheme.cardGlow} transition-colors flex flex-col justify-between`}
+              className={`relative bg-white dark:bg-[#0D131F] rounded-3xl border ${currentTheme.cardBorder} ${currentTheme.cardGlow} transition-colors flex flex-col justify-between overflow-hidden`}
             >
-              {/* Top Image Spotlight */}
+              {/* Top Image Spotlight - Container-sized with zero margins */}
               <Link
                 to={`/product/${currentProduct.slug}`}
                 onClick={() => recordRecentlyViewed(currentProduct)}
-                className="block relative aspect-square sm:aspect-4/3 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-900 mb-3 group"
+                className="block relative aspect-square sm:aspect-4/3 w-full overflow-hidden bg-slate-100 dark:bg-slate-900 group"
               >
                 <img
                   src={
@@ -469,7 +469,7 @@ export function CategoryProductSlider({
               </Link>
 
               {/* Product Details */}
-              <div className="space-y-2.5">
+              <div className="p-3.5 space-y-2.5">
                 <Link
                   to={`/product/${currentProduct.slug}`}
                   onClick={() => recordRecentlyViewed(currentProduct)}

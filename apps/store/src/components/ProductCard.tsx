@@ -50,12 +50,12 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
   }
 
   return (
-    <div className="group relative bg-white dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl p-3 sm:p-3.5 border border-slate-100 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_12px_28px_-6px_rgba(10,130,168,0.12)] dark:hover:shadow-[0_12px_28px_-6px_rgba(255,107,0,0.2)] dark:hover:border-slate-700 transition-all duration-300 flex flex-col justify-between">
-      {/* Top Image Container */}
+    <div className="group relative bg-white dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_12px_28px_-6px_rgba(10,130,168,0.12)] dark:hover:shadow-[0_12px_28px_-6px_rgba(255,107,0,0.2)] dark:hover:border-slate-700 transition-all duration-300 flex flex-col justify-between overflow-hidden">
+      {/* Top Image Container - Full container width with zero margin */}
       <Link
         to={`/product/${product.slug}`}
         onClick={handleCardClick}
-        className="block relative aspect-square w-full rounded-xl sm:rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800/60 mb-3"
+        className="block relative aspect-square w-full overflow-hidden bg-slate-50 dark:bg-slate-800/60 shrink-0"
       >
         <img
           src={product.images[0] || "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=500"}
@@ -68,7 +68,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
         {/* Discount Badge (Top Right) */}
         {discountPercent > 0 && (
           <div
-            className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm tracking-wide"
+            className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm tracking-wide"
             style={{
               background: "linear-gradient(135deg, #FF6B6B 0%, #E83A59 100%)",
             }}
@@ -77,29 +77,31 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
           </div>
         )}
 
-        {/* Brand Tag (Top Left) */}
+        {/* Brand Logo Only (Top Left) */}
         {product.is_urbanrat_brand && (
-          <div className="absolute top-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-brand-dark dark:text-brand-light border border-white/60 dark:border-slate-700/60 shadow-xs">
+          <div
+            title="Urbanrat Original Brand"
+            className="absolute top-2.5 left-2.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-white/80 dark:border-slate-700/80 shadow-xs flex items-center justify-center p-1"
+          >
             <img
               src="/logo.png"
               alt="Urbanrat"
-              className="w-3 h-3 rounded-full object-cover"
+              className="w-full h-full rounded-full object-contain"
             />
-            <span>Urbanrat</span>
           </div>
         )}
 
         {/* Bulk Deals Badge (Bottom Left overlay) */}
         {hasBulkDeals && (
-          <div className="absolute bottom-2 left-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-900/85 dark:bg-black/85 backdrop-blur-md text-brand-light border border-cyan-500/30 dark:border-orange-500/40 shadow-xs">
+          <div className="absolute bottom-2.5 left-2.5 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-900/85 dark:bg-black/85 backdrop-blur-md text-brand-light border border-cyan-500/30 dark:border-orange-500/40 shadow-xs">
             <Layers className="w-2.5 h-2.5 text-brand-light" />
             <span>Bulk Deals</span>
           </div>
         )}
       </Link>
 
-      {/* Info & Price */}
-      <div className="flex flex-col flex-1 justify-between">
+      {/* Info & Price Container */}
+      <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between">
         <Link
           to={`/product/${product.slug}`}
           onClick={handleCardClick}

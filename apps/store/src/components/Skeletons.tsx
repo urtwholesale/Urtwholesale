@@ -1,11 +1,11 @@
 export function ProductCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-3 border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between animate-pulse">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between overflow-hidden animate-pulse">
       {/* Image container skeleton */}
-      <div className="relative aspect-square w-full rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden" />
+      <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-800" />
 
       {/* Details skeleton */}
-      <div className="mt-3 space-y-2">
+      <div className="p-3 sm:p-3.5 space-y-2">
         <div className="h-3.5 bg-slate-100 dark:bg-slate-800 rounded-md w-4/5" />
         <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md w-3/5" />
 
