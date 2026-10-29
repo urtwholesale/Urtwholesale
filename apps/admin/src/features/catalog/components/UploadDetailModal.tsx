@@ -8,11 +8,13 @@ import {
   Wrench,
   AlertCircle,
   CheckCircle2,
+  Palette,
 } from "lucide-react";
 import { supabase } from "../../../lib/supabase";
 import { saveProductMetadata } from "../../../lib/adminService";
 import { triggerHaptic } from "../../../utils/haptics";
 import { KeywordsInput } from "./KeywordsInput";
+import { getColorHex, POPULAR_COLOR_PRESETS } from "@urbanrat/shared";
 import type { CatalogUpload, CatalogUploadItem } from "../types";
 
 interface UploadDetailModalProps {
@@ -50,8 +52,27 @@ export function UploadDetailModal({
   const [fixIsActive, setFixIsActive] = useState(true);
   const [fixKeywords, setFixKeywords] = useState<string[]>([]);
   const [fixImages, setFixImages] = useState<string[]>([]);
+  const [fixHasColors, setFixHasColors] = useState(false);
+  const [fixColors, setFixColors] = useState<string[]>([]);
+  const [fixColorInput, setFixColorInput] = useState("");
   const [fixSaving, setFixSaving] = useState(false);
   const [fixError, setFixError] = useState<string | null>(null);
+
+  function handleAddFixColor(colorToAdd?: string) {
+    const trimmed = (colorToAdd || fixColorInput).trim();
+    if (!trimmed) return;
+    if (fixColors.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+      setFixColorInput("");
+      return;
+    }
+    setFixColors([...fixColors, trimmed]);
+    setFixHasColors(true);
+    setFixColorInput("");
+  }
+
+  function handleRemoveFixColor(idxToRemove: number) {
+    setFixColors(fixColors.filter((_, idx) => idx !== idxToRemove));
+  }
 
   useEffect(() => {
     if (!upload || !isOpen) return;
@@ -106,6 +127,11 @@ export function UploadDetailModal({
     setFixIsActive(p.is_active !== undefined ? Boolean(p.is_active) : true);
     setFixKeywords(p.keywords || []);
     setFixImages(p.images || []);
+    const hasCol = p.hasColors !== undefined ? Boolean(p.hasColors) : Boolean(p.specs?.has_colors || p.attributes?.has_colors);
+    const colList = p.colors || p.specs?.colors || p.attributes?.colors || [];
+    setFixHasColors(hasCol);
+    setFixColors(Array.isArray(colList) ? colList : []);
+    setFixColorInput("");
     setFixError(null);
     triggerHaptic("selection");
   }
@@ -125,6 +151,12 @@ export function UploadDetailModal({
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-|-$/g, "")}-${Date.now().toString(36).substring(4)}`;
 
+      const specsObj = {
+        ...(fixingItem.payload?.specs || {}),
+        has_colors: fixHasColors,
+        colors: fixHasColors ? fixColors : [],
+      };
+
       // 1. Save or update product metadata
       const createdProduct = await saveProductMetadata({
         id: fixingItem.product_id || undefined,
@@ -141,10 +173,14 @@ export function UploadDetailModal({
         short_description: fixTagline.trim(),
         description: fixDescription.trim(),
         brand: fixBrand.trim() || undefined,
-        attributes: fixCompatibility.trim() ? { compatibility_group: fixCompatibility.trim() } : {},
+        attributes: {
+          ...(fixCompatibility.trim() ? { compatibility_group: fixCompatibility.trim() } : {}),
+          has_colors: fixHasColors,
+          colors: fixHasColors ? fixColors : [],
+        },
         keywords: fixKeywords,
         images: fixImages,
-        specs: fixingItem.payload?.specs || {},
+        specs: specsObj,
         is_urbanrat_brand: fixIsUrbanrat,
         is_featured: fixIsFeatured,
         is_trending: fixIsTrending,
@@ -156,6 +192,9 @@ export function UploadDetailModal({
         ...(fixingItem.payload || {}),
         name: fixTitle.trim(),
         sku: fixSku.trim(),
+        hasColors: fixHasColors,
+        colors: fixHasColors ? fixColors : [],
+        specs: specsObj,
         slug,
         price: Number(fixPrice) || 0,
         mrp: fixMrp !== "" ? Number(fixMrp) : null,
@@ -654,6 +693,94 @@ export function UploadDetailModal({
                     />
                     <span className="font-semibold text-slate-800">Trending</span>
                   </label>
+                </div>
+
+                {/* Color Variants Option */}
+                <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                      <Palette className="w-3.5 h-3.5 text-brand-dark" />
+                      <span>Color Selection</span>
+                    </span>
+
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={fixHasColors}
+                        onChange={(e) => setFixHasColors(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900" />
+                      <span className="ml-2 text-xs font-bold text-slate-700">
+                        {fixHasColors ? "Enabled" : "Disabled"}
+                      </span>
+                    </label>
+                  </div>
+
+                  {fixHasColors && (
+                    <div className="space-y-2 pt-1 border-t border-slate-200/60">
+                      {fixColors.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {fixColors.map((c, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-800"
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full border border-black/15 shrink-0"
+                                style={{ backgroundColor: getColorHex(c) }}
+                              />
+                              <span>{c}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFixColor(idx)}
+                                className="text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={fixColorInput}
+                          onChange={(e) => setFixColorInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddFixColor();
+                            }
+                          }}
+                          placeholder="Add color (e.g. Jet Black, Forest Emerald)..."
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddFixColor()}
+                          disabled={!fixColorInput.trim()}
+                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold disabled:opacity-40 cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {POPULAR_COLOR_PRESETS.slice(0, 6).map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => handleAddFixColor(preset)}
+                            className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white border border-slate-200 hover:border-brand text-slate-700 cursor-pointer"
+                          >
+                            + {preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reusable KeywordsInput in Error-Fix Drawer */}

@@ -35,7 +35,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
       try {
         const all = await fetchCategories();
         setCategories(all);
-        const firstParent = all.find((c) => c.parent_id === null);
+        const firstParent = all.find((c) => !c.parent_id);
         if (firstParent) {
           setActiveParentId(firstParent.id);
         }
@@ -48,7 +48,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
     loadData();
   }, []);
 
-  const parentCategories = categories.filter((c) => c.parent_id === null);
+  const parentCategories = categories.filter((c) => !c.parent_id);
   const activeParent = parentCategories.find((c) => c.id === activeParentId);
   const subCategories = categories.filter((c) => c.parent_id === activeParentId);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import {
   fetchProductBySlug,
@@ -16,6 +16,9 @@ import {
   getUnitPrice,
   getNextTier,
   getTierRanges,
+  getProductColors,
+  isColorSelectionEnabled,
+  getColorHex,
   type Product,
   type Review,
 } from "@urbanrat/shared";
@@ -32,12 +35,13 @@ import {
   Send,
   Layers,
   Lightbulb,
+  Palette,
 } from "lucide-react";
 import { QuantityInput } from "../components/QuantityInput";
 import { triggerHaptic } from "../utils/haptics";
 
 interface ProductDetailPageProps {
-  onAddToCart: (product: Product, quantity: number) => void;
+  onAddToCart: (product: Product, quantity: number, selectedColor?: string) => void;
 }
 
 export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
@@ -53,6 +57,22 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
+
+  // Selective Color Variants
+  const availableColors = useMemo(() => {
+    if (!product) return [];
+    return isColorSelectionEnabled(product) ? getProductColors(product) : [];
+  }, [product]);
+
+  const [selectedColor, setSelectedColor] = useState<string>("");
+
+  useEffect(() => {
+    if (availableColors.length > 0) {
+      setSelectedColor(availableColors[0] || "");
+    } else {
+      setSelectedColor("");
+    }
+  }, [availableColors]);
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -199,7 +219,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   function handleAddToCart() {
     if (!product) return;
     triggerHaptic("success");
-    onAddToCart(product, quantity);
+    onAddToCart(product, quantity, selectedColor || undefined);
     setAddedToast(true);
     setTimeout(() => setAddedToast(false), 2200);
   }
@@ -207,7 +227,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   function handleBuyNow() {
     if (!product) return;
     triggerHaptic("medium");
-    onAddToCart(product, quantity);
+    onAddToCart(product, quantity, selectedColor || undefined);
     navigate("/cart");
   }
 
@@ -520,6 +540,52 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               </span>
             </div>
 
+            {/* Selective Color Options (Only when enabled for this catalog) */}
+            {availableColors.length > 0 && (
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                    <Palette className="w-3.5 h-3.5 text-brand-dark" />
+                    <span>Select Color:</span>
+                  </span>
+                  {selectedColor && (
+                    <span className="text-[11px] font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                      {selectedColor}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {availableColors.map((color: string) => {
+                    const isSelected = selectedColor.toLowerCase() === color.toLowerCase();
+                    const hex = getColorHex(color);
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic("selection");
+                          setSelectedColor(color);
+                        }}
+                        className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-sky-50 text-sky-950 border-brand-dark ring-2 ring-brand-light/50 shadow-xs"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-black/15 shadow-2xs shrink-0"
+                          style={{ backgroundColor: hex }}
+                        />
+                        <span>{color}</span>
+                        {isSelected && <CheckCircle2 className="w-3 h-3 text-brand-dark ml-0.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Quantity Stepper respecting min_order_qty, order_qty_step and stock */}
             <div className="pt-2 border-t border-slate-100 space-y-2">
               <div className="flex items-center justify-between">
@@ -618,7 +684,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             {whatsappNumber && (
               <a
                 href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                  `Hi URT Wholesale, I am interested in wholesale order: ${product.name} (SKU: ${
+                  `Hi URT Wholesale, I am interested in wholesale order: ${product.name}${
+                    selectedColor ? ` [Color: ${selectedColor}]` : ""
+                  } (SKU: ${
                     product.sku || "N/A"
                   }). Estimate: ₹${estimatedLineTotal} for ${quantity} pcs.`
                 )}`}
@@ -632,29 +700,44 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             )}
           </div>
 
-          {/* Technical Specs Grid from specs jsonb */}
-          {product.specs && Object.keys(product.specs).length > 0 && (
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Specifications
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {Object.entries(product.specs).map(([key, val]) => (
-                  <div
-                    key={key}
-                    className="flex justify-between py-2 px-3 rounded-xl bg-slate-50 border border-slate-100/60"
-                  >
-                    <span className="font-semibold text-slate-500 capitalize">
-                      {key.replace(/_/g, " ")}
-                    </span>
-                    <span className="font-bold text-slate-900 text-right">
-                      {String(val)}
-                    </span>
-                  </div>
-                ))}
+          {/* Technical Specs Grid from specs jsonb (excluding internal color fields) */}
+          {(() => {
+            const displaySpecs = product.specs
+              ? Object.entries(product.specs).filter(([key]) => {
+                  const lower = key.toLowerCase();
+                  return (
+                    lower !== "colors" &&
+                    lower !== "has_colors" &&
+                    lower !== "colorways" &&
+                    lower !== "colorway" &&
+                    lower !== "color_options"
+                  );
+                })
+              : [];
+            if (displaySpecs.length === 0) return null;
+            return (
+              <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Specifications
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {displaySpecs.map(([key, val]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between py-2 px-3 rounded-xl bg-slate-50 border border-slate-100/60"
+                    >
+                      <span className="font-semibold text-slate-500 capitalize">
+                        {key.replace(/_/g, " ")}
+                      </span>
+                      <span className="font-bold text-slate-900 text-right">
+                        {String(val)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Detailed Product Description (below Specifications) */}
           {product.description && (

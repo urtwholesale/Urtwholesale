@@ -265,7 +265,7 @@ export async function fetchProducts(
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
   ensureConfigured();
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("slug", slug)
@@ -274,6 +274,28 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
 
   if (error) {
     throw new StoreError(error.message, error.code, error);
+  }
+
+  // Resilient fallback: URL decoding, space/dash interchange, and case-insensitivity
+  if (!data) {
+    const decoded = decodeURIComponent(slug).trim();
+    const withSpaces = decoded.replace(/-/g, " ");
+    const withDashes = decoded.replace(/\s+/g, "-");
+
+    const fallbackQueries = [decoded, withSpaces, withDashes].filter((s) => s !== slug);
+    for (const altSlug of fallbackQueries) {
+      const retry = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .ilike("slug", altSlug)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (retry.data) {
+        data = retry.data;
+        break;
+      }
+    }
   }
 
   return data ? formatProduct(data) : null;

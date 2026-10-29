@@ -18,6 +18,7 @@ import {
   Wand2,
   AlertTriangle,
   SlidersHorizontal,
+  Palette,
 } from "lucide-react";
 import { CategoryCascader } from "./CategoryCascader";
 import {
@@ -469,7 +470,11 @@ export function BulkCatalogModal({
             short_description: row.tagline,
             description: row.description,
             brand: row.brand,
-            attributes: row.attributes,
+            attributes: {
+              ...(row.attributes || {}),
+              has_colors: !!row.hasColors,
+              colors: row.hasColors ? (row.colors || []) : [],
+            },
             keywords: row.keywords || [],
             images: row.images,
             specs: row.specs || {},
@@ -1128,17 +1133,28 @@ export function BulkCatalogModal({
                                     </div>
                                   )}
 
-                                  {/* Images count & specs check */}
-                                  <div className="flex items-center space-x-3 mt-1 text-[10px] text-slate-500">
+                                  {/* Images count, specs, & colors check */}
+                                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-slate-500">
                                     <div className="flex items-center space-x-1">
                                       <ImageIcon className="w-3 h-3 text-slate-400" />
                                       <span>{r.images?.length || 0} images</span>
                                     </div>
                                     {r.specs && Object.keys(r.specs).length > 0 && (
                                       <span className="text-slate-400">
-                                        • {Object.keys(r.specs).length} specs parsed
+                                        • {Object.keys(r.specs).filter(k => k !== "colors" && k !== "has_colors").length} specs parsed
                                       </span>
                                     )}
+                                    {r.hasColors && r.colors && r.colors.length > 0 ? (
+                                      <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200">
+                                        <Palette className="w-2.5 h-2.5" />
+                                        <span>{r.colors.length} Colors: {r.colors.slice(0, 3).join(", ")}{r.colors.length > 3 ? "..." : ""}</span>
+                                      </span>
+                                    ) : r.hasColors ? (
+                                      <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
+                                        <Palette className="w-2.5 h-2.5" />
+                                        <span>Colors Enabled (Empty)</span>
+                                      </span>
+                                    ) : null}
                                   </div>
                                 </div>
 

@@ -6,6 +6,7 @@ export interface WhatsAppItem {
   name?: string;
   price?: number;
   quantity: number;
+  selectedColor?: string;
 }
 
 export interface CustomerInfo {
@@ -72,10 +73,11 @@ export function buildWhatsAppMessage({
   const itemsSection = items
     .map((item) => {
       const name = item.product?.name ?? item.name ?? "Item";
+      const colorText = item.selectedColor ? ` [Color: ${item.selectedColor}]` : "";
       const price = item.product?.price ?? item.price ?? 0;
       const qty = item.quantity;
       const lineTotal = price * qty;
-      return `${E.item} *${name}*\n    ${qty} \u00D7 \u20B9${formatMoney(price)} = \u20B9${formatMoney(lineTotal)}`;
+      return `${E.item} *${name}${colorText}*\n    ${qty} \u00D7 \u20B9${formatMoney(price)} = \u20B9${formatMoney(lineTotal)}`;
     })
     .join("\n\n");
 

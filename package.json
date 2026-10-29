@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:store": "vite apps/store --port 5173",
-    "dev:admin": "vite apps/admin --port 5174",
+    "dev:store": "vite apps/store --port 5173 --host",
+    "dev:admin": "vite apps/admin --port 5174 --host",
     "dev": "concurrently -n \"store,admin\" -c \"blue,green\" \"npm run dev:store\" \"npm run dev:admin\"",
     "build:store": "tsc -p apps/store/tsconfig.json && vite build apps/store",
     "build:admin": "tsc -p apps/admin/tsconfig.json && vite build apps/admin",

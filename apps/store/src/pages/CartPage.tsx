@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Product, CustomerDetails, Address } from "@urbanrat/shared";
-import { getUnitPrice, getNextTier } from "@urbanrat/shared";
+import { getUnitPrice, getNextTier, getColorHex } from "@urbanrat/shared";
 import {
   Trash2,
   ShoppingBag,
@@ -22,9 +22,9 @@ import { EmptyState } from "../components/EmptyState";
 import { AddressPicker } from "../components/AddressPicker";
 
 interface CartPageProps {
-  cartItems: { product: Product; quantity: number }[];
-  onUpdateQuantity: (productId: string, quantity: number) => void;
-  onRemoveItem: (productId: string) => void;
+  cartItems: { product: Product; quantity: number; selectedColor?: string }[];
+  onUpdateQuantity: (productId: string, quantity: number, selectedColor?: string) => void;
+  onRemoveItem: (productId: string, selectedColor?: string) => void;
   onClearCart: () => void;
 }
 
@@ -100,7 +100,7 @@ export function CartPage({
   }
 
   // Per-line calculations
-  const lineDetails = cartItems.map(({ product, quantity }) => {
+  const lineDetails = cartItems.map(({ product, quantity, selectedColor }) => {
     const tiers = product.price_tiers || [];
     const firstTierMin = tiers[0]?.min_qty;
     const minQty = Math.max(1, product.min_order_qty || firstTierMin || 1);
@@ -115,6 +115,7 @@ export function CartPage({
     return {
       product,
       quantity,
+      selectedColor,
       tiers,
       minQty,
       step,
@@ -227,10 +228,11 @@ export function CartPage({
       if (targetPhone) {
         const whatsappMessage = buildWhatsAppMessage({
           orderId: savedOrder.id,
-          items: (savedOrder.items || []).map((i: any) => ({
-            name: i.name || i.product?.name || "Item",
+          items: (savedOrder.items || []).map((i: any, idx: number) => ({
+            name: i.name || i.product?.name || cartItems[idx]?.product.name || "Item",
             price: i.unit_price ?? i.price ?? 0,
             quantity: i.quantity,
+            selectedColor: cartItems[idx]?.selectedColor,
           })),
           subtotal: savedOrder.subtotal,
           savings: savedOrder.savings,
@@ -320,6 +322,7 @@ export function CartPage({
               ({
                 product,
                 quantity,
+                selectedColor,
                 minQty,
                 step,
                 unitPrice,
@@ -329,7 +332,7 @@ export function CartPage({
                 nextTier,
               }) => (
                 <div
-                  key={product.id}
+                  key={`${product.id}-${selectedColor || "default"}`}
                   className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border border-slate-100 shadow-xs flex flex-col space-y-2.5"
                 >
                   <div className="flex items-start space-x-3.5 justify-between">
@@ -350,6 +353,16 @@ export function CartPage({
                       >
                         {product.name}
                       </Link>
+
+                      {selectedColor && (
+                        <div className="mt-1 inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-700">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
+                            style={{ backgroundColor: getColorHex(selectedColor) }}
+                          />
+                          <span>Color: {selectedColor}</span>
+                        </div>
+                      )}
 
                       {/* Live Unit Price & Strikethrough First-Tier Price */}
                       <div className="mt-1 flex items-baseline space-x-2">
@@ -375,8 +388,8 @@ export function CartPage({
                       <div className="mt-2.5 flex items-center space-x-3">
                         <QuantityInput
                           value={quantity}
-                          onChange={(newQty) => onUpdateQuantity(product.id, newQty)}
-                          onBelowMin={() => onRemoveItem(product.id)}
+                          onChange={(newQty) => onUpdateQuantity(product.id, newQty, selectedColor)}
+                          onBelowMin={() => onRemoveItem(product.id, selectedColor)}
                           min={minQty}
                           max={product.stock > 0 ? product.stock : undefined}
                           step={step}
@@ -393,7 +406,7 @@ export function CartPage({
                     {/* Remove button */}
                     <button
                       type="button"
-                      onClick={() => onRemoveItem(product.id)}
+                      onClick={() => onRemoveItem(product.id, selectedColor)}
                       aria-label="Remove item"
                       className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer shrink-0"
                     >

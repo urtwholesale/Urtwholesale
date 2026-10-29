@@ -5,6 +5,7 @@ import {
   normalizeKeywords,
   resolveCanonicalHeader,
   parseBool,
+  parseColorString,
 } from "@urbanrat/shared";
 
 export interface BulkCatalogParseResult {
@@ -161,8 +162,16 @@ export function revalidateRow(row: BulkCatalogParsedRow): BulkCatalogParsedRow {
     });
   }
 
+  // Sync colors into specs
+  const updatedSpecs = { ...(row.specs || {}) };
+  if (row.hasColors !== undefined) {
+    updatedSpecs.has_colors = !!row.hasColors;
+    updatedSpecs.colors = row.hasColors ? (row.colors || []) : [];
+  }
+
   return {
     ...row,
+    specs: updatedSpecs,
     isValid: errors.length === 0,
     errors,
   };
@@ -512,6 +521,26 @@ export function parseSpreadsheetRowsWithReport(
     const rawActive = getCol("is_active", row);
     const isActive = rawActive === "" ? true : parseBool(rawActive, true);
 
+    // 14. Colors & Selective Color Configuration
+    const rawColors = getCol("colors", row);
+    const parsedColors = rawColors ? parseColorString(rawColors) : [];
+    const specsColors = Array.isArray(specs.colors) ? specs.colors : [];
+    const colors = parsedColors.length > 0 ? parsedColors : specsColors;
+
+    const rawHasColors = getCol("has_colors", row);
+    let hasColors = false;
+    if (rawHasColors !== "") {
+      hasColors = parseBool(rawHasColors, false);
+    } else if (specs.has_colors !== undefined) {
+      hasColors = parseBool(specs.has_colors, false);
+    } else {
+      hasColors = colors.length > 0;
+    }
+
+    // Persist into specs for database compatibility
+    specs.colors = hasColors ? colors : [];
+    specs.has_colors = hasColors;
+
     parsedRows.push({
       rowNumber,
       name,
@@ -535,6 +564,8 @@ export function parseSpreadsheetRowsWithReport(
       attributes,
       keywords,
       specs,
+      hasColors,
+      colors: hasColors ? colors : [],
       images: uniqueImages,
       tiers,
       isUrbanrat,

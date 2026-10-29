@@ -52,6 +52,7 @@ function ScrollToTop() {
 interface CartStateItem {
   product: Product;
   quantity: number;
+  selectedColor?: string;
 }
 
 const GUEST_CART_KEY = "urt_guest_cart";
@@ -231,13 +232,15 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  function handleAddToCart(product: Product, quantity?: number) {
+  function handleAddToCart(product: Product, quantity?: number, selectedColor?: string) {
     triggerHaptic("success");
     const firstTierMin = product.price_tiers?.[0]?.min_qty;
     const resolvedMin = Math.max(10, product.min_order_qty || firstTierMin || 10);
     const qtyToAdd = quantity !== undefined ? quantity : resolvedMin;
     setCartItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
+      const existingIndex = prev.findIndex(
+        (item) => item.product.id === product.id && (item.selectedColor || "") === (selectedColor || "")
+      );
       let newQty = qtyToAdd;
       if (existingIndex > -1) {
         const updated = [...prev];
@@ -252,10 +255,11 @@ export default function App() {
         return updated;
       }
       syncDbCart(product.id, newQty);
-      return [...prev, { product, quantity: newQty }];
+      return [...prev, { product, quantity: newQty, selectedColor }];
     });
 
-    setToastMessage(`Added ${qtyToAdd} × ${product.name} to cart`);
+    const colorLabel = selectedColor ? ` (${selectedColor})` : "";
+    setToastMessage(`Added ${qtyToAdd} × ${product.name}${colorLabel} to cart`);
     setTimeout(() => {
       setToastMessage(null);
     }, 2400);
@@ -282,22 +286,28 @@ export default function App() {
     }).catch(() => {});
   }
 
-  function handleUpdateQuantity(productId: string, quantity: number) {
+  function handleUpdateQuantity(productId: string, quantity: number, selectedColor?: string) {
     if (quantity <= 0) {
-      handleRemoveItem(productId);
+      handleRemoveItem(productId, selectedColor);
       return;
     }
     syncDbCart(productId, quantity);
     setCartItems((prev) =>
       prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId && (item.selectedColor || "") === (selectedColor || "")
+          ? { ...item, quantity }
+          : item
       )
     );
   }
 
-  function handleRemoveItem(productId: string) {
+  function handleRemoveItem(productId: string, selectedColor?: string) {
     syncDbCart(productId, 0);
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+    setCartItems((prev) =>
+      prev.filter(
+        (item) => !(item.product.id === productId && (item.selectedColor || "") === (selectedColor || ""))
+      )
+    );
   }
 
   function handleClearCart() {

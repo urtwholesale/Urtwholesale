@@ -27,6 +27,7 @@ export interface Product {
   low_stock_threshold?: number;
   brand?: string | null;
   attributes?: Record<string, any>;
+  colors?: string[];
   price_tiers?: PriceTier[];
   created_at: string;
   updated_at?: string;

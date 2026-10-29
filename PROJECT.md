@@ -930,4 +930,44 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - **150 automated unit tests** passing across 11 test suites with 0 failures (`catalogHeaders.test.ts`, `catalogParser.test.ts`, `categoryTree.test.ts`, etc.).
   - Both `apps/admin` and `apps/store` compile cleanly with 0 TypeScript/CSS errors (`npm run build`).
 
+---
+
+### Touchpoint 14 — Selective Color Variants Management Across Admin Uploading, Bulk Catalogs, Product Editor, and Storefront PDP
+
+- **Selective Color Configuration & Architecture (`packages/shared/src/colors.ts`, `product.ts`)**:
+  - **Selective Per-Catalog Control**: Added first-class support for selective color variants. Catalogs with color variants can enable colors (`has_colors: true`) and configure options, while non-color catalogs (such as clear tempered glass) leave it disabled (`has_colors: false`), cleanly omitting any color picker UI.
+  - **Robust Resilient Storage**: Stored inside `specs.has_colors` and `specs.colors` as well as `attributes` (and root `colors?: string[]`), guaranteeing compatibility with live Supabase PostgreSQL schemas without relying on unmigrated columns.
+  - **Color Normalization Utilities**: Implemented `cleanColorArray`, `parseColorString` (supporting comma-separated, semicolon-separated, slash-separated, and JSON array strings), `isColorSelectionEnabled(product)`, `getProductColors(product)` (with fallback checks across `specs.colors`, `specs.has_colors`, `attributes`, and legacy specs `Colorways`), and `getColorHex(colorName)` supporting 50+ rich hardware colorway hex mappings (e.g. Jet Black `#0f0f10`, Forest Emerald `#1b4d3e`, Crimson Ruby `#9e1b32`, Desert Titanium `#c5b399`, etc.).
+  - **Popular Color Presets**: Provided `POPULAR_COLOR_PRESETS` for quick one-click merchant selection in admin editors.
+
+- **Bulk Catalog CSV & Excel Ingestion (`catalogHeaders.ts`, `catalogParser.ts`, `BulkCatalogModal.tsx`, `UploadDetailModal.tsx`)**:
+  - **Canonical Header Aliases**: Registered canonical field aliases for `colors` (`color`, `colours`, `colour`, `availablecolors`, `coloroptions`, `colorways`, `shades`, etc.) and `has_colors` (`hascolors`, `enablecolors`, `colorvariants`, `hascoloroptions`, `allowcolors`, etc.).
+  - **Intelligent Parser Logic**: Parses color strings from spreadsheet rows, normalizes and deduplicates color arrays, casts boolean flag `has_colors` (recognizing `true`, `1`, `yes`, `enabled` or `false`, `0`, `no`, `disabled`), and auto-enables `hasColors` if valid color options are provided and `has_colors` is omitted.
+  - **Preview & QC Badges**: Visual indicator in `BulkCatalogModal` preview rows showing parsed color counts and color names (`🎨 3 Colors: Jet Black, Forest Emerald...`).
+  - **Slide-over QC Error-Fix Drawer (`UploadDetailModal.tsx`)**: Integrated toggle switch, custom color input, chip manager with color swatch previews, and quick presets directly inside the catalog error-fixing drawer.
+
+- **Single Catalog Wizard (`SingleCatalogWizard.tsx`)**:
+  - Added dedicated **Color Variants & Selective Options** card in Step 2 with an Enable/Disable toggle switch.
+  - Interactive chip editor allowing merchants to add custom colors (with Enter key or button), delete chips, and select from popular presets.
+  - Added "Copy colors to all products" shortcut allowing merchants drafting multiple models to instantly propagate color configurations across all products in the batch.
+  - In `handlePublishProducts`, automatically serializes `has_colors` and `colors` into `specs` and `attributes` for Supabase persistence.
+
+- **Admin Product Editor Modal (`ProductEditor.tsx`)**:
+  - Added dedicated **Color Variants & Selective Options** card positioned between Inventory / Stock rules and Technical Specs.
+  - Toggle switch for `hasColors` with instant visual feedback.
+  - Chip manager showing color name and real-time color dot preview (`getColorHex`) with remove action.
+  - Text input for custom colorways + quick preset suggestions.
+  - Synchronized `specs.has_colors` and `specs.colors` on save, while filtering internal color keys from generic technical specs key-value rows.
+
+- **Storefront Product Detail Page & Ordering Pipeline (`ProductDetailPage.tsx`, `App.tsx`, `CartPage.tsx`, `buildWhatsAppMessage.ts`)**:
+  - **Interactive Storefront Color Picker (`ProductDetailPage.tsx`)**: When a catalog has colors enabled, displays a mobile-first color selector above the quantity stepper featuring visual color swatches, active selection ring, and selected color badge. Catalogs with colors disabled automatically hide the section.
+  - **Specifications Clean-up**: Filtered out internal keys `colors` and `has_colors` from the Technical Specifications grid to ensure clean display.
+  - **Cart Color Preservation (`App.tsx`, `CartPage.tsx`)**: Extended `CartStateItem` with `selectedColor?: string`. Items with different colors are distinct line items with accurate quantity updates and removals. Rendered visual color pill with swatch dot in the cart list.
+  - **WhatsApp Quote Integration (`buildWhatsAppMessage.ts`)**: Included selected colorway in WhatsApp line items (e.g. `boAt Buds X Prime [Color: Jet Black] x 10 pcs = ₹2,450`) and in direct WhatsApp inquiry links.
+
+- **Automated Verification & Test Suite**:
+  - **163 automated unit tests** passing across 12 test suites (`colors.test.ts`, `catalogParser.test.ts`, `catalogHeaders.test.ts`, `buildWhatsAppMessage.test.ts`, etc.) with 0 failures.
+  - Both `apps/store` and `apps/admin` compile with 0 TypeScript/CSS errors (`npm run build`).
+  - Dev servers running live on ports 5173 (storefront) and 5174 (admin).
+
 

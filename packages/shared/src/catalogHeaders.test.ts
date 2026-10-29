@@ -41,6 +41,11 @@ describe("catalogHeaders", () => {
     expect(resolveCanonicalHeader("min_order_qty")).toBe("moq");
     expect(resolveCanonicalHeader("order_qty_step")).toBe("order_step");
     expect(resolveCanonicalHeader("search_keywords")).toBe("keywords");
+    expect(resolveCanonicalHeader("colors")).toBe("colors");
+    expect(resolveCanonicalHeader("color_options")).toBe("colors");
+    expect(resolveCanonicalHeader("Available Colors")).toBe("colors");
+    expect(resolveCanonicalHeader("enable_colors")).toBe("has_colors");
+    expect(resolveCanonicalHeader("has_colors")).toBe("has_colors");
     expect(resolveCanonicalHeader("is_urbanrat_brand")).toBe("is_urbanrat_brand");
     expect(resolveCanonicalHeader("flag_urbanrat_brand")).toBe("is_urbanrat_brand");
     expect(resolveCanonicalHeader("is_featured")).toBe("is_featured");

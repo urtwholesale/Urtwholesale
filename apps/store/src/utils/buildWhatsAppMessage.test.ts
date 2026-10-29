@@ -143,4 +143,22 @@ describe("buildWhatsAppMessage", () => {
 
     expect(msgCustom).toContain("*UPI ID for Payment:*\nmerchant@bank");
   });
+
+  it("includes selectedColor in item line when provided", () => {
+    const msg = buildWhatsAppMessage({
+      orderId: "URT-COLOR-TEST",
+      items: [
+        {
+          name: "boAt Buds X Prime",
+          price: 245,
+          quantity: 10,
+          selectedColor: "Jet Black",
+        },
+      ],
+      total: 2450,
+      customer: sampleCustomer,
+    });
+
+    expect(msg).toContain("*boAt Buds X Prime [Color: Jet Black]*");
+  });
 });

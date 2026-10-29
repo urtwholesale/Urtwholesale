@@ -61,6 +61,8 @@ export interface SingleCatalogFormData {
   specs: { key: string; val: string }[];
   images: string[];
   keywords?: string[];
+  hasColors?: boolean;
+  colors?: string[];
   isUrbanrat: boolean;
   isFeatured: boolean;
   isTrending: boolean;
@@ -91,6 +93,8 @@ export interface BulkCatalogParsedRow {
   attributes?: Record<string, any>;
   keywords?: string[];
   specs?: Record<string, any>;
+  hasColors?: boolean;
+  colors?: string[];
   images: string[];
   tiers: { min_qty: number; unit_price: number }[];
   isUrbanrat: boolean;

@@ -160,5 +160,15 @@ export {
   computeImageUpdate,
 } from "./bulkOps";
 
+export {
+  getProductColors,
+  isColorSelectionEnabled,
+  cleanColorArray,
+  parseColorString,
+  getColorHex,
+  POPULAR_COLOR_PRESETS,
+} from "./colors";
+
+
 
 

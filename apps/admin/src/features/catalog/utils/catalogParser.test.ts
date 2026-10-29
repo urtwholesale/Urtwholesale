@@ -191,3 +191,48 @@ describe("Bulk CSV Catalog Parser — Mobile Accessories with mrp_inr & volume_p
     expect(row.images[0]).toContain("product-images/catalog");
   });
 });
+
+describe("Bulk CSV Catalog Parser — Selective Color Configuration", () => {
+  const CSV_WITH_COLORS = `product_name,url_slug,product_sku,base_wholesale_price,initial_stock,colors,has_colors
+"boAt Buds X Prime",boat-buds-x-prime,BOAT-BUDS-X-PRIME,245,100,"Jet Black, Forest Emerald, Crimson Ruby",true
+"Tempered Glass Clear",tempered-glass-clear,TG-CLEAR-01,15,500,"",false
+"iPhone 16 Pro Case",iphone-16-pro-case,CASE-IP16P,99,200,"Natural Titanium, Desert Titanium, White Titanium, Black Titanium",
+"Plain Cable",plain-cable,CBL-01,40,150,"Black, White",disabled`;
+
+  const parsed = Papa.parse<string[]>(CSV_WITH_COLORS, { skipEmptyLines: "greedy", header: false });
+  const result = parseSpreadsheetRowsWithReport(parsed.data);
+  const rows = result.rows;
+
+  it("parses 4 products with selective colors", () => {
+    expect(rows).toHaveLength(4);
+  });
+
+  it("parses boAt Buds with 3 colors enabled (has_colors=true)", () => {
+    const row = rows[0]!;
+    expect(row.hasColors).toBe(true);
+    expect(row.colors).toEqual(["Jet Black", "Forest Emerald", "Crimson Ruby"]);
+    expect(row.specs?.colors).toEqual(["Jet Black", "Forest Emerald", "Crimson Ruby"]);
+    expect(row.specs?.has_colors).toBe(true);
+  });
+
+  it("parses Tempered Glass with colors disabled (has_colors=false, empty colors)", () => {
+    const row = rows[1]!;
+    expect(row.hasColors).toBe(false);
+    expect(row.colors).toEqual([]);
+    expect(row.specs?.has_colors).toBe(false);
+  });
+
+  it("auto-enables colors when colors provided and has_colors column is omitted", () => {
+    const row = rows[2]!;
+    expect(row.hasColors).toBe(true);
+    expect(row.colors).toHaveLength(4);
+    expect(row.colors).toContain("Natural Titanium");
+  });
+
+  it("disables colors when explicitly disabled even if colors string was present", () => {
+    const row = rows[3]!;
+    expect(row.hasColors).toBe(false);
+    expect(row.colors).toEqual([]);
+    expect(row.specs?.has_colors).toBe(false);
+  });
+});

@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import type { Category } from "@urbanrat/shared";
-import { normalizeKeywords } from "@urbanrat/shared";
+import {
+  normalizeKeywords,
+  POPULAR_COLOR_PRESETS,
+  getColorHex,
+} from "@urbanrat/shared";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +22,7 @@ import {
   Link2,
   Clipboard,
   X,
+  Palette,
 } from "lucide-react";
 import { CategoryCascader } from "./CategoryCascader";
 import { KeywordsInput } from "./KeywordsInput";
@@ -49,6 +54,8 @@ export interface SingleProductDraft {
   shortDesc: string;
   keywords: string[];
   specs: { key: string; val: string }[];
+  hasColors?: boolean;
+  colors?: string[];
   tiers: { min_qty: number; unit_price: number }[];
   frontImage: string | null;
   galleryImages: string[];
@@ -77,6 +84,8 @@ function createDefaultProduct(cat?: Category | null, index = 1): SingleProductDr
     shortDesc: "",
     keywords: [],
     specs: [{ key: "Packaging", val: "Retail Box Wholesale Pack" }],
+    hasColors: false,
+    colors: [],
     tiers: [{ min_qty: 10, unit_price: 100 }],
     frontImage: null,
     galleryImages: [],
@@ -242,10 +251,41 @@ export function SingleCatalogWizard({
   const currentProduct: SingleProductDraft =
     products[activeProductIndex] ?? products[0] ?? fallbackProduct;
 
+  const [colorInput, setColorInput] = useState("");
+
   function updateCurrentProduct(patch: Partial<SingleProductDraft>) {
     setProducts((prev) =>
       prev.map((p, idx) => (idx === activeProductIndex ? { ...p, ...patch } : p))
     );
+  }
+
+  function handleAddColor(colorName?: string) {
+    const trimmed = (colorName || colorInput).trim();
+    if (!trimmed) return;
+    const current = currentProduct.colors || [];
+    if (current.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+      setColorInput("");
+      return;
+    }
+    updateCurrentProduct({ colors: [...current, trimmed], hasColors: true });
+    setColorInput("");
+  }
+
+  function handleRemoveColor(idxToRemove: number) {
+    const current = currentProduct.colors || [];
+    updateCurrentProduct({ colors: current.filter((_, idx) => idx !== idxToRemove) });
+  }
+
+  function handleCopyColorsToAll() {
+    if (!currentProduct.colors || currentProduct.colors.length === 0) return;
+    setProducts((prev) =>
+      prev.map((p) => ({
+        ...p,
+        hasColors: currentProduct.hasColors,
+        colors: [...(currentProduct.colors || [])],
+      }))
+    );
+    triggerHaptic("success");
   }
 
   // Handle category selected from Step 1 Cascader
@@ -401,6 +441,8 @@ export function SingleCatalogWizard({
           description: src.description,
           shortDesc: src.shortDesc,
           specs: JSON.parse(JSON.stringify(src.specs)),
+          hasColors: src.hasColors,
+          colors: src.colors ? [...src.colors] : [],
           tiers: JSON.parse(JSON.stringify(src.tiers)),
           isUrbanrat: src.isUrbanrat,
           isFeatured: src.isFeatured,
@@ -472,10 +514,14 @@ export function SingleCatalogWizard({
           unit_price: Number(prod.price),
         };
 
-        const specsObj: Record<string, string> = {};
+        const specsObj: Record<string, any> = {};
         prod.specs.forEach((s) => {
-          if (s.key.trim()) specsObj[s.key.trim()] = s.val.trim();
+          if (s.key.trim() && s.key.trim() !== "colors" && s.key.trim() !== "has_colors") {
+            specsObj[s.key.trim()] = s.val.trim();
+          }
         });
+        specsObj.has_colors = !!prod.hasColors;
+        specsObj.colors = prod.hasColors ? (prod.colors || []) : [];
 
         // Normalize keywords and track deduplication/trimming
         const rawKwCount = prod.keywords.length;
@@ -501,6 +547,10 @@ export function SingleCatalogWizard({
           short_description: prod.shortDesc.trim(),
           keywords: normalizedKeywords,
           images: allImages,
+          attributes: {
+            has_colors: !!prod.hasColors,
+            colors: prod.hasColors ? (prod.colors || []) : [],
+          },
           specs: specsObj,
           is_urbanrat_brand: prod.isUrbanrat,
           is_featured: prod.isFeatured,
@@ -1160,6 +1210,165 @@ export function SingleCatalogWizard({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* ── Color Variants & Selective Options ── */}
+              <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Palette className="w-4 h-4 text-brand-dark" />
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                        Color Variants &amp; Selective Options
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Enable color selection if this product has color options. Disabled products won't show color selectors.
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!currentProduct.hasColors}
+                      onChange={(e) =>
+                        updateCurrentProduct({
+                          hasColors: e.target.checked,
+                          colors: e.target.checked
+                            ? currentProduct.colors && currentProduct.colors.length > 0
+                              ? currentProduct.colors
+                              : []
+                            : [],
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900" />
+                    <span className="ml-2 text-xs font-bold text-slate-700">
+                      {currentProduct.hasColors ? "Enabled" : "Disabled"}
+                    </span>
+                  </label>
+                </div>
+
+                {currentProduct.hasColors ? (
+                  <div className="space-y-3 pt-2 border-t border-slate-100">
+                    {/* Active Colors List */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-slate-600">
+                          Active Colors ({(currentProduct.colors || []).length})
+                        </span>
+                        {products.length > 1 && (currentProduct.colors || []).length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleCopyColorsToAll}
+                            className="text-[10px] font-bold text-brand-dark hover:underline flex items-center space-x-1 cursor-pointer"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>Copy colors to all products</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {(currentProduct.colors || []).length === 0 ? (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200/60 p-2.5 rounded-xl">
+                          Colors enabled. Add custom colors or pick quick presets below.
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {(currentProduct.colors || []).map((c, idx) => {
+                            const hex = getColorHex(c);
+                            return (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs text-xs font-bold text-slate-800"
+                              >
+                                <span
+                                  className="w-3 h-3 rounded-full border border-black/15 shrink-0"
+                                  style={{ backgroundColor: hex }}
+                                />
+                                <span>{c}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveColor(idx)}
+                                  className="ml-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                                  aria-label={`Remove color ${c}`}
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Add Custom Color Input */}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={colorInput}
+                        onChange={(e) => setColorInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddColor();
+                          }
+                        }}
+                        placeholder="Enter color name (e.g. Jet Black, Forest Emerald)..."
+                        className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-light focus:border-brand"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddColor()}
+                        disabled={!colorInput.trim()}
+                        className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer"
+                      >
+                        Add Color
+                      </button>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Quick Presets
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {POPULAR_COLOR_PRESETS.slice(0, 10).map((preset) => {
+                          const alreadyAdded = (currentProduct.colors || []).some(
+                            (c) => c.toLowerCase() === preset.toLowerCase()
+                          );
+                          const hex = getColorHex(preset);
+                          return (
+                            <button
+                              key={preset}
+                              type="button"
+                              disabled={alreadyAdded}
+                              onClick={() => handleAddColor(preset)}
+                              className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
+                                alreadyAdded
+                                  ? "bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-brand hover:text-brand-dark hover:bg-sky-50/50"
+                              }`}
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full border border-black/15 shrink-0"
+                                style={{ backgroundColor: hex }}
+                              />
+                              <span>{preset}</span>
+                              {!alreadyAdded && <Plus className="w-2.5 h-2.5 ml-0.5 text-slate-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                    <span>Color selection is disabled for this product.</span>
+                  </div>
+                )}
               </div>
 
               {/* Full Technical Description (Below Specifications) */}
