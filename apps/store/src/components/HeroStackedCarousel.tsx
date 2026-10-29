@@ -193,7 +193,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
   return (
     <section
       aria-label="Wholesale Offers Showcase"
-      className="relative w-full py-4 sm:py-6 select-none overflow-hidden"
+      className="relative w-full py-4 sm:py-6 select-none overflow-hidden lg:overflow-visible"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -211,7 +211,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
       />
 
       {/* ── Split Layout Container: Left Headline + Right 3D Carousel on Desktop ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 lg:gap-12 w-full max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 lg:gap-12 w-full max-w-7xl mx-auto overflow-visible">
         {/* ── Left Column: Cinematic Headline & Premiere Gear Controls (Desktop View) ── */}
         <div className="hidden lg:flex flex-col justify-center flex-1 space-y-6 max-w-xl pl-2">
           {/* Top Pill Badge */}
@@ -289,8 +289,8 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
         </div>
 
         {/* ── Right Column: 3D Stacked Carousel Cards ── */}
-        <div className="w-full lg:w-120 xl:w-132.5 shrink-0">
-          <div className="relative w-full h-102.5 sm:h-117.5 md:h-125 lg:h-130 flex items-center justify-center">
+        <div className="w-full lg:w-120 xl:w-132.5 shrink-0 overflow-visible">
+          <div className="relative w-full h-102.5 sm:h-117.5 md:h-125 lg:h-130 flex items-center justify-center overflow-visible">
             {cards.map((card, idx) => {
               // Calculate relative circular offset: -1 = left, 0 = center, 1 = right, others = hidden
               let offset = idx - activeIndex;
@@ -310,8 +310,8 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                   layout
                   initial={false}
                   animate={{
-                    x: isCenter ? "0%" : isLeft ? "-48%" : "48%",
-                    scale: isCenter ? 1 : 0.86,
+                    x: isCenter ? "0%" : isLeft ? "-22%" : "22%",
+                    scale: isCenter ? 1 : 0.88,
                     rotate: isCenter ? 0 : isLeft ? -2.5 : 2.5,
                     zIndex: isCenter ? 30 : 15,
                     opacity: isCenter ? 1 : isDark ? 0.45 : 0.65,
@@ -350,14 +350,22 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                   <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/35 to-black/15 pointer-events-none" />
 
                   {/* ── Top Pill Badge (e.g. URBANRAT PRO) ── */}
-                  <div className="absolute top-4 left-4 z-20">
+                  <div
+                    className={`absolute top-4 left-4 z-20 transition-opacity duration-300 ${
+                      isCenter ? "opacity-100" : "opacity-40"
+                    }`}
+                  >
                     <span className="inline-flex items-center px-3 py-1 rounded-xl bg-black/60 dark:bg-black/75 backdrop-blur-md border border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white shadow-sm">
                       {card.badge}
                     </span>
                   </div>
 
-                  {/* ── Floating Frosted Glass Bottom Pill Card ── */}
-                  <div className="absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-[#0F172A]/92 dark:bg-[#070B12]/94 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-2.5">
+                  {/* ── Floating Frosted Glass Bottom Pill Card (Only on front card) ── */}
+                  <div
+                    className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-[#0F172A]/92 dark:bg-[#070B12]/94 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-2.5 transition-opacity duration-300 ${
+                      isCenter ? "opacity-100" : "opacity-0 pointer-events-none"
+                    }`}
+                  >
                     {/* Left Metadata: Title, Star Rating, Subtitle */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center space-x-1.5">

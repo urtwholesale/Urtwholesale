@@ -302,7 +302,7 @@ export default function App() {
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-brand-light/30">
+      <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-brand-light/30 overflow-x-clip">
       <ScrollToTop />
 
       {/* ── Fixed Glassmorphism Top Navigation Bar ── */}
