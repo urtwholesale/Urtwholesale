@@ -197,9 +197,9 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
         <CategoryTopRailSkeleton />
       ) : (
         <div className="space-y-4 sm:space-y-5">
-          {/* ── Sticky Top Category Navigation Rail & Subcategories Bar ── */}
-          <div className="sticky top-16 md:top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)] transition-colors">
-            <div className="max-w-7xl mx-auto space-y-2">
+          {/* ── Top Category Navigation Rail & Subcategories Bar (Expanded to Borders, Non-Sticky on Desktop) ── */}
+          <div className="sticky top-16 md:static z-30 w-screen relative left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)] transition-colors">
+            <div className="w-full max-w-[1780px] mx-auto space-y-2">
               {/* Horizontal Parent Categories Cards Rail */}
               <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-x-auto scrollbar-none no-scrollbar py-1 px-0.5">
                 {parentCategories.map((parent) => {

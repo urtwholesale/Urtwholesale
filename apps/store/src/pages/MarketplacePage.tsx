@@ -427,78 +427,80 @@ export function MarketplacePage({
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-12">
-      {/* ── Category & Subcategory Filter Rail (Sticky) ── */}
-      <div className="sticky top-16 md:top-0 z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] space-y-2 transition-colors">
-        {/* Row 1: Parent Category Vertical Cards */}
-        {categoryChips}
+      {/* ── Category & Subcategory Filter Rail (Expanded to Borders, Non-Sticky on Desktop) ── */}
+      <div className="sticky top-16 md:static z-30 w-screen relative left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-colors">
+        <div className="w-full max-w-[1780px] mx-auto space-y-2">
+          {/* Row 1: Parent Category Vertical Cards */}
+          {categoryChips}
 
-        {/* Row 2: Subcategories (Dedicated strip for easy access) */}
-        {subCategories.length > 0 && (
-          <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none no-scrollbar pt-1.5 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in slide-in-from-top-1 duration-200">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 mr-1 flex items-center space-x-1">
-              <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light" />
-              <span className="hidden sm:inline">Subcategories:</span>
-            </span>
+          {/* Row 2: Subcategories (Dedicated strip for easy access) */}
+          {subCategories.length > 0 && (
+            <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none no-scrollbar pt-1.5 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in slide-in-from-top-1 duration-200">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 mr-1 flex items-center space-x-1">
+                <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light" />
+                <span className="hidden sm:inline">Subcategories:</span>
+              </span>
 
-            {/* "All in Category" pill */}
-            <button
-              type="button"
-              onClick={() => handleSubCategoryChange(null)}
-              className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition active:scale-95 cursor-pointer ${
-                selectedSubCategory === null
-                  ? "text-white shadow-xs font-black"
-                  : "bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-200/70 dark:hover:bg-slate-700"
-              }`}
-              style={
-                selectedSubCategory === null
-                  ? {
-                      background: "var(--brand-gradient)",
-                      boxShadow: "var(--brand-shadow)",
+              {/* "All in Category" pill */}
+              <button
+                type="button"
+                onClick={() => handleSubCategoryChange(null)}
+                className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition active:scale-95 cursor-pointer ${
+                  selectedSubCategory === null
+                    ? "text-white shadow-xs font-black"
+                    : "bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                }`}
+                style={
+                  selectedSubCategory === null
+                    ? {
+                        background: "var(--brand-gradient)",
+                        boxShadow: "var(--brand-shadow)",
+                      }
+                    : {}
+                }
+              >
+                All {activeParent ? activeParent.name : "Subcategories"}
+              </button>
+
+              {/* Subcategory individual pills */}
+              {subCategories.map((sub) => {
+                const isSelected = selectedSubCategory === sub.slug;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => {
+                      if (selectedCategory === "all" && sub.parent_id) {
+                        const p = allCategories.find((c) => c.id === sub.parent_id);
+                        if (p) setSelectedCategory(p.slug);
+                      }
+                      handleSubCategoryChange(sub.slug);
+                    }}
+                    className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-semibold transition active:scale-95 cursor-pointer ${
+                      isSelected
+                        ? "text-white shadow-xs font-black"
+                        : "bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-200/70 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                    }`}
+                    style={
+                      isSelected
+                        ? { background: "var(--brand-gradient)" }
+                        : {}
                     }
-                  : {}
-              }
-            >
-              All {activeParent ? activeParent.name : "Subcategories"}
-            </button>
-
-            {/* Subcategory individual pills */}
-            {subCategories.map((sub) => {
-              const isSelected = selectedSubCategory === sub.slug;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  onClick={() => {
-                    if (selectedCategory === "all" && sub.parent_id) {
-                      const p = allCategories.find((c) => c.id === sub.parent_id);
-                      if (p) setSelectedCategory(p.slug);
-                    }
-                    handleSubCategoryChange(sub.slug);
-                  }}
-                  className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-semibold transition active:scale-95 cursor-pointer ${
-                    isSelected
-                      ? "text-white shadow-xs font-black"
-                      : "bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-200/70 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                  }`}
-                  style={
-                    isSelected
-                      ? { background: "var(--brand-gradient)" }
-                      : {}
-                  }
-                >
-                  {sub.image_url && (
-                    <img
-                      src={sub.image_url}
-                      alt=""
-                      className="w-3 h-3 rounded-full object-cover shrink-0"
-                    />
-                  )}
-                  <span>{sub.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  >
+                    {sub.image_url && (
+                      <img
+                        src={sub.image_url}
+                        alt=""
+                        className="w-3 h-3 rounded-full object-cover shrink-0"
+                      />
+                    )}
+                    <span>{sub.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Page Header ── */}
