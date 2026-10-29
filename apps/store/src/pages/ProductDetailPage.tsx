@@ -3,9 +3,14 @@ import { useParams, Link, useNavigate } from "react-router";
 import {
   fetchProductBySlug,
   fetchRelatedProducts,
+  fetchSimilarProducts,
+  fetchCatalogProducts,
+  fetchCategories,
   getApprovedReviews,
   submitReview,
 } from "../services/storeService";
+import { recordRecentlyViewed } from "../services/recentViews";
+import { ProductCatalogNav } from "../components/ProductCatalogNav";
 import { useSettings } from "../context/SettingsContext";
 import { supabase } from "../lib/supabase";
 import { ProductCard } from "../components/ProductCard";
@@ -21,9 +26,9 @@ import {
   getColorHex,
   type Product,
   type Review,
+  type Category,
 } from "@urbanrat/shared";
 import {
-  ArrowLeft,
   ShieldCheck,
   Truck,
   RotateCcw,
@@ -50,6 +55,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const { whatsappNumber } = useSettings();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+  const [categoryName, setCategoryName] = useState<string>("Catalog");
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,13 +106,31 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
       const prod = await fetchProductBySlug(slug);
       setProduct(prod);
       if (prod) {
+        recordRecentlyViewed(prod);
         setQuantity(prod.min_order_qty || 1);
-        const [related, approvedRevs, authRes] = await Promise.all([
+        const [similar, related, catalogItems, cats, approvedRevs, authRes] = await Promise.all([
+          fetchSimilarProducts(prod).catch(() => []),
           fetchRelatedProducts(prod.id, prod.category_id).catch(() => []),
+          prod.category_id ? fetchCatalogProducts(prod.category_id).catch(() => []) : Promise.resolve([]),
+          fetchCategories().catch(() => []),
           getApprovedReviews(prod.id).catch(() => []),
           supabase.auth.getUser().catch(() => ({ data: { user: null } })),
         ]);
+        setSimilarProducts(similar);
         setRelatedProducts(related);
+        setAllCategories(cats);
+
+        // Populate catalog siblings: if catalogItems returned list, use it; otherwise fallback to prod + similar
+        if (catalogItems.length > 0) {
+          setCatalogProducts(catalogItems);
+        } else if (similar.length > 0) {
+          setCatalogProducts([prod, ...similar]);
+        } else {
+          setCatalogProducts([prod]);
+        }
+
+        const cat = cats.find((c) => c.id === prod.category_id);
+        setCategoryName(cat?.name || "Catalog");
         setReviews(approvedRevs);
         setCurrentUser(authRes.data.user);
       }
@@ -255,27 +282,23 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-16 -mt-4 sm:mt-0">
-      {/* ── Breadcrumb / Back Navigation ── */}
-      <div className="hidden sm:flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => {
-            if (window.history.state && window.history.state.idx > 0) {
-              navigate(-1);
-            } else {
-              navigate("/");
-            }
-          }}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
-
-        <span className="text-[11px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 shadow-2xs">
-          SKU: {product.sku || "UR-ACCESSORY"}
-        </span>
-      </div>
+      {/* ── Symmetrical Product Catalog Navigation & Quick-Switch Hub ── */}
+      <ProductCatalogNav
+        currentProduct={product}
+        catalogProducts={catalogProducts}
+        categoryName={categoryName}
+        allCategories={allCategories}
+        onSelectProduct={(targetSlug) => {
+          navigate(`/product/${targetSlug}`);
+        }}
+        onBack={() => {
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);
+          } else {
+            navigate("/marketplace");
+          }
+        }}
+      />
 
       {/* ── Main Showcase Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 xl:gap-14 items-start">
@@ -284,7 +307,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative aspect-square sm:rounded-3xl overflow-hidden bg-white sm:border sm:border-slate-100 sm:shadow-xs flex items-center justify-center p-0 group select-none -mx-4 sm:mx-0 border-b border-slate-100 sm:border-b-0"
+            className="relative aspect-square sm:rounded-3xl overflow-hidden bg-white dark:bg-slate-900 sm:border sm:border-slate-100 dark:sm:border-slate-800 sm:shadow-xs flex items-center justify-center p-0 group select-none -mx-4 sm:mx-0 border-b border-slate-100 dark:border-slate-800 sm:border-b-0"
           >
             <img
               src={images[activeImageIndex]}
@@ -305,7 +328,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             )}
 
             {product.is_urbanrat_brand && (
-              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur-md text-brand-dark border border-slate-200/60 shadow-xs flex items-center space-x-1.5">
+              <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-brand-dark dark:text-brand-light border border-slate-200/60 dark:border-slate-700/60 shadow-xs flex items-center space-x-1.5">
                 <img
                   src="/logo.png"
                   alt="Urbanrat"
@@ -410,20 +433,20 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               </div>
             )}
 
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
               {product.name}
             </h1>
 
             {product.short_description && (
-              <p className="mt-1 text-xs sm:text-sm font-medium text-slate-600">
+              <p className="mt-1 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
                 {product.short_description}
               </p>
             )}
 
             {/* Warranty Badge */}
             {Boolean(product.warranty_months && product.warranty_months > 0) && (
-              <div className="mt-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="mt-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>{product.warranty_months} Months Wholesale Warranty</span>
               </div>
             )}
@@ -431,11 +454,11 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
           {/* ── Bulk Pricing Table ── */}
           {tiers.length > 0 && (
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-brand-dark" />
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                  <Layers className="w-4 h-4 text-brand-dark dark:text-brand-light" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                     Tiered Volume Pricing
                   </h3>
                 </div>
@@ -472,35 +495,35 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                       aria-label={`Select ${rangeStr} pieces tier at ₹${tier.unit_price} each`}
                       className={`relative rounded-2xl p-3 border transition-all text-left w-full cursor-pointer select-none group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark/50 disabled:opacity-50 disabled:cursor-not-allowed ${
                         isActive
-                          ? "bg-sky-50/80 border-brand-dark ring-2 ring-brand-light/40 shadow-xs"
-                          : "bg-slate-50/60 border-slate-100 hover:bg-sky-50/40 hover:border-brand-light/60 active:scale-[0.98]"
+                          ? "bg-sky-50/80 dark:bg-orange-950/30 border-brand-dark dark:border-orange-500 ring-2 ring-brand-light/40 dark:ring-orange-500/40 shadow-xs"
+                          : "bg-slate-50/60 dark:bg-slate-800/60 border-slate-100 dark:border-slate-800 hover:bg-sky-50/40 dark:hover:bg-orange-950/20 hover:border-brand-light/60 dark:hover:border-orange-500/60 active:scale-[0.98]"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1 gap-1">
                         <span
                           className={`text-[11px] font-extrabold ${
                             isActive
-                              ? "text-brand-dark font-black"
-                              : "text-slate-600 group-hover:text-slate-900"
+                              ? "text-brand-dark dark:text-brand-light font-black"
+                              : "text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white"
                           }`}
                         >
                           {rangeStr} pcs
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
                           {savingsVsFirst > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800">
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400">
                               Save {savingsVsFirst}%
                             </span>
                           )}
                           {isActive && (
-                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand-dark text-white shadow-2xs">
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand-dark dark:bg-brand text-white shadow-2xs">
                               Active
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div className="text-base font-black text-slate-900 tracking-tight">
+                      <div className="text-base font-black text-slate-900 dark:text-white tracking-tight">
                         ₹{tier.unit_price.toLocaleString("en-IN")}
                         <span className="text-[10px] text-slate-400 font-medium ml-0.5">
                           /pc
@@ -514,9 +537,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           )}
 
           {/* Pricing Box & Quantity Stepper */}
-          <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-4">
             <div className="flex items-baseline space-x-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 ₹{unitPrice.toLocaleString("en-IN")}
               </span>
               <span className="text-xs text-slate-400 font-medium">/ unit</span>
@@ -535,21 +558,21 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   stock > 0 ? "bg-emerald-500" : "bg-rose-500"
                 }`}
               />
-              <span className="text-xs font-bold text-slate-700">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 {stock > 0 ? "In Stock" : "Out of Stock"}
               </span>
             </div>
 
             {/* Selective Color Options (Only when enabled for this catalog) */}
             {availableColors.length > 0 && (
-              <div className="pt-3 border-t border-slate-100 space-y-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
-                    <Palette className="w-3.5 h-3.5 text-brand-dark" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                    <Palette className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light" />
                     <span>Select Color:</span>
                   </span>
                   {selectedColor && (
-                    <span className="text-[11px] font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                    <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                       {selectedColor}
                     </span>
                   )}
@@ -569,8 +592,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         }}
                         className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-sky-50 text-sky-950 border-brand-dark ring-2 ring-brand-light/50 shadow-xs"
-                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                            ? "bg-sky-50 dark:bg-orange-950/40 text-sky-950 dark:text-orange-200 border-brand-dark dark:border-orange-500 ring-2 ring-brand-light/50 dark:ring-orange-500/40 shadow-xs"
+                            : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60"
                         }`}
                       >
                         <span
@@ -578,7 +601,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                           style={{ backgroundColor: hex }}
                         />
                         <span>{color}</span>
-                        {isSelected && <CheckCircle2 className="w-3 h-3 text-brand-dark ml-0.5" />}
+                        {isSelected && <CheckCircle2 className="w-3 h-3 text-brand-dark dark:text-brand-light ml-0.5" />}
                       </button>
                     );
                   })}
@@ -587,9 +610,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             )}
 
             {/* Quantity Stepper respecting min_order_qty, order_qty_step and stock */}
-            <div className="pt-2 border-t border-slate-100 space-y-2">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Quantity (Min: {minQty}
                   {step > 1 ? `, Step: ${step}` : ""})
                 </span>
@@ -608,11 +631,11 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
               {/* Live Line Total Math (clearly labeled as an estimate) */}
               <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-slate-500 font-medium">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
                   Estimated Subtotal:
                 </span>
                 <div className="text-right">
-                  <span className="text-slate-900 font-black text-sm">
+                  <span className="text-slate-900 dark:text-white font-black text-sm">
                     ₹{estimatedLineTotal.toLocaleString("en-IN")}
                   </span>
                   <span className="ml-1 text-[10px] text-slate-400 font-normal">
@@ -627,7 +650,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   <button
                     type="button"
                     onClick={() => handleSelectTier(nextTier.tier.min_qty)}
-                    className="w-full text-left p-2.5 rounded-xl bg-sky-50 hover:bg-sky-100/70 border border-sky-100 text-[11px] font-semibold text-sky-800 flex items-center justify-between transition-colors cursor-pointer group"
+                    className="w-full text-left p-2.5 rounded-xl bg-sky-50 dark:bg-orange-950/30 hover:bg-sky-100/70 dark:hover:bg-orange-950/50 border border-sky-100 dark:border-orange-500/30 text-[11px] font-semibold text-sky-800 dark:text-orange-200 flex items-center justify-between transition-colors cursor-pointer group"
                     aria-label={`Add ${nextTier.piecesNeeded} more to reach ${nextTier.tier.min_qty} pieces tier at ₹${nextTier.tier.unit_price} each`}
                   >
                     <div className="flex items-center space-x-1.5">
@@ -639,7 +662,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         </strong>
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold text-brand-dark underline underline-offset-2 opacity-80 group-hover:opacity-100 shrink-0 ml-2">
+                    <span className="text-[10px] font-bold text-brand-dark dark:text-brand-light underline underline-offset-2 opacity-80 group-hover:opacity-100 shrink-0 ml-2">
                       Apply
                     </span>
                   </button>
@@ -657,7 +680,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 disabled={stock <= 0}
                 className="flex-1 py-3.5 px-6 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5 disabled:opacity-50"
                 style={{
-                  background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                  background: "var(--brand-gradient)",
                 }}
               >
                 {addedToast ? (
@@ -674,7 +697,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 type="button"
                 onClick={handleBuyNow}
                 disabled={stock <= 0}
-                className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-900 dark:bg-slate-800 hover:bg-black dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50 border border-transparent dark:border-slate-700"
               >
                 Buy Now
               </button>
@@ -716,20 +739,20 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               : [];
             if (displaySpecs.length === 0) return null;
             return (
-              <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Specifications
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {displaySpecs.map(([key, val]) => (
                     <div
                       key={key}
-                      className="flex justify-between py-2 px-3 rounded-xl bg-slate-50 border border-slate-100/60"
+                      className="flex justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100/60 dark:border-slate-700/80"
                     >
-                      <span className="font-semibold text-slate-500 capitalize">
+                      <span className="font-semibold text-slate-500 dark:text-slate-400 capitalize">
                         {key.replace(/_/g, " ")}
                       </span>
-                      <span className="font-bold text-slate-900 text-right">
+                      <span className="font-bold text-slate-900 dark:text-white text-right">
                         {String(val)}
                       </span>
                     </div>
@@ -741,28 +764,28 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
           {/* Detailed Product Description (below Specifications) */}
           {product.description && (
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-2.5">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-2.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Description
               </h3>
-              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal whitespace-pre-line">
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line">
                 {product.description}
               </div>
             </div>
           )}
 
           {/* Guarantees */}
-          <div className="grid grid-cols-3 gap-2 pt-2 text-center text-slate-600 text-[11px]">
-            <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
-              <Truck className="w-4 h-4 text-brand-dark mx-auto mb-1" />
+          <div className="grid grid-cols-3 gap-2 pt-2 text-center text-slate-600 dark:text-slate-300 text-[11px]">
+            <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <Truck className="w-4 h-4 text-brand-dark dark:text-brand-light mx-auto mb-1" />
               <span className="font-semibold">Fast Shipping</span>
             </div>
-            <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-brand-dark mx-auto mb-1" />
+            <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <ShieldCheck className="w-4 h-4 text-brand-dark dark:text-brand-light mx-auto mb-1" />
               <span className="font-semibold">QA Tested</span>
             </div>
-            <div className="bg-white p-2.5 rounded-2xl border border-slate-100">
-              <RotateCcw className="w-4 h-4 text-brand-dark mx-auto mb-1" />
+            <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <RotateCcw className="w-4 h-4 text-brand-dark dark:text-brand-light mx-auto mb-1" />
               <span className="font-semibold">DOA Guarantee</span>
             </div>
           </div>
@@ -770,10 +793,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
       </div>
 
       {/* ── Customer Reviews & Ratings ── */}
-      <section className="pt-8 border-t border-slate-100 space-y-6">
+      <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
               Customer Reviews
             </h2>
             <p className="text-xs text-slate-400">
@@ -782,7 +805,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           </div>
           {Boolean(product.rating_count && product.rating_count > 0) && (
             <div className="text-right">
-              <span className="text-lg font-black text-slate-900">
+              <span className="text-lg font-black text-slate-900 dark:text-white">
                 {Number(product.rating_avg).toFixed(1)}
               </span>
               <span className="text-xs text-slate-400 font-medium"> / 5.0</span>
@@ -796,7 +819,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             {reviews.map((rev) => (
               <div
                 key={rev.id}
-                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-2"
+                className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center text-amber-400">
@@ -806,20 +829,20 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         className={`w-3.5 h-3.5 ${
                           i < rev.rating
                             ? "fill-amber-400 text-amber-400"
-                            : "text-slate-200"
+                            : "text-slate-200 dark:text-slate-700"
                         }`}
                       />
                     ))}
                   </div>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
                     {new Date(rev.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 {rev.title && (
-                  <h4 className="text-xs font-bold text-slate-900">{rev.title}</h4>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
                 )}
                 {rev.body && (
-                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
                     {rev.body}
                   </p>
                 )}
@@ -827,21 +850,21 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             ))}
           </div>
         ) : (
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 text-center text-xs text-slate-500">
+          <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400 shadow-xs transition-colors">
             No approved reviews yet. Verified buyers can submit feedback below!
           </div>
         )}
 
         {/* Write a Review Section */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-3">
-          <h3 className="text-sm font-extrabold text-slate-800">
+        <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-3 transition-colors">
+          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">
             Write a Wholesale Review
           </h3>
 
           {currentUser ? (
             reviewSuccess ? (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-semibold flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>
                   Thank you! Your review has been submitted and will appear once approved by moderation.
                 </span>
@@ -849,14 +872,14 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             ) : (
               <form onSubmit={handleReviewSubmit} className="space-y-3">
                 {reviewError && (
-                  <p className="text-xs text-rose-600 font-semibold">
+                  <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
                     {reviewError}
                   </p>
                 )}
 
                 {/* Rating Stars Input */}
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-700">Rating:</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Rating:</span>
                   <div className="flex items-center space-x-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -869,7 +892,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                           className={`w-5 h-5 ${
                             star <= reviewRating
                               ? "fill-amber-400 text-amber-400"
-                              : "text-slate-300"
+                              : "text-slate-300 dark:text-slate-700 hover:text-amber-300 transition-colors"
                           }`}
                         />
                       </button>
@@ -883,7 +906,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     value={reviewTitle}
                     onChange={(e) => setReviewTitle(e.target.value)}
                     placeholder="Review headline (optional)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-brand-light dark:focus:ring-orange-500/50 dark:focus:border-orange-500 focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -893,16 +916,17 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     onChange={(e) => setReviewBody(e.target.value)}
                     rows={3}
                     placeholder="Share your experience regarding build quality, margins, or packaging..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-light focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-brand-light dark:focus:ring-orange-500/50 dark:focus:border-orange-500 focus:outline-none resize-none transition-colors"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submittingReview}
-                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow hover:shadow-md active:scale-95 transition disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-sm hover:shadow-md active:scale-95 transition disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                   style={{
-                    background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                    background: "var(--brand-gradient, linear-gradient(to bottom, #5ADBE5, #0A82A8))",
+                    boxShadow: "var(--brand-shadow, 0 4px 14px rgba(30, 175, 199, 0.25))",
                   }}
                 >
                   <Send className="w-3.5 h-3.5" />
@@ -913,9 +937,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               </form>
             )
           ) : (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Please{" "}
-              <Link to="/menu" className="font-bold text-brand-dark underline">
+              <Link to="/menu" className="font-bold text-brand-dark dark:text-orange-400 underline">
                 sign in to your customer account
               </Link>{" "}
               to write a review.
@@ -924,16 +948,52 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         </div>
       </section>
 
+      {/* ── Similar Products Row (Same Category & Compatible Model, In-Stock First) ── */}
+      {similarProducts.length > 0 && (
+        <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                Similar Products
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {product.specs?.compatibility_group
+                  ? `Compatible with ${product.specs.compatibility_group}`
+                  : product.specs?.brand_compatibility
+                  ? `For ${product.specs.brand_compatibility} devices`
+                  : "Matching category items in stock"}
+              </p>
+            </div>
+            <Link
+              to="/marketplace"
+              className="text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline"
+            >
+              View All →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
+            {similarProducts.map((sim) => (
+              <ProductCard
+                key={sim.id}
+                product={sim}
+                onAddToCart={(p) => onAddToCart(p, p.min_order_qty || 1)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Related Products Row ── */}
       {relatedProducts.length > 0 && (
-        <section className="pt-8 border-t border-slate-100 space-y-4">
+        <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
               Related Accessories
             </h2>
             <Link
               to="/marketplace"
-              className="text-xs font-bold text-brand-dark hover:underline"
+              className="text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline"
             >
               View All →
             </Link>

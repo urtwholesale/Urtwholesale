@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router";
+import { Routes, Route, useLocation } from "react-router";
 import type { Product } from "@urbanrat/shared";
 import {
   isSupabaseConfigured,
-  searchProducts,
   PRODUCT_SELECT,
   formatProduct,
 } from "./services/storeService";
@@ -13,6 +12,7 @@ import { StoreNotConfigured } from "./components/StoreNotConfigured";
 import { TopBar } from "./components/TopBar";
 import { NavigationDock } from "./components/NavigationDock";
 import { StoreMenuDrawer } from "./components/StoreMenuDrawer";
+import { SearchModal } from "./components/SearchModal";
 import { HomePage } from "./pages/HomePage";
 import { MarketplacePage } from "./pages/MarketplacePage";
 import { CategoriesPage } from "./pages/CategoriesPage";
@@ -30,8 +30,8 @@ import { AddressesPage } from "./pages/AddressesPage";
 import { ReturnsPage } from "./pages/ReturnsPage";
 import { ReturnDetailPage } from "./pages/ReturnDetailPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Search, X, Loader2, ArrowRight } from "lucide-react";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
+import { LazyMotion, domAnimation } from "./lib/motion";
 
 /**
  * Ensures whenever a user navigates or clicks a link from anywhere on a page,
@@ -58,7 +58,6 @@ interface CartStateItem {
 const GUEST_CART_KEY = "urt_guest_cart";
 
 export default function App() {
-  const navigate = useNavigate();
   const { settings } = useSettings();
 
   // If Supabase environment variables are missing, enforce configuration screen
@@ -200,37 +199,11 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [searching, setSearching] = useState(false);
 
   // Read popular searches dynamically from store_settings
   const popularSearches = settings?.popular_searches || [];
 
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-  // Debounced live search against Supabase using trigram RPC searchProducts
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
-
-    setSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const results = await searchProducts(searchQuery.trim(), 8);
-        setSearchResults(results);
-      } catch (err) {
-        console.error("Search failed:", err);
-      } finally {
-        setSearching(false);
-      }
-    }, 220);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   function handleAddToCart(product: Product, quantity?: number, selectedColor?: string) {
     triggerHaptic("success");
@@ -328,7 +301,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-brand-light/30">
+    <LazyMotion features={domAnimation}>
+      <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-brand-light/30">
       <ScrollToTop />
 
       {/* ── Fixed Glassmorphism Top Navigation Bar ── */}
@@ -463,100 +437,12 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Search Modal Drawer with Instant Supabase Results ── */}
-      {searchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/45 backdrop-blur-xs animate-in fade-in">
-          <div className="relative w-full max-w-lg bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center space-x-2.5 flex-1 mr-3">
-                <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products, chargers, cables..."
-                  className="w-full text-xs sm:text-sm bg-transparent outline-none placeholder:text-slate-400 font-medium"
-                />
-                {searching && <Loader2 className="w-3.5 h-3.5 text-brand-dark animate-spin shrink-0" />}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Popular Search Suggestions from store_settings (hidden if empty) */}
-            {!searchQuery.trim() && popularSearches.length > 0 && (
-              <div className="space-y-2 py-1">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Popular Searches
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {popularSearches.map((term) => (
-                    <button
-                      key={term}
-                      type="button"
-                      onClick={() => setSearchQuery(term)}
-                      className="px-3 py-1.5 rounded-full text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-medium transition cursor-pointer"
-                    >
-                      {term}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Live Search Results */}
-            {searchQuery.trim() && (
-              <div className="max-h-80 overflow-y-auto space-y-2 pt-1 divide-y divide-slate-100">
-                {searchResults.length > 0 ? (
-                  searchResults.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        setSearchOpen(false);
-                        setSearchQuery("");
-                        navigate(`/product/${product.slug}`);
-                      }}
-                      className="pt-2 pb-2 first:pt-0 flex items-center justify-between hover:bg-slate-50 rounded-xl p-2 transition cursor-pointer"
-                    >
-                      <div className="flex items-center space-x-3 min-w-0 pr-2">
-                        {product.images[0] && (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
-                          />
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">
-                            {product.name}
-                          </p>
-                          <p className="text-[11px] text-slate-400">
-                            ₹{product.price.toLocaleString("en-IN")}
-                          </p>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
-                    </div>
-                  ))
-                ) : (
-                  !searching && (
-                    <div className="py-6 text-center text-xs text-slate-400">
-                      No matching products found for "{searchQuery}"
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ── Search Modal Drawer with Typo-Tolerant, Synonym-Aware Engine ── */}
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        popularSearches={popularSearches}
+      />
 
       {/* ── Fixed Glassmorphism Bottom Navigation Dock ── */}
       <NavigationDock
@@ -571,5 +457,6 @@ export default function App() {
         cartCount={totalCartCount}
       />
     </div>
+    </LazyMotion>
   );
 }

@@ -2174,27 +2174,82 @@ export async function fetchBanners(): Promise<Banner[]> {
   return (data as Banner[]) || [];
 }
 
-export async function saveBanner(banner: Partial<Banner> & { id: string }): Promise<void> {
+export async function createBanner(banner: Partial<Banner>): Promise<Banner> {
+  const insertPayload: any = {
+    title: banner.title || "New Offer Card",
+    subtitle: banner.subtitle || "Wholesale bulk deal",
+    badge_text: banner.badge_text || "URBANRAT PRO",
+    image_url: banner.image_url || null,
+    rating: banner.rating || "4.9",
+    badges: banner.badges || [{ icon: "Star", text: banner.rating || "4.9" }],
+    cta_text: banner.cta_text || "Receive",
+    cta_link: banner.cta_link || "/marketplace",
+    secondary_cta_text: banner.secondary_cta_text || "",
+    secondary_cta_link: banner.secondary_cta_link || "",
+    placement: banner.placement || "home_hero",
+    sort_order: banner.sort_order ?? 0,
+    is_active: banner.is_active ?? true,
+  };
+
+  const { data, error } = await supabase
+    .from("banners")
+    .insert([insertPayload])
+    .select()
+    .single();
+
+  if (error) {
+    if (error.message?.includes("rating") || error.code === "PGRST204") {
+      delete insertPayload.rating;
+      const retry = await supabase.from("banners").insert([insertPayload]).select().single();
+      if (retry.error) throw retry.error;
+      return retry.data as Banner;
+    }
+    throw error;
+  }
+  return data as Banner;
+}
+
+export async function deleteBanner(id: string): Promise<void> {
   const { error } = await supabase
     .from("banners")
-    .update({
-      title: banner.title,
-      subtitle: banner.subtitle,
-      badge_text: banner.badge_text,
-      image_url: banner.image_url,
-      badges: banner.badges,
-      cta_text: banner.cta_text,
-      cta_link: banner.cta_link,
-      secondary_cta_text: banner.secondary_cta_text,
-      secondary_cta_link: banner.secondary_cta_link,
-      placement: banner.placement,
-      sort_order: banner.sort_order,
-      is_active: banner.is_active,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", banner.id);
+    .delete()
+    .eq("id", id);
 
   if (error) throw error;
+}
+
+export async function saveBanner(banner: Partial<Banner> & { id: string }): Promise<void> {
+  const updatePayload: any = {
+    title: banner.title,
+    subtitle: banner.subtitle,
+    badge_text: banner.badge_text,
+    image_url: banner.image_url,
+    rating: banner.rating || "4.9",
+    badges: banner.badges || [{ icon: "Star", text: banner.rating || "4.9" }],
+    cta_text: banner.cta_text,
+    cta_link: banner.cta_link,
+    secondary_cta_text: banner.secondary_cta_text,
+    secondary_cta_link: banner.secondary_cta_link,
+    placement: banner.placement,
+    sort_order: banner.sort_order,
+    is_active: banner.is_active,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("banners")
+    .update(updatePayload)
+    .eq("id", banner.id);
+
+  if (error) {
+    if (error.message?.includes("rating") || error.code === "PGRST204") {
+      delete updatePayload.rating;
+      const retry = await supabase.from("banners").update(updatePayload).eq("id", banner.id);
+      if (retry.error) throw retry.error;
+      return;
+    }
+    throw error;
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -3405,4 +3460,65 @@ export async function checkCatalogImageUrlExists(url: string): Promise<boolean> 
 
   const cached = getLocalCachedCatalogImages();
   return cached.some((img: CatalogImage) => img.public_url === url);
+}
+
+export interface ZeroResultSearchRecord {
+  normalized_query: string;
+  search_count: number;
+  last_searched: string;
+}
+
+/**
+ * Fetch top zero-result customer searches for specified timeframe (days)
+ */
+export async function fetchTopZeroResultSearches(
+  days: number = 7
+): Promise<ZeroResultSearchRecord[]> {
+  try {
+    const { data, error } = await supabase.rpc("admin_top_zero_result_searches", {
+      p_days: days,
+    });
+    if (!error && Array.isArray(data)) {
+      return data as ZeroResultSearchRecord[];
+    }
+  } catch (e) {
+    console.warn("admin_top_zero_result_searches warning:", e);
+  }
+  return [];
+}
+
+/**
+ * Add or update search synonym mapping
+ */
+export async function addSearchSynonym(
+  term: string,
+  synonyms: string[]
+): Promise<void> {
+  const cleanTerm = term.trim().toLowerCase();
+  const cleanSynonyms = synonyms.map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+  const { error } = await supabase.from("search_synonyms").upsert(
+    {
+      term: cleanTerm,
+      synonyms: cleanSynonyms,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "term" }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+/**
+ * Trigger backend vocabulary harvesting across all product titles, skus, brands, and categories
+ */
+export async function refreshSearchVocabulary(): Promise<number> {
+  const { data, error } = await supabase.rpc("refresh_search_vocabulary");
+  if (error) {
+    throw new Error(error.message);
+  }
+  return typeof data === "number" ? data : 0;
 }

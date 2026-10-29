@@ -1,45 +1,138 @@
 @import "tailwindcss";
 
-/* ── Design Tokens & Typography ── */
-@theme {
+/* ── Enable class-based dark variant in Tailwind v4 ── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Light and Dark CSS Custom Properties ── */
+:root {
+  /* Brand cyan/blue in light mode */
   --color-brand-light: #5ADBE5;
   --color-brand: #1EAFC7;
   --color-brand-dark: #0A82A8;
 
   --color-surface: #F8F9FB;
   --color-surface-card: #FFFFFF;
+  --color-surface-card-subtle: #F1F5F9;
+  --color-surface-border: #E2E8F0;
+
+  --brand-gradient: linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%);
+  --brand-gradient-horizontal: linear-gradient(90deg, #5ADBE5 0%, #1EAFC7 50%, #0A82A8 100%);
+  --brand-gradient-accent: linear-gradient(135deg, #5ADBE5 0%, #1EAFC7 60%, #0A82A8 100%);
+  --brand-shadow: 0 4px 16px rgba(10, 130, 168, 0.35);
+  --brand-glow: 0 0 20px rgba(90, 219, 229, 0.4);
+}
+
+.dark, [data-theme="dark"] {
+  /* Brand black + gradient orange in dark mode */
+  --color-brand-light: #FFA033;
+  --color-brand: #FF7700;
+  --color-brand-dark: #E64A00;
+
+  --color-surface: #0B0F17;
+  --color-surface-card: #131B26;
+  --color-surface-card-subtle: #192333;
+  --color-surface-border: #1E2D40;
+
+  --brand-gradient: linear-gradient(180deg, #FFA033 0%, #FF6B00 50%, #E64A00 100%);
+  --brand-gradient-horizontal: linear-gradient(90deg, #FFA033 0%, #FF7700 50%, #E64A00 100%);
+  --brand-gradient-accent: linear-gradient(135deg, #FFA033 0%, #FF7700 60%, #E64A00 100%);
+  --brand-shadow: 0 4px 18px rgba(255, 107, 0, 0.45);
+  --brand-glow: 0 0 24px rgba(255, 122, 0, 0.45);
+}
+
+/* ── Design Tokens & Typography ── */
+@theme {
+  --color-brand-light: var(--color-brand-light);
+  --color-brand: var(--color-brand);
+  --color-brand-dark: var(--color-brand-dark);
+
+  --color-surface: var(--color-surface);
+  --color-surface-card: var(--color-surface-card);
+  --color-surface-card-subtle: var(--color-surface-card-subtle);
+  --color-surface-border: var(--color-surface-border);
+
+  /* Deep slate nuances for dark mode navigation and sheets */
+  --color-slate-750: #1a2436;
+  --color-slate-850: #0e1624;
 
   --font-sans: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* ── Motion & Animation Tokens (Mirrors apps/store/src/lib/motion.ts) ── */
+  --duration-instant: 120ms;
+  --duration-fast: 200ms;
+  --duration-base: 320ms;
+  --duration-slow: 500ms;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── Brand Gradient Utilities ── */
 .bg-brand-gradient {
-  background: linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%);
+  background: var(--brand-gradient);
+}
+
+.bg-brand-gradient-h {
+  background: var(--brand-gradient-horizontal);
 }
 
 .text-brand-gradient {
-  background: linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%);
+  background: var(--brand-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* ── Frosted Glass Top Bar ── */
-.glass-top {
-  background: rgba(255, 255, 255, 0.48);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+.shadow-brand {
+  box-shadow: var(--brand-shadow);
 }
 
-/* ── Floating Light Frosted Blur Dock (Matching Reference Image) ── */
-.glass-dock {
-  background: rgba(255, 255, 255, 0.65);
+.glow-brand {
+  box-shadow: var(--brand-glow);
+}
+
+/* ── Frosted Glass Top Bar ── */
+.glass-top {
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+}
+.dark .glass-top {
+  background: rgba(11, 15, 23, 0.85);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Floating Light Frosted Blur Dock ── */
+.glass-dock {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+.dark .glass-dock {
+  background: rgba(19, 27, 38, 0.82);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 107, 0, 0.1);
 }
 
 /* ── Glass Card ── */
@@ -47,8 +140,15 @@
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.7);
   box-shadow: 0 4px 20px -2px rgba(10, 130, 168, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+.dark .glass-card {
+  background: rgba(19, 27, 38, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 107, 0, 0.06);
 }
 
 /* ── Base resets ── */
@@ -67,13 +167,20 @@
     -moz-osx-font-smoothing: grayscale;
     background-color: #F8F9FB;
     color: #0F172A;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  html.dark {
+    background-color: #0B0F17;
+    color: #F8FAFC;
   }
 
   body {
     min-height: 100dvh;
-    background-color: #F8F9FB;
-    color: #0F172A;
+    background-color: inherit;
+    color: inherit;
     overflow-x: hidden;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 }
 

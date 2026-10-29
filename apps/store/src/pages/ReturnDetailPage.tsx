@@ -93,16 +93,20 @@ export function ReturnDetailPage() {
   if (error || !returnReq) {
     return (
       <div className="max-w-md mx-auto py-14 px-4 text-center space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
+        <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-orange-500/15 text-amber-600 dark:text-orange-400 flex items-center justify-center mx-auto border border-amber-100 dark:border-orange-500/30">
           <RotateCcw className="w-7 h-7" />
         </div>
-        <h2 className="text-lg font-black text-slate-900">Return Request Not Found</h2>
-        <p className="text-xs text-slate-500">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Return Request Not Found</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           We couldn't locate return record #{returnId || "unknown"}. Please check your link or return history.
         </p>
         <Link
           to="/returns"
-          className="inline-block px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition"
+          style={{
+            background: "var(--brand-gradient)",
+            boxShadow: "var(--brand-shadow)",
+          }}
+          className="inline-block px-5 py-2.5 rounded-xl text-white font-bold text-xs transition hover:opacity-95"
         >
           View All Returns
         </Link>
@@ -133,42 +137,42 @@ export function ReturnDetailPage() {
       case "requested":
         return {
           dot: "bg-amber-500",
-          badge: "bg-amber-50 text-amber-800 border-amber-200",
+          badge: "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60",
         };
       case "approved":
         return {
           dot: "bg-blue-500",
-          badge: "bg-blue-50 text-blue-800 border-blue-200",
+          badge: "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60",
         };
       case "pickup_scheduled":
       case "in_transit":
         return {
           dot: "bg-indigo-500",
-          badge: "bg-indigo-50 text-indigo-800 border-indigo-200",
+          badge: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60",
         };
       case "received":
         return {
           dot: "bg-purple-500",
-          badge: "bg-purple-50 text-purple-800 border-purple-200",
+          badge: "bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/60",
         };
       case "qc_passed":
       case "refunded":
       case "replacement_shipped":
         return {
           dot: "bg-emerald-500",
-          badge: "bg-emerald-50 text-emerald-800 border-emerald-200",
+          badge: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
         };
       case "rejected":
       case "qc_failed":
         return {
           dot: "bg-rose-500",
-          badge: "bg-rose-50 text-rose-800 border-rose-200",
+          badge: "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60",
         };
       case "closed":
       default:
         return {
-          dot: "bg-slate-400",
-          badge: "bg-slate-100 text-slate-700 border-slate-200",
+          dot: "bg-slate-400 dark:bg-slate-500",
+          badge: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
         };
     }
   }
@@ -178,49 +182,49 @@ export function ReturnDetailPage() {
   return (
     <div className="max-w-5xl mx-auto py-4 sm:py-6 px-3 sm:px-4 space-y-5 animate-in fade-in duration-300 pb-20">
       {/* ── Breadcrumb Navigation ── */}
-      <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-slate-500 overflow-x-auto py-1">
-        <Link to="/" className="hover:text-slate-900 transition shrink-0">
+      <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-xs text-slate-500 dark:text-slate-400 overflow-x-auto py-1">
+        <Link to="/" className="hover:text-slate-900 dark:hover:text-white transition shrink-0">
           Home
         </Link>
-        <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-        <Link to="/account" className="hover:text-slate-900 transition shrink-0">
+        <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 shrink-0" />
+        <Link to="/account" className="hover:text-slate-900 dark:hover:text-white transition shrink-0">
           My Account
         </Link>
-        <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-        <Link to="/returns" className="hover:text-slate-900 transition shrink-0">
+        <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 shrink-0" />
+        <Link to="/returns" className="hover:text-slate-900 dark:hover:text-white transition shrink-0">
           Returns
         </Link>
-        <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
-        <span className="font-bold text-slate-900 truncate shrink-0">
+        <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 shrink-0" />
+        <span className="font-bold text-slate-900 dark:text-white truncate shrink-0">
           {returnReq.return_code}
         </span>
       </nav>
 
       {/* ── Top Header Banner ── */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-3 flex-wrap gap-y-1">
-            <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
               <span>{returnReq.return_code}</span>
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer"
                 title="Copy Return Code"
               >
                 {copiedCode ? (
-                  <Check className="w-4 h-4 text-emerald-600" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
               </button>
             </h1>
 
-            <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 uppercase tracking-wider">
+            <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               {returnReq.type === "replacement" ? (
-                <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+                <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               ) : (
-                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-orange-400" />
               )}
               <span>{returnReq.type}</span>
             </span>
@@ -233,17 +237,17 @@ export function ReturnDetailPage() {
             </span>
           </div>
 
-          <p className="text-xs text-slate-500 mt-1 flex items-center space-x-2 flex-wrap">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-2 flex-wrap">
             <span className="flex items-center space-x-1">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
               <span>Requested on {formattedDate}</span>
             </span>
-            <span className="text-slate-300">&bull;</span>
+            <span className="text-slate-300 dark:text-slate-600">&bull;</span>
             <span>
               Order:{" "}
               <Link
                 to={`/order/${returnReq.order_id}`}
-                className="font-bold text-brand-dark hover:underline"
+                className="font-bold text-brand-dark dark:text-orange-400 hover:underline"
               >
                 #{returnReq.order_id}
               </Link>
@@ -256,9 +260,9 @@ export function ReturnDetailPage() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs border border-emerald-200/80 transition shadow-2xs self-start md:self-auto"
+          className="inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 font-bold text-xs border border-emerald-200/80 dark:border-emerald-800/60 transition shadow-2xs self-start md:self-auto"
         >
-          <MessageCircle className="w-4 h-4 text-emerald-600" />
+          <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Resolution Desk on WhatsApp</span>
         </a>
       </div>
@@ -268,14 +272,14 @@ export function ReturnDetailPage() {
         {/* ── Left Column: Timeline, Items & Evidence ── */}
         <div className="lg:col-span-8 space-y-5">
           {/* ── Vertical Timeline from return_events ── */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
-            <h2 className="font-extrabold text-sm text-slate-900 flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-brand-dark" />
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-4">
+            <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center space-x-2">
+              <Clock className="w-4 h-4 text-brand-dark dark:text-orange-400" />
               <span>Return Status Timeline</span>
             </h2>
 
             {returnReq.events && returnReq.events.length > 0 ? (
-              <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2.75 sm:before:left-3.75 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+              <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2.75 sm:before:left-3.75 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                 {returnReq.events.map((ev: ReturnEvent, idx: number) => {
                   const evDate = new Date(ev.created_at).toLocaleString("en-IN", {
                     day: "numeric",
@@ -293,7 +297,7 @@ export function ReturnDetailPage() {
                       <div
                         className={`absolute -left-6 sm:-left-8 top-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
                           isLast
-                            ? "bg-brand-dark text-white ring-4 ring-sky-100"
+                            ? "bg-brand-dark dark:bg-orange-500 text-white ring-4 ring-sky-100 dark:ring-orange-500/20"
                             : "bg-emerald-600 text-white shadow-xs"
                         }`}
                       >
@@ -307,16 +311,16 @@ export function ReturnDetailPage() {
                       {/* Event Content */}
                       <div className="min-w-0 flex-1 pt-0.5">
                         <div className="flex items-baseline justify-between flex-wrap gap-x-2">
-                          <p className="text-xs sm:text-sm font-bold text-slate-900 capitalize">
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white capitalize">
                             {RETURN_STATUS_LABELS[ev.status as ReturnStatus] || ev.status}
                           </p>
-                          <span className="text-[11px] text-slate-400 font-medium">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                             {evDate}
                           </span>
                         </div>
 
                         {ev.note && (
-                          <p className="text-xs text-slate-600 mt-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 leading-relaxed">
+                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-750 leading-relaxed">
                             {ev.note}
                           </p>
                         )}
@@ -326,18 +330,18 @@ export function ReturnDetailPage() {
                 })}
               </div>
             ) : (
-              <p className="text-xs text-slate-500 italic">No timeline events recorded.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 italic">No timeline events recorded.</p>
             )}
           </div>
 
           {/* ── Returned Items List ── */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-4">
-            <h2 className="font-extrabold text-sm text-slate-900 flex items-center space-x-2 pb-2 border-b border-slate-100">
-              <Package className="w-4 h-4 text-brand-dark" />
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center space-x-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <Package className="w-4 h-4 text-brand-dark dark:text-orange-400" />
               <span>Returned Items ({returnReq.items?.length || 0})</span>
             </h2>
 
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {returnReq.items?.map((item, idx) => {
                 const prod = item.product;
                 const unitPrice = prod?.price || 0;
@@ -348,7 +352,7 @@ export function ReturnDetailPage() {
                     className="py-3 flex items-start justify-between gap-3"
                   >
                     <div className="flex items-start space-x-3 min-w-0">
-                      <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-750 flex items-center justify-center overflow-hidden shrink-0">
                         {prod?.images?.[0] ? (
                           <img
                             src={prod.images[0]}
@@ -356,21 +360,21 @@ export function ReturnDetailPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Package className="w-6 h-6 text-slate-300" />
+                          <Package className="w-6 h-6 text-slate-300 dark:text-slate-600" />
                         )}
                       </div>
 
                       <div className="min-w-0 space-y-0.5">
-                        <p className="font-bold text-xs sm:text-sm text-slate-900 leading-snug">
+                        <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
                           {prod?.name || "Product Unit"}
                         </p>
-                        <div className="flex items-center space-x-2 text-[11px] text-slate-500">
+                        <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400">
                           {prod?.sku && <span>SKU: {prod.sku}</span>}
                           <span>&bull;</span>
-                          <span>Condition: <strong className="capitalize">{item.condition || "Unopened"}</strong></span>
+                          <span>Condition: <strong className="capitalize text-slate-700 dark:text-slate-200">{item.condition || "Unopened"}</strong></span>
                         </div>
-                        <p className="text-xs text-slate-600 font-semibold pt-0.5">
-                          Quantity: <strong className="text-slate-900">{item.quantity} pcs</strong>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold pt-0.5">
+                          Quantity: <strong className="text-slate-900 dark:text-white">{item.quantity} pcs</strong>
                           {unitPrice > 0 && ` × ₹${unitPrice.toLocaleString("en-IN")}`}
                         </p>
                       </div>
@@ -382,28 +386,28 @@ export function ReturnDetailPage() {
           </div>
 
           {/* ── Reason, Description & Evidence Thumbnails ── */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-4">
-            <h2 className="font-extrabold text-sm text-slate-900 flex items-center space-x-2 pb-2 border-b border-slate-100">
-              <FileText className="w-4 h-4 text-brand-dark" />
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center space-x-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <FileText className="w-4 h-4 text-brand-dark dark:text-orange-400" />
               <span>Reason &amp; Uploaded Evidence</span>
             </h2>
 
-            <div className="space-y-3 text-xs text-slate-700">
+            <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
               <div>
-                <span className="font-bold text-slate-500 text-[11px] uppercase tracking-wider block">
+                <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider block">
                   Reported Reason
                 </span>
-                <p className="font-bold text-slate-900 text-sm mt-0.5">
+                <p className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
                   {RETURN_REASON_LABELS[returnReq.reason_code]}
                 </p>
               </div>
 
               {returnReq.description && (
                 <div>
-                  <span className="font-bold text-slate-500 text-[11px] uppercase tracking-wider block">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider block">
                     Customer Description
                   </span>
-                  <p className="mt-1 p-3 bg-slate-50 rounded-2xl border border-slate-100 leading-relaxed text-slate-800">
+                  <p className="mt-1 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-750 leading-relaxed text-slate-800 dark:text-slate-200">
                     {returnReq.description}
                   </p>
                 </div>
@@ -412,7 +416,7 @@ export function ReturnDetailPage() {
               {/* Evidence Thumbnails */}
               {evidenceUrls.length > 0 && (
                 <div className="pt-2">
-                  <span className="font-bold text-slate-500 text-[11px] uppercase tracking-wider block mb-2">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider block mb-2">
                     Evidence Media ({evidenceUrls.length})
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -421,7 +425,7 @@ export function ReturnDetailPage() {
                         key={i}
                         type="button"
                         onClick={() => setActiveMediaUrl(url)}
-                        className="group relative h-24 rounded-2xl bg-slate-50 border border-slate-200/80 overflow-hidden cursor-pointer hover:border-brand-dark transition-all"
+                        className="group relative h-24 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 overflow-hidden cursor-pointer hover:border-brand-dark dark:hover:border-orange-500 transition-all"
                       >
                         <img
                           src={url}
@@ -443,21 +447,21 @@ export function ReturnDetailPage() {
         {/* ── Right Column: Resolution & Admin Message ── */}
         <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
           {/* Resolution Card */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-3.5">
-            <h3 className="font-extrabold text-sm text-slate-900">
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-3.5">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
               Resolution Summary
             </h3>
 
-            <div className="space-y-2 text-xs text-slate-600 border-b border-slate-100 pb-3">
+            <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex justify-between">
                 <span>Resolution Type:</span>
-                <span className="font-bold uppercase text-slate-900">
+                <span className="font-bold uppercase text-slate-900 dark:text-white">
                   {returnReq.type}
                 </span>
               </div>
 
               {returnReq.refund_amount > 0 && (
-                <div className="flex justify-between items-baseline text-emerald-700 font-bold">
+                <div className="flex justify-between items-baseline text-emerald-700 dark:text-emerald-400 font-bold">
                   <span>Refund / Credit Value:</span>
                   <span className="text-base font-black">
                     ₹{returnReq.refund_amount.toLocaleString("en-IN")}
@@ -466,7 +470,7 @@ export function ReturnDetailPage() {
               )}
 
               {returnReq.resolved_at && (
-                <div className="flex justify-between text-slate-500 text-[11px]">
+                <div className="flex justify-between text-slate-500 dark:text-slate-400 text-[11px]">
                   <span>Resolved On:</span>
                   <span>
                     {new Date(returnReq.resolved_at).toLocaleDateString("en-IN", {
@@ -481,29 +485,29 @@ export function ReturnDetailPage() {
 
             {/* Admin Note when present */}
             {returnReq.admin_note ? (
-              <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/70 text-xs space-y-1">
-                <span className="font-bold text-amber-900 flex items-center space-x-1.5">
-                  <ShieldCheck className="w-4 h-4 text-amber-700" />
+              <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl border border-amber-200/70 dark:border-amber-800/50 text-xs space-y-1">
+                <span className="font-bold text-amber-900 dark:text-amber-300 flex items-center space-x-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-700 dark:text-amber-400" />
                   <span>QC &amp; Operational Note:</span>
                 </span>
-                <p className="text-amber-800 leading-relaxed">
+                <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
                   {returnReq.admin_note}
                 </p>
               </div>
             ) : (
-              <p className="text-[11px] text-slate-400 italic">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 italic">
                 Our warehouse QC inspection team is currently verifying the consignment.
               </p>
             )}
           </div>
 
           {/* Quick Help Box */}
-          <div className="bg-slate-50/80 rounded-3xl border border-slate-200/70 p-4 space-y-2 text-xs text-slate-600">
-            <div className="flex items-center space-x-2 text-slate-900 font-bold">
-              <Truck className="w-4 h-4 text-brand-dark" />
+          <div className="bg-slate-50/80 dark:bg-slate-800/60 rounded-3xl border border-slate-200/70 dark:border-slate-700/80 p-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+            <div className="flex items-center space-x-2 text-slate-900 dark:text-white font-bold">
+              <Truck className="w-4 h-4 text-brand-dark dark:text-orange-400" />
               <span>Doorstep Pickup Assistance</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
               Keep the items packed securely in their original carton box. The courier pickup agent will contact you prior to arrival.
             </p>
             <div className="pt-1">
@@ -511,7 +515,7 @@ export function ReturnDetailPage() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-dark font-bold hover:underline inline-flex items-center space-x-1 text-xs"
+                className="text-brand-dark dark:text-orange-400 font-bold hover:underline inline-flex items-center space-x-1 text-xs"
               >
                 <span>Chat with Resolution Support</span>
                 <ExternalLink className="w-3 h-3" />

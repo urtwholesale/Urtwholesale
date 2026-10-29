@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { fetchCategories, fetchProducts } from "../services/storeService";
 import { ProductCard } from "../components/ProductCard";
-import { CategoryTwoPaneSkeleton, ProductGridSkeleton } from "../components/Skeletons";
+import { CategoryTopRailSkeleton, ProductGridSkeleton } from "../components/Skeletons";
 import { EmptyState } from "../components/EmptyState";
+import { triggerHaptic } from "../utils/haptics";
 import type { Category, Product } from "@urbanrat/shared";
 import {
   ArrowLeft,
@@ -27,6 +28,19 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
   const [loadingCats, setLoadingCats] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const activeCategoryButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Smoothly center active category button in the horizontal strip on change
+  useEffect(() => {
+    if (activeCategoryButtonRef.current) {
+      activeCategoryButtonRef.current.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [activeParentId]);
 
   // Load all categories
   useEffect(() => {
@@ -108,230 +122,246 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
   }
 
   function handleSelectParent(parentId: string) {
+    triggerHaptic("selection");
     setActiveParentId(parentId);
     setSelectedSubCategory(null);
+    // Smoothly scroll back to top of product list if scrolled down
+    if (window.scrollY > 120) {
+      window.scrollTo({ top: 90, behavior: "smooth" });
+    }
+  }
+
+  function handleSelectSub(sub: Category | null) {
+    triggerHaptic("selection");
+    setSelectedSubCategory(sub);
+    // Smoothly scroll back to top of product list if scrolled down
+    if (window.scrollY > 120) {
+      window.scrollTo({ top: 90, behavior: "smooth" });
+    }
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 pb-12">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-          Categories &amp; Subcategories
-        </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Two-pane department navigator for mobile electronics
-        </p>
+    <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300 pb-16">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            Categories &amp; Catalog
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Browse wholesale mobile electronics by department
+          </p>
+        </div>
+
+        {activeParent && (
+          <Link
+            to={`/marketplace?category=${activeParent.slug}${
+              selectedSubCategory ? `&subcategory=${selectedSubCategory.slug}` : ""
+            }`}
+            className="inline-flex items-center space-x-1 text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline self-start sm:self-auto cursor-pointer"
+          >
+            <span>Open in Marketplace</span>
+            <span>&rarr;</span>
+          </Link>
+        )}
       </div>
 
       {loadingCats ? (
-        <CategoryTwoPaneSkeleton />
+        <CategoryTopRailSkeleton />
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden flex min-h-145 sm:min-h-160">
-          {/* ── Left Pane: Main Categories ── */}
-          <div className="w-24 sm:w-36 md:w-44 bg-slate-50/90 border-r border-slate-100 flex flex-col shrink-0 overflow-y-auto no-scrollbar py-2">
-            {parentCategories.map((parent) => {
-              const isActive = parent.id === activeParentId;
-              return (
-                <button
-                  key={parent.id}
-                  type="button"
-                  onClick={() => handleSelectParent(parent.id)}
-                  className={`relative p-2.5 sm:p-3 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-1.5 ${
-                    isActive
-                      ? "bg-white text-slate-900 font-bold shadow-2xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium"
-                  }`}
-                >
-                  {/* Active highlight indicator bar */}
-                  {isActive && (
-                    <div
-                      className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
-                      style={{
-                        background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-                      }}
-                    />
-                  )}
-
-                  <div
-                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl overflow-hidden border transition-all ${
-                      isActive
-                        ? "border-brand-light shadow-xs ring-2 ring-brand-light/30"
-                        : "border-slate-200/80 bg-white"
-                    }`}
-                  >
-                    <img
-                      src={parent.image_url || ""}
-                      alt={parent.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  <span className="text-[11px] sm:text-xs leading-tight line-clamp-2">
-                    {parent.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Right Pane: Sub-Categories Strip + Product Grid ── */}
-          <div className="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-4">
-            {/* Top Bar with Navigation & Marketplace Link */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
-              <div className="min-w-0">
-                {selectedSubCategory ? (
-                  <div className="flex items-center space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSubCategory(null)}
-                      className="inline-flex items-center space-x-1 text-xs font-bold text-brand-dark hover:underline cursor-pointer shrink-0"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">All {activeParent?.name}</span>
-                      <span className="sm:hidden">All</span>
-                    </button>
-                    <span className="text-slate-300 font-normal">/</span>
-                    <h2 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
-                      {selectedSubCategory.name}
-                    </h2>
-                  </div>
-                ) : (
-                  <div>
-                    <h2 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
-                      {activeParent?.name || "Select Category"}
-                    </h2>
-                    <p className="text-[11px] text-slate-400">
-                      {totalCount > 0
-                        ? `Showing ${products.length} of ${totalCount} products in this category`
-                        : "Browse direct inventory"}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {activeParent && (
-                <Link
-                  to={`/marketplace?category=${activeParent.slug}${
-                    selectedSubCategory ? `&subcategory=${selectedSubCategory.slug}` : ""
-                  }`}
-                  className="text-[11px] font-bold text-brand-dark hover:underline shrink-0"
-                >
-                  Open in Marketplace →
-                </Link>
-              )}
-            </div>
-
-            {/* Subcategories Filter Chips */}
-            {subCategories.length > 0 && (
-              <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none no-scrollbar pb-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0 mr-1 flex items-center space-x-1">
-                  <Layers className="w-3.5 h-3.5 text-brand-dark" />
-                  <span className="hidden sm:inline">Subcategories:</span>
-                </span>
-
-                {/* "All Products in Category" Pill */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedSubCategory(null)}
-                  className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition active:scale-95 cursor-pointer ${
-                    selectedSubCategory === null
-                      ? "text-white shadow-xs font-black"
-                      : "bg-slate-50 text-slate-600 border border-slate-200/90 hover:bg-slate-100"
-                  }`}
-                  style={
-                    selectedSubCategory === null
-                      ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
-                      : {}
-                  }
-                >
-                  All {activeParent ? activeParent.name : "Products"}
-                </button>
-
-                {/* Individual Subcategory Pills */}
-                {subCategories.map((sub) => {
-                  const isSelected = selectedSubCategory?.id === sub.id;
+        <div className="space-y-4 sm:space-y-5">
+          {/* ── Sticky Top Category Navigation Rail & Subcategories Bar ── */}
+          <div className="sticky top-16 md:top-28 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)] transition-colors">
+            <div className="max-w-7xl mx-auto space-y-2">
+              {/* Horizontal Parent Categories Cards Rail */}
+              <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-x-auto scrollbar-none no-scrollbar py-1 px-0.5">
+                {parentCategories.map((parent) => {
+                  const isActive = parent.id === activeParentId;
                   return (
                     <button
-                      key={sub.id}
+                      key={parent.id}
+                      ref={isActive ? activeCategoryButtonRef : null}
                       type="button"
-                      onClick={() => setSelectedSubCategory(sub)}
-                      className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-semibold transition active:scale-95 cursor-pointer ${
-                        isSelected
-                          ? "text-white shadow-xs font-black"
-                          : "bg-slate-50 text-slate-700 border border-slate-200/90 hover:bg-slate-100"
+                      onClick={() => handleSelectParent(parent.id)}
+                      className={`group relative shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+                        isActive
+                          ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
+                          : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
                       }`}
-                      style={
-                        isSelected
-                          ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
-                          : {}
-                      }
                     >
-                      {sub.image_url && (
-                        <img
-                          src={sub.image_url}
-                          alt=""
-                          className="w-3.5 h-3.5 rounded-full object-cover shrink-0"
+                      {/* Category Full-Bleed Image */}
+                      <img
+                        src={parent.image_url || "/hero-accessories.jpg"}
+                        alt={parent.name}
+                        className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        decoding="async"
+                      />
+
+                      {/* Ambient Dark Gradient Vignette for Text Contrast */}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-black/5 pointer-events-none" />
+
+                      {/* Active Glowing Highlight Bar at Top */}
+                      {isActive && (
+                        <div
+                          className="absolute top-2 left-2 right-2 h-1 rounded-full z-10 shadow-xs"
+                          style={{ background: "var(--brand-gradient)" }}
                         />
                       )}
-                      <span>{sub.name}</span>
+
+                      {/* Category Title Inside the Card at the Bottom */}
+                      <div className="absolute bottom-2 left-2 right-2 z-10">
+                        <span className="text-[11px] sm:text-xs font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+                          {parent.name}
+                        </span>
+                      </div>
                     </button>
                   );
                 })}
               </div>
-            )}
 
-            {/* Product Grid or Loading / Empty States */}
-            {loadingProducts ? (
-              <ProductGridSkeleton count={6} />
-            ) : products.length > 0 ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                  {products.map((p) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      onAddToCart={onAddToCart}
-                    />
-                  ))}
+              {/* Subcategories Filter Chips */}
+              {subCategories.length > 0 && (
+                <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto scrollbar-none no-scrollbar pt-1.5 border-t border-slate-100/90 dark:border-slate-800/80">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 shrink-0 mr-1 flex items-center space-x-1">
+                    <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400" />
+                    <span>Subcategories:</span>
+                  </span>
+
+                  {/* "All Products in Category" Pill */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSub(null)}
+                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 cursor-pointer ${
+                      selectedSubCategory === null
+                        ? "text-white shadow-xs font-black"
+                        : "bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                    }`}
+                    style={
+                      selectedSubCategory === null
+                        ? {
+                            background: "var(--brand-gradient)",
+                            boxShadow: "var(--brand-shadow)",
+                          }
+                        : {}
+                    }
+                  >
+                    All {activeParent ? activeParent.name : "Products"}
+                  </button>
+
+                  {/* Individual Subcategory Pills */}
+                  {subCategories.map((sub) => {
+                    const isSelected = selectedSubCategory?.id === sub.id;
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => handleSelectSub(sub)}
+                        className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 cursor-pointer ${
+                          isSelected
+                            ? "text-white shadow-xs font-black"
+                            : "bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                        }`}
+                        style={
+                          isSelected
+                            ? {
+                                background: "var(--brand-gradient)",
+                                boxShadow: "var(--brand-shadow)",
+                              }
+                            : {}
+                        }
+                      >
+                        {sub.image_url && (
+                          <img
+                            src={sub.image_url}
+                            alt=""
+                            className="w-3.5 h-3.5 rounded-full object-cover shrink-0"
+                          />
+                        )}
+                        <span>{sub.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+              )}
+            </div>
+          </div>
 
-                {/* Load More Pagination */}
-                {products.length < totalCount && (
-                  <div className="text-center pt-2">
-                    <button
-                      type="button"
-                      onClick={handleLoadMore}
-                      disabled={loadingMore}
-                      className="px-6 py-2 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-50 active:scale-95 disabled:opacity-50 transition cursor-pointer"
-                    >
-                      {loadingMore
-                        ? "Loading more products..."
-                        : `Load More Products (${products.length} of ${totalCount})`}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <EmptyState
-                icon={<Sparkles className="w-8 h-8 text-brand-dark" />}
-                title={
-                  selectedSubCategory
-                    ? `No products in ${selectedSubCategory.name}`
-                    : `No products in ${activeParent?.name || "this category"}`
-                }
-                description="Inventory for this category is currently being restocked or updated."
-                actionText={selectedSubCategory ? "View all in category" : "Browse Marketplace"}
-                onAction={() => {
-                  if (selectedSubCategory) {
-                    setSelectedSubCategory(null);
-                  } else {
-                    navigate("/marketplace");
-                  }
-                }}
-              />
+          {/* ── Active Department Header & Count ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-1 pb-1 gap-1">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                {selectedSubCategory ? selectedSubCategory.name : activeParent?.name || "All Products"}
+              </h2>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {totalCount > 0
+                  ? `(${totalCount.toLocaleString("en-IN")} products)`
+                  : ""}
+              </span>
+            </div>
+
+            {selectedSubCategory && (
+              <button
+                type="button"
+                onClick={() => handleSelectSub(null)}
+                className="inline-flex items-center space-x-1 text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline cursor-pointer self-start sm:self-auto"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>View All {activeParent?.name}</span>
+              </button>
             )}
           </div>
+
+          {/* ── Product Grid (Full Width, Spacious Cards) ── */}
+          {loadingProducts ? (
+            <ProductGridSkeleton count={8} />
+          ) : products.length > 0 ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4.5">
+                {products.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    onAddToCart={onAddToCart}
+                  />
+                ))}
+              </div>
+
+              {/* Load More Pagination */}
+              {products.length < totalCount && (
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="px-6 py-2.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 disabled:opacity-50 transition cursor-pointer"
+                  >
+                    {loadingMore
+                      ? "Loading more products..."
+                      : `Load More Products (${products.length} of ${totalCount.toLocaleString("en-IN")})`}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Sparkles className="w-8 h-8 text-brand-dark dark:text-orange-400" />}
+              title={
+                selectedSubCategory
+                  ? `No products in ${selectedSubCategory.name}`
+                  : `No products in ${activeParent?.name || "this category"}`
+              }
+              description="Inventory for this category is currently being restocked or updated."
+              actionText={selectedSubCategory ? "View all in category" : "Browse Marketplace"}
+              onAction={() => {
+                if (selectedSubCategory) {
+                  setSelectedSubCategory(null);
+                } else {
+                  navigate("/marketplace");
+                }
+              }}
+            />
+          )}
         </div>
       )}
     </div>

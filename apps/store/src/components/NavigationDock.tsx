@@ -13,7 +13,7 @@ export function NavigationDock({
 }: NavigationDockProps = {}) {
   return (
     <div className="md:hidden fixed z-40 dock-bottom-offset left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-90 transition-all duration-300">
-      {/* ── Light Frosted Glass Capsule Dock ── */}
+      {/* ── Frosted Glass Capsule Dock ── */}
       <nav
         aria-label="Main Navigation"
         className="glass-dock rounded-full px-2 py-1.5 flex items-center justify-between"
@@ -27,15 +27,15 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white shadow-[0_4px_16px_rgba(10,130,168,0.4)] scale-105"
-                : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                ? "text-white scale-105"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
           }
           style={({ isActive }) =>
             isActive && !isMenuOpen
               ? {
-                  background:
-                    "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--brand-gradient)",
+                  boxShadow: "var(--brand-shadow)",
                 }
               : undefined
           }
@@ -45,7 +45,7 @@ export function NavigationDock({
               className={`w-5 h-5 transition-transform duration-200 ${
                 isActive && !isMenuOpen
                   ? "text-white stroke-[2.4]"
-                  : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
+                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
               }`}
             />
           )}
@@ -59,15 +59,15 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white shadow-[0_4px_16px_rgba(10,130,168,0.4)] scale-105"
-                : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                ? "text-white scale-105"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
           }
           style={({ isActive }) =>
             isActive && !isMenuOpen
               ? {
-                  background:
-                    "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--brand-gradient)",
+                  boxShadow: "var(--brand-shadow)",
                 }
               : undefined
           }
@@ -77,7 +77,7 @@ export function NavigationDock({
               className={`w-5 h-5 transition-transform duration-200 ${
                 isActive && !isMenuOpen
                   ? "text-white stroke-[2.4]"
-                  : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
+                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
               }`}
             />
           )}
@@ -91,15 +91,15 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white shadow-[0_4px_16px_rgba(10,130,168,0.4)] scale-105"
-                : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                ? "text-white scale-105"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
           }
           style={({ isActive }) =>
             isActive && !isMenuOpen
               ? {
-                  background:
-                    "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--brand-gradient)",
+                  boxShadow: "var(--brand-shadow)",
                 }
               : undefined
           }
@@ -125,15 +125,15 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white shadow-[0_4px_16px_rgba(10,130,168,0.4)] scale-105"
-                : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                ? "text-white scale-105"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
           }
           style={({ isActive }) =>
             isActive && !isMenuOpen
               ? {
-                  background:
-                    "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--brand-gradient)",
+                  boxShadow: "var(--brand-shadow)",
                 }
               : undefined
           }
@@ -143,7 +143,7 @@ export function NavigationDock({
               className={`w-5 h-5 transition-transform duration-200 ${
                 isActive && !isMenuOpen
                   ? "text-white stroke-[2.4]"
-                  : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
+                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
               }`}
             />
           )}
@@ -159,14 +159,14 @@ export function NavigationDock({
           aria-label="Open Navigation Menu"
           className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
             isMenuOpen
-              ? "text-white shadow-[0_4px_16px_rgba(10,130,168,0.4)] scale-105"
-              : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+              ? "text-white scale-105"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
           }`}
           style={
             isMenuOpen
               ? {
-                  background:
-                    "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--brand-gradient)",
+                  boxShadow: "var(--brand-shadow)",
                 }
               : undefined
           }
@@ -175,7 +175,7 @@ export function NavigationDock({
             className={`w-5 h-5 transition-transform duration-200 ${
               isMenuOpen
                 ? "text-white stroke-[2.4]"
-                : "text-slate-600 stroke-2 group-hover:scale-110 group-hover:text-slate-900"
+                : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
             }`}
           />
         </button>

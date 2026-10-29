@@ -296,10 +296,10 @@ export function CartPage({
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Wholesale Cart
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {cartItems.length} {cartItems.length === 1 ? "line item" : "line items"} ready for dispatch
           </p>
         </div>
@@ -307,7 +307,7 @@ export function CartPage({
         <button
           type="button"
           onClick={onClearCart}
-          className="text-xs font-bold text-rose-500 hover:text-rose-700 transition cursor-pointer"
+          className="text-xs font-bold text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition cursor-pointer"
         >
           Clear All
         </button>
@@ -333,11 +333,11 @@ export function CartPage({
               }) => (
                 <div
                   key={`${product.id}-${selectedColor || "default"}`}
-                  className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border border-slate-100 shadow-xs flex flex-col space-y-2.5"
+                  className="bg-white dark:bg-slate-900/90 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col space-y-2.5 transition-colors"
                 >
                   <div className="flex items-start space-x-3.5 justify-between">
                     {/* Product Thumbnail */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 dark:bg-slate-800/80 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700/80">
                       <img
                         src={product.images[0] || ""}
                         alt={product.name}
@@ -349,13 +349,13 @@ export function CartPage({
                     <div className="flex-1 min-w-0 pr-2">
                       <Link
                         to={`/product/${product.slug}`}
-                        className="block font-bold text-xs sm:text-sm text-slate-800 hover:text-brand-dark transition truncate"
+                        className="block font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 hover:text-brand-dark dark:hover:text-brand transition truncate"
                       >
                         {product.name}
                       </Link>
 
                       {selectedColor && (
-                        <div className="mt-1 inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-700">
+                        <div className="mt-1 inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300">
                           <span
                             className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
                             style={{ backgroundColor: getColorHex(selectedColor) }}
@@ -366,19 +366,19 @@ export function CartPage({
 
                       {/* Live Unit Price & Strikethrough First-Tier Price */}
                       <div className="mt-1 flex items-baseline space-x-2">
-                        <span className="font-black text-sm sm:text-base text-slate-900">
+                        <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
                           ₹{unitPrice.toLocaleString("en-IN")}
-                          <span className="text-[10px] text-slate-400 font-normal">
+                          <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">
                             /pc
                           </span>
                         </span>
                         {firstTierPrice > unitPrice && (
-                          <span className="text-[11px] text-slate-400 line-through">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
                             ₹{firstTierPrice.toLocaleString("en-IN")}
                           </span>
                         )}
                         {lineSavings > 0 && (
-                          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
                             Saved ₹{lineSavings.toLocaleString("en-IN")}
                           </span>
                         )}
@@ -397,7 +397,7 @@ export function CartPage({
                           ariaLabel={`Quantity for ${product.name}`}
                         />
 
-                        <span className="text-xs font-black text-slate-900">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
                           = ₹{lineTotal.toLocaleString("en-IN")}
                         </span>
                       </div>
@@ -408,7 +408,7 @@ export function CartPage({
                       type="button"
                       onClick={() => onRemoveItem(product.id, selectedColor)}
                       aria-label="Remove item"
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer shrink-0"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -416,8 +416,8 @@ export function CartPage({
 
                   {/* Nudge: Add N more to save */}
                   {nextTier && (
-                    <div className="pt-1.5 border-t border-slate-100/60">
-                      <div className="p-2 rounded-xl bg-sky-50 border border-sky-100 text-[11px] font-semibold text-sky-800 flex items-center space-x-1.5">
+                    <div className="pt-1.5 border-t border-slate-100/60 dark:border-slate-800/60">
+                      <div className="p-2 rounded-xl bg-sky-50 dark:bg-orange-950/30 border border-sky-100 dark:border-orange-500/30 text-[11px] font-semibold text-sky-800 dark:text-orange-200 flex items-center space-x-1.5">
                         <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                         <span>
                           Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
@@ -434,16 +434,16 @@ export function CartPage({
           </div>
 
           {/* Customer Delivery Details Form */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-4">
-            <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-sky-50 text-brand-dark flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
+            <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-orange-950/40 text-brand-dark dark:text-orange-400 flex items-center justify-center">
                 <MapPin className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="font-extrabold text-sm text-slate-900">
+                <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
                   Customer &amp; Delivery Destination
                 </h2>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-400 dark:text-slate-400">
                   Required for invoice generation &amp; wholesale dispatch verification
                 </p>
               </div>
@@ -459,23 +459,23 @@ export function CartPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {/* Full Name */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                   Full Name <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
                     errors.name
-                      ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
+                      ? "border-rose-300 dark:border-rose-500/50 bg-rose-50/30 dark:bg-rose-950/30 ring-1 ring-rose-400 dark:ring-rose-500"
+                      : "border-slate-200 dark:border-slate-700 focus-within:border-brand-dark dark:focus-within:border-brand focus-within:bg-white dark:focus-within:bg-slate-800"
                   }`}
                 >
-                  <User className="w-4 h-4 text-slate-400 shrink-0" />
+                  <User className="w-4 h-4 text-slate-400 dark:text-slate-400 shrink-0" />
                   <input
                     type="text"
                     value={customer.name}
                     onChange={(e) => handleCustomerChange("name", e.target.value)}
                     placeholder="Shop / Business Owner Name"
-                    className="w-full text-xs font-medium text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+                    className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
                 {errors.name && (
@@ -488,18 +488,18 @@ export function CartPage({
 
               {/* Phone Number */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                   Mobile Number <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
                     errors.phone
-                      ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
+                      ? "border-rose-300 dark:border-rose-500/50 bg-rose-50/30 dark:bg-rose-950/30 ring-1 ring-rose-400 dark:ring-rose-500"
+                      : "border-slate-200 dark:border-slate-700 focus-within:border-brand-dark dark:focus-within:border-brand focus-within:bg-white dark:focus-within:bg-slate-800"
                   }`}
                 >
-                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="text-xs font-bold text-slate-400 select-none">
+                  <Phone className="w-4 h-4 text-slate-400 dark:text-slate-400 shrink-0" />
+                  <span className="text-xs font-bold text-slate-400 dark:text-slate-500 select-none">
                     +91
                   </span>
                   <input
@@ -508,7 +508,7 @@ export function CartPage({
                     maxLength={10}
                     onChange={(e) => handleCustomerChange("phone", e.target.value)}
                     placeholder="10-digit mobile number"
-                    className="w-full text-xs font-medium text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+                    className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
                 {errors.phone && (
@@ -521,23 +521,23 @@ export function CartPage({
 
               {/* Delivery Address */}
               <div className="sm:col-span-2 space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                   Delivery Address <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-start space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
+                  className={`flex items-start space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
                     errors.address
-                      ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
+                      ? "border-rose-300 dark:border-rose-500/50 bg-rose-50/30 dark:bg-rose-950/30 ring-1 ring-rose-400 dark:ring-rose-500"
+                      : "border-slate-200 dark:border-slate-700 focus-within:border-brand-dark dark:focus-within:border-brand focus-within:bg-white dark:focus-within:bg-slate-800"
                   }`}
                 >
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-400 shrink-0 mt-0.5" />
                   <textarea
                     rows={2}
                     value={customer.address}
                     onChange={(e) => handleCustomerChange("address", e.target.value)}
                     placeholder="Shop / House No., Market / Area, City, State"
-                    className="w-full text-xs font-medium text-slate-800 bg-transparent outline-none placeholder:text-slate-400 resize-none"
+                    className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
                   />
                 </div>
                 {errors.address && (
@@ -550,24 +550,24 @@ export function CartPage({
 
               {/* PIN Code */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                   Postal PIN Code <span className="text-rose-500">*</span>
                 </label>
                 <div
-                  className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
                     errors.pincode
-                      ? "border-rose-300 bg-rose-50/30 ring-1 ring-rose-400"
-                      : "border-slate-200 focus-within:border-brand-dark focus-within:bg-white"
+                      ? "border-rose-300 dark:border-rose-500/50 bg-rose-50/30 dark:bg-rose-950/30 ring-1 ring-rose-400 dark:ring-rose-500"
+                      : "border-slate-200 dark:border-slate-700 focus-within:border-brand-dark dark:focus-within:border-brand focus-within:bg-white dark:focus-within:bg-slate-800"
                   }`}
                 >
-                  <Hash className="w-4 h-4 text-slate-400 shrink-0" />
+                  <Hash className="w-4 h-4 text-slate-400 dark:text-slate-400 shrink-0" />
                   <input
                     type="text"
                     maxLength={6}
                     value={customer.pincode}
                     onChange={(e) => handleCustomerChange("pincode", e.target.value)}
                     placeholder="6-digit PIN code"
-                    className="w-full text-xs font-medium text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+                    className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
                 {errors.pincode && (
@@ -582,26 +582,26 @@ export function CartPage({
         </div>
 
         {/* Right: Order Summary Box (Display-only estimates) */}
-        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-4">
+        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
           <div>
-            <h2 className="font-extrabold text-base text-slate-900">
+            <h2 className="font-extrabold text-base text-slate-900 dark:text-white">
               Estimated Order Summary
             </h2>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-400 dark:text-slate-400">
               Display estimate. Official total verified by server upon placement.
             </p>
           </div>
 
-          <div className="space-y-2 text-xs text-slate-600 border-b border-slate-100 pb-3">
+          <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex justify-between">
               <span>Items Subtotal</span>
-              <span className="font-bold text-slate-900">
+              <span className="font-bold text-slate-900 dark:text-white">
                 ₹{displaySubtotal.toLocaleString("en-IN")}
               </span>
             </div>
 
             {displaySavings > 0 && (
-              <div className="flex justify-between text-emerald-600 font-semibold">
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
                 <span>Wholesale Margin Savings</span>
                 <span>-₹{displaySavings.toLocaleString("en-IN")}</span>
               </div>
@@ -609,17 +609,17 @@ export function CartPage({
 
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span className="font-semibold text-emerald-600">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                 {displayShipping === 0 ? "FREE" : `₹${displayShipping}`}
               </span>
             </div>
           </div>
 
           <div className="flex justify-between items-baseline pt-1">
-            <span className="font-black text-sm text-slate-900">
+            <span className="font-black text-sm text-slate-900 dark:text-white">
               Estimated Total
             </span>
-            <span className="text-xl font-black text-slate-900">
+            <span className="text-xl font-black text-slate-900 dark:text-white">
               ₹{displayTotal.toLocaleString("en-IN")}
             </span>
           </div>

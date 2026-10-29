@@ -22,6 +22,7 @@ export interface Banner {
   image_url: string | null;
   link_url?: string | null;
   badges?: { icon?: string; text?: string; label?: string; value?: string }[];
+  rating?: string;
   cta_text: string;
   cta_link: string;
   secondary_cta_text: string;

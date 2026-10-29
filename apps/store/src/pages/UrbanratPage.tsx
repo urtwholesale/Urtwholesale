@@ -61,12 +61,12 @@ export function UrbanratPage({ onAddToCart, cartCount = 0 }: UrbanratPageProps) 
           onRetry={loadBanner}
         />
       ) : banner ? (
-        <section className="relative overflow-hidden rounded-3xl p-6 sm:p-10 bg-slate-950 text-white shadow-xl border border-cyan-900/40">
+        <section className="relative overflow-hidden rounded-3xl p-6 sm:p-10 bg-slate-950 text-white shadow-xl border border-cyan-900/40 dark:border-orange-500/30">
           {/* Ambient Gradient Glow */}
           <div
             className="absolute -top-24 -right-24 w-80 h-80 rounded-full blur-3xl opacity-35 pointer-events-none"
             style={{
-              background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+              background: "var(--brand-gradient)",
             }}
           />
 

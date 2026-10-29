@@ -32,6 +32,17 @@ export async function createReturnRequest(
   });
 
   if (error) {
+    if (
+      error.code === "PGRST202" ||
+      error.message?.includes("create_return_request") ||
+      error.message?.includes("schema cache")
+    ) {
+      throw new ReturnServiceError(
+        "Returns backend is not yet active in database. Please run migration 012_returns_backend.sql in Supabase SQL editor.",
+        error.code,
+        error
+      );
+    }
     throw new ReturnServiceError(error.message, error.code, error);
   }
 
@@ -59,6 +70,17 @@ export async function listCustomerReturns(): Promise<ReturnRequest[]> {
     .order("requested_at", { ascending: false });
 
   if (error) {
+    if (
+      error.code === "PGRST205" ||
+      error.code === "42P01" ||
+      error.message?.includes("return_requests") ||
+      error.message?.includes("schema cache")
+    ) {
+      console.warn(
+        "return_requests table is not available in Supabase schema cache yet. Returning empty array."
+      );
+      return [];
+    }
     throw new ReturnServiceError(error.message, error.code, error);
   }
 
@@ -102,6 +124,15 @@ export async function getReturnById(idOrCode: string): Promise<ReturnRequest | n
   const { data, error } = await query.maybeSingle();
 
   if (error) {
+    if (
+      error.code === "PGRST205" ||
+      error.code === "42P01" ||
+      error.message?.includes("return_requests") ||
+      error.message?.includes("schema cache")
+    ) {
+      console.warn("return_requests table is not available in Supabase schema cache yet.");
+      return null;
+    }
     throw new ReturnServiceError(error.message, error.code, error);
   }
 

@@ -1,20 +1,20 @@
 export function ProductCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl sm:rounded-3xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between animate-pulse">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-3 border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between animate-pulse">
       {/* Image container skeleton */}
-      <div className="relative aspect-square w-full rounded-xl sm:rounded-2xl bg-slate-100 overflow-hidden" />
+      <div className="relative aspect-square w-full rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden" />
 
       {/* Details skeleton */}
       <div className="mt-3 space-y-2">
-        <div className="h-3.5 bg-slate-100 rounded-md w-4/5" />
-        <div className="h-3 bg-slate-100 rounded-md w-3/5" />
+        <div className="h-3.5 bg-slate-100 dark:bg-slate-800 rounded-md w-4/5" />
+        <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md w-3/5" />
 
-        <div className="pt-2 flex items-center justify-between border-t border-slate-50">
+        <div className="pt-2 flex items-center justify-between border-t border-slate-50 dark:border-slate-800">
           <div className="space-y-1">
-            <div className="h-4 bg-slate-200 rounded-md w-14" />
-            <div className="h-2.5 bg-slate-100 rounded-md w-10" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-md w-14" />
+            <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-md w-10" />
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-100" />
+          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800" />
         </div>
       </div>
     </div>
@@ -33,41 +33,69 @@ export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
 
 export function CategoryChipsSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="flex space-x-2 overflow-hidden py-1">
+    <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-hidden py-1 px-0.5">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="h-9 w-24 rounded-full bg-slate-100 animate-pulse shrink-0"
+          className="shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
         />
       ))}
     </div>
   );
 }
 
+export function CategoryTopRailSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {/* Sticky top category rail skeleton */}
+      <div className="sticky top-16 md:top-28 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)]">
+        <div className="max-w-7xl mx-auto space-y-2">
+          <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-hidden py-1 px-0.5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5"
+              />
+            ))}
+          </div>
+          {/* Subcategory strip */}
+          <div className="flex space-x-2 overflow-hidden pt-1.5 border-t border-slate-100 dark:border-slate-800">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-6 w-20 rounded-full bg-slate-100 dark:bg-slate-800" />
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* Product Grid */}
+      <ProductGridSkeleton count={8} />
+    </div>
+  );
+}
+
 export function CategoryTwoPaneSkeleton() {
   return (
-    <div className="flex bg-white rounded-2xl border border-slate-100 min-h-[500px] overflow-hidden">
+    <div className="flex bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 min-h-125 overflow-hidden">
       {/* Left pane skeleton */}
-      <div className="w-28 sm:w-36 bg-slate-50 border-r border-slate-100 p-2 space-y-2">
+      <div className="w-28 sm:w-36 bg-slate-50 dark:bg-slate-950/80 border-r border-slate-100 dark:border-slate-800 p-2 space-y-2">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="p-2 space-y-1 animate-pulse">
-            <div className="w-10 h-10 mx-auto rounded-full bg-slate-200" />
-            <div className="h-2.5 bg-slate-200 rounded w-14 mx-auto" />
+            <div className="w-10 h-10 mx-auto rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="h-2.5 bg-slate-200 dark:bg-slate-800 rounded w-14 mx-auto" />
           </div>
         ))}
       </div>
 
       {/* Right pane skeleton */}
       <div className="flex-1 p-4 space-y-4">
-        <div className="h-5 bg-slate-100 rounded w-36 animate-pulse" />
+        <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded w-36 animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 animate-pulse"
+              className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2 animate-pulse"
             >
-              <div className="aspect-square rounded-xl bg-slate-200" />
-              <div className="h-3 bg-slate-200 rounded w-3/4 mx-auto" />
+              <div className="aspect-square rounded-xl bg-slate-200 dark:bg-slate-700" />
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mx-auto" />
             </div>
           ))}
         </div>

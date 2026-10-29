@@ -69,11 +69,21 @@ create index if not exists idx_return_requests_status on public.return_requests(
 create index if not exists idx_return_requests_return_code on public.return_requests(return_code);
 create index if not exists idx_return_requests_created_at on public.return_requests(created_at desc);
 
--- Auto-update updated_at trigger
+-- Auto-update updated_at trigger function
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 drop trigger if exists trigger_return_requests_updated_at on public.return_requests;
 create trigger trigger_return_requests_updated_at
   before update on public.return_requests
-  for each row execute procedure public.handle_updated_at();
+  for each row execute function public.handle_updated_at();
 
 -- ----------------------------------------------------------------------------
 -- 3. TABLE: return_items
@@ -803,3 +813,8 @@ end;
 $$;
 
 grant execute on function public.get_return_stats(integer) to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 10. NOTIFY POSTGREST TO RELOAD SCHEMA CACHE IMMEDIATELY
+-- ----------------------------------------------------------------------------
+notify pgrst, 'reload schema';

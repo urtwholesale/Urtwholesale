@@ -15,6 +15,10 @@ import type {
   Address,
   Review,
 } from "@urbanrat/shared";
+import {
+  normalizeSearchQuery,
+  generateSearchVariants,
+} from "@urbanrat/shared";
 import * as addressService from "./addressService";
 
 /**
@@ -332,6 +336,82 @@ export async function fetchRelatedProducts(
 }
 
 /**
+ * Fetch similar products from same category and compatible model, in stock first, excluding current product.
+ */
+export async function fetchSimilarProducts(
+  currentProduct: Product,
+  limit: number = 6
+): Promise<Product[]> {
+  ensureConfigured();
+  if (!currentProduct?.id) return [];
+
+  const compGroup = currentProduct.specs?.compatibility_group;
+  const brandComp = currentProduct.specs?.brand_compatibility;
+
+  let query = supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("is_active", true)
+    .neq("id", currentProduct.id);
+
+  if (currentProduct.category_id) {
+    query = query.eq("category_id", currentProduct.category_id);
+  }
+
+  if (compGroup) {
+    query = query.eq("specs->>compatibility_group", compGroup);
+  } else if (brandComp) {
+    query = query.eq("specs->>brand_compatibility", brandComp);
+  }
+
+  // In-stock first
+  query = query.order("stock", { ascending: false }).limit(limit);
+
+  const { data, error } = await query;
+  if (error || !data || data.length === 0) {
+    if (currentProduct.category_id) {
+      const fallback = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .eq("category_id", currentProduct.category_id)
+        .eq("is_active", true)
+        .neq("id", currentProduct.id)
+        .order("stock", { ascending: false })
+        .limit(limit);
+      return (fallback.data || []).map(formatProduct);
+    }
+    return [];
+  }
+
+  return data.map(formatProduct);
+}
+
+/**
+ * Fetch all active products in the same category/catalog for PDP quick-navigation
+ */
+export async function fetchCatalogProducts(
+  categoryId: string,
+  limit: number = 100
+): Promise<Product[]> {
+  ensureConfigured();
+  if (!categoryId) return [];
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("category_id", categoryId)
+    .eq("is_active", true)
+    .order("name", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    return [];
+  }
+
+  return (data || []).map(formatProduct);
+}
+
+/**
  * Fetch authenticated customer's orders from live database with timeline events
  */
 export async function fetchCustomerOrders(): Promise<Order[]> {
@@ -584,6 +664,206 @@ export async function fetchAllStorePages(): Promise<StorePage[]> {
   return (data as StorePage[]) || [];
 }
 
+export interface SearchProductsOptions {
+  query: string;
+  categoryIds?: string[];
+  categorySlug?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  isUrbanratBrand?: boolean;
+  sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "price-asc" | "price-desc";
+  limit?: number;
+  offset?: number;
+}
+
+export interface SearchProductsResult {
+  normalizedQuery: string;
+  correctedQuery: string | null;
+  didYouMean: string | null;
+  matchType: "exact" | "fuzzy" | "related" | "popular";
+  total: number;
+  products: Product[];
+  searchId?: string;
+}
+
+/**
+ * Typo-tolerant, synonym-aware search powered by search_products_v2 with resilient fallback
+ */
+export async function searchProductsV2(
+  options: SearchProductsOptions
+): Promise<SearchProductsResult> {
+  ensureConfigured();
+  const rawQuery = options.query || "";
+  const norm = normalizeSearchQuery(rawQuery);
+
+  // If a category slug was passed without categoryIds, resolve category ID and descendants
+  let resolvedCategoryIds = options.categoryIds;
+  if (!resolvedCategoryIds && options.categorySlug) {
+    try {
+      const { data: catData } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", options.categorySlug)
+        .maybeSingle();
+      if (catData?.id) {
+        resolvedCategoryIds = await getCategoryAndDescendantIds(catData.id);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 1. Attempt server-side search_products_v2 RPC
+  try {
+    const { data, error } = await supabase.rpc("search_products_v2", {
+      p_query: rawQuery,
+      p_category_ids: resolvedCategoryIds || null,
+      p_min_price: options.minPrice ?? null,
+      p_max_price: options.maxPrice ?? null,
+      p_urbanrat_only: options.isUrbanratBrand || false,
+      p_sort: options.sort === "relevance" ? "relevance" : options.sort || "relevance",
+      p_limit: options.limit || 24,
+      p_offset: options.offset || 0,
+    });
+
+    if (!error && data) {
+      const res = data as {
+        normalized_query: string;
+        corrected_query: string | null;
+        did_you_mean: string | null;
+        match_type: "exact" | "fuzzy" | "related" | "popular";
+        total: number;
+        products: any[];
+      };
+
+      const products = (res.products || []).map(formatProduct);
+
+      // Fire-and-forget log search event
+      let searchId: string | undefined;
+      if (norm.length > 0) {
+        supabase
+          .rpc("log_search_event", {
+            p_query: rawQuery,
+            p_normalized_query: res.normalized_query || norm,
+            p_result_count: res.total,
+            p_match_type: res.match_type,
+          })
+          .then(
+            ({ data: logId }) => {
+              if (logId) searchId = logId;
+            },
+            () => {}
+          );
+      }
+
+      return {
+        normalizedQuery: res.normalized_query || norm,
+        correctedQuery: res.corrected_query,
+        didYouMean: res.did_you_mean,
+        matchType: res.match_type,
+        total: res.total,
+        products,
+        searchId,
+      };
+    }
+  } catch (rpcErr) {
+    console.warn("[Urbanrat Store] search_products_v2 RPC unavailable, falling back:", rpcErr);
+  }
+
+  // 2. Resilient Client-Side Fallback using fetchProducts
+  const sortParam =
+    options.sort === "price-asc" || options.sort === "price_asc"
+      ? "price_asc"
+      : options.sort === "price-desc" || options.sort === "price_desc"
+      ? "price_desc"
+      : options.sort === "newest"
+      ? "newest"
+      : "newest";
+
+  const fetchRes = await fetchProducts({
+    search: norm || rawQuery,
+    categorySlug: options.categorySlug,
+    isUrbanratBrand: options.isUrbanratBrand,
+    sort: sortParam,
+    priceMin: options.minPrice,
+    priceMax: options.maxPrice,
+    limit: options.limit || 24,
+    offset: options.offset || 0,
+  });
+
+  // If 0 results on original query, try generated variants (typos & synonyms)
+  if (fetchRes.total === 0 && norm.length >= 2) {
+    const variants = generateSearchVariants(norm);
+    for (const variant of variants) {
+      if (variant !== norm) {
+        const altRes = await fetchProducts({
+          search: variant,
+          categorySlug: options.categorySlug,
+          isUrbanratBrand: options.isUrbanratBrand,
+          sort: sortParam,
+          priceMin: options.minPrice,
+          priceMax: options.maxPrice,
+          limit: options.limit || 24,
+          offset: options.offset || 0,
+        });
+
+        if (altRes.total > 0) {
+          return {
+            normalizedQuery: norm,
+            correctedQuery: variant,
+            didYouMean: variant,
+            matchType: "fuzzy",
+            total: altRes.total,
+            products: altRes.products,
+          };
+        }
+      }
+    }
+
+    // Still 0? Return popular items fallback so customer never sees empty dead-end
+    const popRes = await fetchProducts({
+      isFeatured: true,
+      categorySlug: options.categorySlug,
+      isUrbanratBrand: options.isUrbanratBrand,
+      limit: options.limit || 24,
+      offset: 0,
+    });
+
+    return {
+      normalizedQuery: norm,
+      correctedQuery: null,
+      didYouMean: null,
+      matchType: "popular",
+      total: popRes.total,
+      products: popRes.products,
+    };
+  }
+
+  return {
+    normalizedQuery: norm,
+    correctedQuery: null,
+    didYouMean: null,
+    matchType: "exact",
+    total: fetchRes.total,
+    products: fetchRes.products,
+  };
+}
+
+/**
+ * Fire-and-forget search click logger
+ */
+export async function logSearchClick(searchId?: string, productId?: string): Promise<void> {
+  if (!searchId || !productId) return;
+  try {
+    await supabase.rpc("log_search_click", {
+      p_search_id: searchId,
+      p_product_id: productId,
+    });
+  } catch {
+    // Ignore logging errors in client
+  }
+}
+
 /**
  * Perform server-side search using search_products RPC with pg_trgm
  */
@@ -594,16 +874,11 @@ export async function searchProducts(
   ensureConfigured();
   if (!query || !query.trim()) return [];
 
-  const { data, error } = await supabase.rpc("search_products", {
-    q: query.trim(),
-    max_rows: maxRows,
+  const res = await searchProductsV2({
+    query,
+    limit: maxRows,
   });
-
-  if (error) {
-    throw new StoreError(error.message, error.code, error);
-  }
-
-  return (data || []).map(formatProduct);
+  return res.products;
 }
 
 // ----------------------------------------------------------------------------

@@ -171,6 +171,16 @@ export {
   POPULAR_COLOR_PRESETS,
 } from "./colors";
 
+export {
+  normalizeSearchQuery,
+  tokenizeQuery,
+  generateSearchVariants,
+  highlightSearchMatch,
+  SEARCH_SYNONYM_MAP,
+  COMMON_TYPO_CORRECTIONS,
+} from "./search";
+
+
 
 
 
