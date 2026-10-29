@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Plus,
   Check,
-  Layers,
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 import { recordRecentlyViewed } from "../services/recentViews";
@@ -456,14 +455,6 @@ export function CategoryProductSlider({
                     }}
                   >
                     {discountPercent}% OFF
-                  </div>
-                )}
-
-                {/* Bulk Deals Badge (Bottom Left) */}
-                {hasBulkDeals && (
-                  <div className="absolute bottom-2.5 left-2.5 inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-950/85 backdrop-blur-md text-brand-light border border-orange-500/40 shadow-xs">
-                    <Layers className="w-2.5 h-2.5 text-brand-light" />
-                    <span>Bulk Deals</span>
                   </div>
                 )}
               </Link>

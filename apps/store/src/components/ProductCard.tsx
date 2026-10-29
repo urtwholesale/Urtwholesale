@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import type { Product } from "@urbanrat/shared";
-import { Plus, Check, Layers } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 import { recordRecentlyViewed } from "../services/recentViews";
 
@@ -88,14 +88,6 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
               alt="Urbanrat"
               className="w-full h-full rounded-full object-contain"
             />
-          </div>
-        )}
-
-        {/* Bulk Deals Badge (Bottom Left overlay) */}
-        {hasBulkDeals && (
-          <div className="absolute bottom-2.5 left-2.5 inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-900/85 dark:bg-black/85 backdrop-blur-md text-brand-light border border-cyan-500/30 dark:border-orange-500/40 shadow-xs">
-            <Layers className="w-2.5 h-2.5 text-brand-light" />
-            <span>Bulk Deals</span>
           </div>
         )}
       </Link>
