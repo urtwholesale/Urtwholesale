@@ -191,7 +191,7 @@ export function MenuPage() {
         </div>
 
         {/* ── Right Column: Helpdesk & Policies ── */}
-        <div className="lg:col-span-5 xl:col-span-5 space-y-6 lg:sticky lg:top-24">
+        <div className="lg:col-span-5 xl:col-span-5 space-y-6 lg:sticky lg:top-6">
           {/* ── 3. Contact on WhatsApp (Only shown if whatsappNumber is configured) ── */}
           {whatsappNumber && (
             <section className="overflow-hidden rounded-3xl bg-linear-to-br from-emerald-600 to-teal-700 text-white p-5 sm:p-6 shadow-md">

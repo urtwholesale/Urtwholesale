@@ -48,7 +48,7 @@ export function CategoryTopRailSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
       {/* Sticky top category rail skeleton */}
-      <div className="sticky top-16 md:top-28 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)]">
+      <div className="sticky top-16 md:top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)]">
         <div className="max-w-7xl mx-auto space-y-2">
           <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-hidden py-1 px-0.5">
             {Array.from({ length: 8 }).map((_, i) => (

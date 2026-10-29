@@ -289,7 +289,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
         </div>
 
         {/* ── Right Column: 3D Stacked Carousel Cards ── */}
-        <div className="w-full lg:w-[480px] xl:w-[530px] shrink-0">
+        <div className="w-full lg:w-120 xl:w-132.5 shrink-0">
           <div className="relative w-full h-102.5 sm:h-117.5 md:h-125 lg:h-130 flex items-center justify-center">
             {cards.map((card, idx) => {
               // Calculate relative circular offset: -1 = left, 0 = center, 1 = right, others = hidden

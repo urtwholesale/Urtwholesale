@@ -1127,7 +1127,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
         </div>
 
         {/* ── Right Column (Collapsible Details - Screenshot 2) ── */}
-        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
+        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-6">
           {/* ── Delivery Details Card ── */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition">
             <button

@@ -445,7 +445,7 @@ export function ReturnDetailPage() {
         </div>
 
         {/* ── Right Column: Resolution & Admin Message ── */}
-        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
+        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-6">
           {/* Resolution Card */}
           <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-3.5">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">

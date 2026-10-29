@@ -582,7 +582,7 @@ export function CartPage({
         </div>
 
         {/* Right: Order Summary Box (Display-only estimates) */}
-        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
+        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-6 bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
           <div>
             <h2 className="font-extrabold text-base text-slate-900 dark:text-white">
               Estimated Order Summary

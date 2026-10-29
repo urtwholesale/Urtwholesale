@@ -4,7 +4,7 @@ export function StoreNotConfigured() {
   return (
     <div className="min-h-dvh bg-[#F8F9FB] flex flex-col font-sans text-slate-900 antialiased selection:bg-[#5ADBE5]/30">
       {/* ── Fixed Glassmorphism Top Bar ── */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-white/40 shadow-[0_1px_8px_rgba(0,0,0,0.06)]">
+      <header className="fixed md:static top-0 left-0 right-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-white/40 shadow-[0_1px_8px_rgba(0,0,0,0.06)]">
         <div className="max-w-md md:max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="inline-flex items-center space-x-2 py-1.5 pl-2 pr-4 rounded-full bg-white border border-slate-100 shadow-2xs">
             <div
@@ -26,7 +26,7 @@ export function StoreNotConfigured() {
       </header>
 
       {/* ── Main Message Container (Mobile-first 390px) ── */}
-      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-28 pb-16 flex flex-col justify-center text-center">
+      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-28 md:pt-12 pb-16 flex flex-col justify-center text-center">
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mx-auto shadow-xs">
             <AlertTriangle className="w-8 h-8 stroke-[2.2]" />

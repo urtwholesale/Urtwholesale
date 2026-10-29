@@ -401,7 +401,7 @@ export function MarketplacePage({
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-12">
       {/* ── Category & Subcategory Filter Rail (Sticky) ── */}
-      <div className="sticky top-16 md:top-28 z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] space-y-2 transition-colors">
+      <div className="sticky top-16 md:top-0 z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] space-y-2 transition-colors">
         {/* Row 1: Parent Category Vertical Cards */}
         {categoryChips}
 

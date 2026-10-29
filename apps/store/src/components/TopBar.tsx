@@ -36,7 +36,7 @@ export function TopBar({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-colors">
+    <header className="fixed md:static top-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-colors">
       <div className="relative w-full max-w-7xl 2xl:max-w-[1780px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 h-16 flex items-center justify-between">
         {/* ── Left Corner: Search Button (+ Back Button on subpages) ── */}
         <div className="flex items-center space-x-2 shrink-0 z-10">

@@ -345,7 +345,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
       {/* ── Desktop Two-Column Layout ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* ── Left Sidebar: Marketplace Filter Panel ── */}
-        <aside className="hidden lg:block lg:col-span-3 bg-white rounded-3xl p-5 border border-slate-100 shadow-2xs space-y-6 sticky top-24">
+        <aside className="hidden lg:block lg:col-span-3 bg-white rounded-3xl p-5 border border-slate-100 shadow-2xs space-y-6 sticky top-6">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h2 className="font-black text-sm uppercase tracking-wider text-slate-900 flex items-center space-x-2">
               <Filter className="w-4 h-4 text-brand-dark" />
