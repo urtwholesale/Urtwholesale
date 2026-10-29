@@ -1227,27 +1227,48 @@ export function SingleCatalogWizard({
                     </p>
                   </div>
 
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={!!currentProduct.hasColors}
-                      onChange={(e) =>
+                  <div className="flex items-center space-x-2.5">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!currentProduct.hasColors}
+                      onClick={() =>
                         updateCurrentProduct({
-                          hasColors: e.target.checked,
-                          colors: e.target.checked
+                          hasColors: !currentProduct.hasColors,
+                          colors: !currentProduct.hasColors
                             ? currentProduct.colors && currentProduct.colors.length > 0
                               ? currentProduct.colors
                               : []
                             : [],
                         })
                       }
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900" />
-                    <span className="ml-2 text-xs font-bold text-slate-700">
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        currentProduct.hasColors ? "bg-slate-900" : "bg-slate-200"
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          currentProduct.hasColors ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <span
+                      onClick={() =>
+                        updateCurrentProduct({
+                          hasColors: !currentProduct.hasColors,
+                          colors: !currentProduct.hasColors
+                            ? currentProduct.colors && currentProduct.colors.length > 0
+                              ? currentProduct.colors
+                              : []
+                            : [],
+                        })
+                      }
+                      className="text-xs font-bold text-slate-700 cursor-pointer select-none"
+                    >
                       {currentProduct.hasColors ? "Enabled" : "Disabled"}
                     </span>
-                  </label>
+                  </div>
                 </div>
 
                 {currentProduct.hasColors ? (

@@ -703,18 +703,30 @@ export function UploadDetailModal({
                       <span>Color Selection</span>
                     </span>
 
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={fixHasColors}
-                        onChange={(e) => setFixHasColors(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900" />
-                      <span className="ml-2 text-xs font-bold text-slate-700">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={fixHasColors}
+                        onClick={() => setFixHasColors(!fixHasColors)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          fixHasColors ? "bg-slate-900" : "bg-slate-200"
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                            fixHasColors ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                      <span
+                        onClick={() => setFixHasColors(!fixHasColors)}
+                        className="text-xs font-bold text-slate-700 cursor-pointer select-none"
+                      >
                         {fixHasColors ? "Enabled" : "Disabled"}
                       </span>
-                    </label>
+                    </div>
                   </div>
 
                   {fixHasColors && (
