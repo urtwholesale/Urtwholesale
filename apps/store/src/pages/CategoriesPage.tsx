@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
 import { fetchCategories, fetchProducts } from "../services/storeService";
 import { ProductCard } from "../components/ProductCard";
@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Layers,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 interface CategoriesPageProps {
@@ -100,9 +101,9 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
     };
   }, [activeParentId, selectedSubCategory]);
 
-  // Load more pagination
-  async function handleLoadMore() {
-    if (loadingMore || products.length >= totalCount || !activeParentId) return;
+  // Infinite scroll auto-loader
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || products.length >= totalCount || !activeParentId || loadingProducts) return;
     setLoadingMore(true);
 
     try {
@@ -119,7 +120,33 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [loadingMore, products.length, totalCount, activeParentId, loadingProducts, selectedSubCategory]);
+
+  // Sentinel ref for infinite scroll
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "350px", // Trigger 350px before reaching the bottom for seamless auto-loading
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+    };
+  }, [handleLoadMore]);
 
   function handleSelectParent(parentId: string) {
     triggerHaptic("selection");
@@ -327,19 +354,25 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                 ))}
               </div>
 
-              {/* Load More Pagination */}
+              {/* Infinite Scroll Auto-loader Sentinel */}
               {products.length < totalCount && (
-                <div className="text-center pt-2">
-                  <button
-                    type="button"
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    className="px-6 py-2.5 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 disabled:opacity-50 transition cursor-pointer"
-                  >
-                    {loadingMore
-                      ? "Loading more products..."
-                      : `Load More Products (${products.length} of ${totalCount.toLocaleString("en-IN")})`}
-                  </button>
+                <div
+                  ref={loadMoreSentinelRef}
+                  className="py-6 flex flex-col items-center justify-center min-h-14"
+                >
+                  {loadingMore && (
+                    <div className="flex items-center space-x-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                      <Loader2 className="w-4 h-4 animate-spin text-brand-dark dark:text-cyan-400" />
+                      <span>Loading more products...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* End of Catalog Indicator */}
+              {products.length >= totalCount && totalCount > 0 && (
+                <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 select-none">
+                  Showing all {totalCount.toLocaleString("en-IN")} products
                 </div>
               )}
             </div>

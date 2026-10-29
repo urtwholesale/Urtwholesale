@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeletons";
@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Layers,
   X,
+  Loader2,
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 
@@ -214,9 +215,9 @@ export function MarketplacePage({
     loadInitialProducts();
   }, [selectedCategory, selectedSubCategory, searchQuery, sortOption, priceBracketIndex, brandOnly]);
 
-  // Load more (pagination / infinite scroll button)
-  async function handleLoadMore() {
-    if (loadingMore || products.length >= totalCount) return;
+  // Infinite scroll auto-loader
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || products.length >= totalCount || loading) return;
     setLoadingMore(true);
 
     try {
@@ -254,7 +255,33 @@ export function MarketplacePage({
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [loadingMore, products.length, totalCount, loading, priceBracketIndex, page, selectedSubCategory, selectedCategory, searchQuery, brandOnly, sortOption]);
+
+  // Sentinel ref for infinite scroll
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "350px", // Trigger 350px before reaching the bottom for seamless auto-loading
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+    };
+  }, [handleLoadMore]);
 
   function handleCategoryChange(slug: string) {
     triggerHaptic("selection");
@@ -749,17 +776,25 @@ export function MarketplacePage({
             ))}
           </div>
 
-          {/* Load More Pagination */}
+          {/* Infinite Scroll Auto-loader Sentinel */}
           {products.length < totalCount && (
-            <div className="text-center pt-4">
-              <button
-                type="button"
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="px-6 py-2.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-50 active:scale-95 disabled:opacity-50 transition cursor-pointer"
-              >
-                {loadingMore ? "Loading more products..." : "Load More Products"}
-              </button>
+            <div
+              ref={loadMoreSentinelRef}
+              className="py-6 flex flex-col items-center justify-center min-h-14"
+            >
+              {loadingMore && (
+                <div className="flex items-center space-x-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-dark dark:text-cyan-400" />
+                  <span>Loading more products...</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* End of Catalog Indicator */}
+          {products.length >= totalCount && totalCount > 0 && !loading && (
+            <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 select-none">
+              Showing all {totalCount.toLocaleString("en-IN")} products
             </div>
           )}
         </div>
