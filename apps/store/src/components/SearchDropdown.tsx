@@ -740,7 +740,7 @@ export function SearchDropdown({
 
         {/* ── DROPDOWN SEARCH OPTIONS PANEL (Desktop) ── */}
         {isOpen && (
-          <div className="absolute top-full mt-2.5 right-0 w-[440px] lg:w-[500px] xl:w-[540px] max-w-[calc(100vw-32px)] z-50 rounded-3xl liquid-glass-slab shadow-[0_24px_60px_-12px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] border border-white/90 dark:border-white/10 animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
+          <div className="absolute top-full mt-2.5 right-0 w-110 lg:w-125 xl:w-135 max-w-[calc(100vw-32px)] z-50 rounded-3xl liquid-glass-slab shadow-[0_24px_60px_-12px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] border border-white/90 dark:border-white/10 animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
             {renderDropdownContent()}
           </div>
         )}
@@ -820,3 +820,4 @@ export function SearchDropdown({
     </>
   );
 }
+
