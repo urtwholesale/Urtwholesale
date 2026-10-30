@@ -1,115 +1,129 @@
 /**
  * Category Theme Image Mapper
- * Maps categories to high-resolution, photorealistic 1:1 3D tech studio renders
- * featuring a cohesive dark graphite/charcoal studio background and cyan rim lighting.
+ * Maps categories to high-resolution, photorealistic 1:1 3D tech studio renders.
+ * Supports dual-theme: clean light studio renders for Light Theme and sleek obsidian/cyan renders for Dark Theme.
  */
 
-export const CATEGORY_THEME_IMAGES: Record<string, string> = {
+export const CATEGORY_FILENAMES: Record<string, string> = {
   // All Products
-  all: "/categories/all-products.jpg",
-  "all-products": "/categories/all-products.jpg",
+  all: "all-products.jpg",
+  "all-products": "all-products.jpg",
 
   // Tempered Glass & UV Glass
-  "tempered-glass-uv-glass": "/categories/tempered-glass.jpg",
-  "tempered-glass": "/categories/tempered-glass.jpg",
-  "uv-glass": "/categories/tempered-glass.jpg",
+  "tempered-glass-uv-glass": "tempered-glass.jpg",
+  "tempered-glass": "tempered-glass.jpg",
+  "uv-glass": "tempered-glass.jpg",
 
   // Cables & Cords
-  cables: "/categories/cables.jpg",
-  "cables-cords": "/categories/cables.jpg",
+  cables: "cables.jpg",
+  "cables-cords": "cables.jpg",
 
   // Mobile Chargers
-  "mobile-chargers": "/categories/chargers.jpg",
-  chargers: "/categories/chargers.jpg",
+  "mobile-chargers": "chargers.jpg",
+  chargers: "chargers.jpg",
 
   // Buds & TWS
-  "buds-tws": "/categories/buds-tws.jpg",
-  buds: "/categories/buds-tws.jpg",
-  tws: "/categories/buds-tws.jpg",
+  "buds-tws": "buds-tws.jpg",
+  buds: "buds-tws.jpg",
+  tws: "buds-tws.jpg",
 
   // Neckbands
-  neckbands: "/categories/neckbands.jpg",
+  neckbands: "neckbands.jpg",
 
   // Speakers / Audio
-  audio: "/categories/speakers.jpg",
-  speakers: "/categories/speakers.jpg",
+  audio: "speakers.jpg",
+  speakers: "speakers.jpg",
 
   // OTG Connectors
-  "otg-connector": "/categories/otg-connectors.jpg",
-  "otg connector": "/categories/otg-connectors.jpg",
-  "otg-connectors": "/categories/otg-connectors.jpg",
-  otg: "/categories/otg-connectors.jpg",
+  "otg-connector": "otg-connectors.jpg",
+  "otg connector": "otg-connectors.jpg",
+  "otg-connectors": "otg-connectors.jpg",
+  otg: "otg-connectors.jpg",
 
   // Mobile Holders & Stand
-  "mobile-holders-stand": "/categories/mobile-holders.jpg",
-  "mobile-holders": "/categories/mobile-holders.jpg",
-  stands: "/categories/mobile-holders.jpg",
+  "mobile-holders-stand": "mobile-holders.jpg",
+  "mobile-holders": "mobile-holders.jpg",
+  stands: "mobile-holders.jpg",
 
   // Power Banks
-  "power-banks": "/categories/power-banks.jpg",
-  powerbanks: "/categories/power-banks.jpg",
+  "power-banks": "power-banks.jpg",
+  powerbanks: "power-banks.jpg",
 
   // Watches
-  watches: "/categories/watches.jpg",
-  smartwatches: "/categories/watches.jpg",
+  watches: "watches.jpg",
+  smartwatches: "watches.jpg",
 
   // Earphones
-  earphones: "/categories/earphones.jpg",
+  earphones: "earphones.jpg",
 
   // Battery
-  battry: "/categories/battery.jpg",
-  battery: "/categories/battery.jpg",
+  battry: "battery.jpg",
+  battery: "battery.jpg",
 };
 
 /**
  * Resolves the themed UI image for a category.
- * Prioritizes the curated 1:1 themed studio asset to maintain a cohesive UI theme.
+ * Dynamically selects light studio or dark studio asset based on active theme.
  */
 export function getCategoryThemeImage(
-  category?: { slug?: string | null; name?: string | null; image_url?: string | null } | string | null
+  category?: { slug?: string | null; name?: string | null; image_url?: string | null } | string | null,
+  isDark?: boolean
 ): string {
-  if (!category) return "/categories/all-products.jpg";
+  // Automatically detect dark mode if not explicitly supplied
+  const resolvedIsDark =
+    isDark !== undefined
+      ? isDark
+      : typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : true;
+
+  const mode = resolvedIsDark ? "dark" : "light";
+  const defaultImage = `/categories/${mode}/all-products.jpg`;
+
+  if (!category) return defaultImage;
+
+  let filename: string | undefined;
 
   if (typeof category === "string") {
     const slugKey = category.toLowerCase().trim();
-    if (CATEGORY_THEME_IMAGES[slugKey]) {
-      return CATEGORY_THEME_IMAGES[slugKey];
-    }
+    filename = CATEGORY_FILENAMES[slugKey];
   } else {
     // 1. Match by slug
     if (category.slug) {
       const slugKey = category.slug.toLowerCase().trim();
-      if (CATEGORY_THEME_IMAGES[slugKey]) {
-        return CATEGORY_THEME_IMAGES[slugKey];
-      }
+      filename = CATEGORY_FILENAMES[slugKey];
     }
 
     // 2. Match by normalized name
-    if (category.name) {
+    if (!filename && category.name) {
       const nameLower = category.name.toLowerCase().trim();
-      if (CATEGORY_THEME_IMAGES[nameLower]) {
-        return CATEGORY_THEME_IMAGES[nameLower];
-      }
+      filename = CATEGORY_FILENAMES[nameLower];
 
-      if (nameLower.includes("tempered") || nameLower.includes("glass")) return "/categories/tempered-glass.jpg";
-      if (nameLower.includes("cable") || nameLower.includes("cord")) return "/categories/cables.jpg";
-      if (nameLower.includes("charger")) return "/categories/chargers.jpg";
-      if (nameLower.includes("bud") || nameLower.includes("tws")) return "/categories/buds-tws.jpg";
-      if (nameLower.includes("neckband")) return "/categories/neckbands.jpg";
-      if (nameLower.includes("speaker") || nameLower.includes("audio")) return "/categories/speakers.jpg";
-      if (nameLower.includes("otg")) return "/categories/otg-connectors.jpg";
-      if (nameLower.includes("holder") || nameLower.includes("stand")) return "/categories/mobile-holders.jpg";
-      if (nameLower.includes("power") || nameLower.includes("bank")) return "/categories/power-banks.jpg";
-      if (nameLower.includes("watch")) return "/categories/watches.jpg";
-      if (nameLower.includes("earphone")) return "/categories/earphones.jpg";
-      if (nameLower.includes("batt")) return "/categories/battery.jpg";
+      if (!filename) {
+        if (nameLower.includes("tempered") || nameLower.includes("glass")) filename = "tempered-glass.jpg";
+        else if (nameLower.includes("cable") || nameLower.includes("cord")) filename = "cables.jpg";
+        else if (nameLower.includes("charger")) filename = "chargers.jpg";
+        else if (nameLower.includes("bud") || nameLower.includes("tws")) filename = "buds-tws.jpg";
+        else if (nameLower.includes("neckband")) filename = "neckbands.jpg";
+        else if (nameLower.includes("speaker") || nameLower.includes("audio")) filename = "speakers.jpg";
+        else if (nameLower.includes("otg")) filename = "otg-connectors.jpg";
+        else if (nameLower.includes("holder") || nameLower.includes("stand")) filename = "mobile-holders.jpg";
+        else if (nameLower.includes("power") || nameLower.includes("bank")) filename = "power-banks.jpg";
+        else if (nameLower.includes("watch")) filename = "watches.jpg";
+        else if (nameLower.includes("earphone")) filename = "earphones.jpg";
+        else if (nameLower.includes("batt")) filename = "battery.jpg";
+      }
     }
 
-    // 3. Fallback to existing image_url if provided
-    if (category.image_url) {
+    // 3. Fallback to existing image_url if provided and no match
+    if (!filename && category.image_url) {
       return category.image_url;
     }
   }
 
-  return "/categories/all-products.jpg";
+  if (filename) {
+    return `/categories/${mode}/${filename}`;
+  }
+
+  return defaultImage;
 }

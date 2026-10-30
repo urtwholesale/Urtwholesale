@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 import { getCategoryThemeImage } from "../utils/categoryTheme";
+import { useTheme } from "../context/ThemeContext";
 
 interface MarketplacePageProps {
   onAddToCart: (product: Product) => void;
@@ -43,6 +44,7 @@ export function MarketplacePage({
   onAddToCart,
   brandOnly = false,
 }: MarketplacePageProps) {
+  const { isDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -336,7 +338,7 @@ export function MarketplacePage({
     (priceBracketIndex !== 0 ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0;
 
-  // Reusable square category cards rail with unified 3D studio theme
+  // Reusable square category cards rail with dual-theme 3D studio support
   const categoryChips = (
     <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
       {/* "All Products" Square Card */}
@@ -344,15 +346,15 @@ export function MarketplacePage({
         ref={selectedCategory === "all" ? activeCategoryButtonRef : null}
         type="button"
         onClick={() => handleCategoryChange("all")}
-        className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+        className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-slate-100 dark:bg-slate-900 ${
           selectedCategory === "all"
             ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-            : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
+            : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-90 hover:opacity-100"
         }`}
       >
-        {/* Full-Bleed Themed Studio Image */}
+        {/* Full-Bleed Themed Studio Image (Light / Dark Adaptive) */}
         <img
-          src={getCategoryThemeImage("all")}
+          src={getCategoryThemeImage("all", isDark)}
           alt="All Products"
           className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
@@ -360,7 +362,7 @@ export function MarketplacePage({
         />
 
         {/* Ambient Dark Gradient Vignette for Text Contrast */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
         {/* Active Glowing Highlight Bar at Top */}
         {selectedCategory === "all" && (
@@ -373,7 +375,7 @@ export function MarketplacePage({
         {/* Category Title Inside the Card at the Bottom */}
         <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
           <Layers className="w-3 h-3 text-orange-400 mb-0.5 drop-shadow-xs" />
-          <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+          <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 block">
             All Products
           </span>
         </div>
@@ -388,15 +390,15 @@ export function MarketplacePage({
             ref={isSelected ? activeCategoryButtonRef : null}
             type="button"
             onClick={() => handleCategoryChange(cat.slug)}
-            className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+            className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-slate-100 dark:bg-slate-900 ${
               isSelected
                 ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
+                : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-90 hover:opacity-100"
             }`}
           >
-            {/* Category Themed Studio Image */}
+            {/* Category Themed Studio Image (Light / Dark Adaptive) */}
             <img
-              src={getCategoryThemeImage(cat)}
+              src={getCategoryThemeImage(cat, isDark)}
               alt={cat.name}
               className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
@@ -404,7 +406,7 @@ export function MarketplacePage({
             />
 
             {/* Ambient Dark Gradient Vignette */}
-            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
             {/* Active Glowing Highlight Bar at Top */}
             {isSelected && (
@@ -416,7 +418,7 @@ export function MarketplacePage({
 
             {/* Category Title Inside the Card at the Bottom */}
             <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
-              <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+              <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 block">
                 {cat.name}
               </span>
             </div>

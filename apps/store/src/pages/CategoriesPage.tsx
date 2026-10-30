@@ -6,6 +6,7 @@ import { CategoryTopRailSkeleton, ProductGridSkeleton } from "../components/Skel
 import { EmptyState } from "../components/EmptyState";
 import { triggerHaptic } from "../utils/haptics";
 import { getCategoryThemeImage } from "../utils/categoryTheme";
+import { useTheme } from "../context/ThemeContext";
 import type { Category, Product } from "@urbanrat/shared";
 import {
   ArrowLeft,
@@ -21,6 +22,7 @@ interface CategoriesPageProps {
 const PAGE_SIZE = 24;
 
 export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeParentId, setActiveParentId] = useState<string>("");
@@ -211,23 +213,23 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                       ref={isActive ? activeCategoryButtonRef : null}
                       type="button"
                       onClick={() => handleSelectParent(parent.id)}
-                      className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+                      className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-slate-100 dark:bg-slate-900 ${
                         isActive
                           ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                          : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
+                          : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-90 hover:opacity-100"
                       }`}
                     >
-                      {/* Category Themed Studio Image */}
+                      {/* Category Themed Studio Image (Light / Dark Adaptive) */}
                       <img
-                        src={getCategoryThemeImage(parent)}
+                        src={getCategoryThemeImage(parent, isDark)}
                         alt={parent.name}
                         className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                         decoding="async"
                       />
 
-                      {/* Ambient Dark Gradient Vignette for Text Contrast */}
-                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent pointer-events-none" />
+                      {/* Ambient Gradient Vignette for Text Contrast */}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
                       {/* Active Glowing Highlight Bar at Top */}
                       {isActive && (
@@ -239,7 +241,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
 
                       {/* Category Title Inside the Card at the Bottom */}
                       <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
-                        <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+                        <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 block">
                           {parent.name}
                         </span>
                       </div>
