@@ -1,11 +1,12 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Search, ShoppingBag, ArrowLeft, Sun, Moon } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Sun, Moon } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { SearchDropdown } from "./SearchDropdown";
 
 interface TopBarProps {
   cartCount?: number;
-  onOpenSearch?: () => void;
   onOpenMenu?: () => void;
+  popularSearches?: string[];
 }
 
 const DESKTOP_NAV_ITEMS = [
@@ -19,8 +20,8 @@ const DESKTOP_NAV_ITEMS = [
 
 export function TopBar({
   cartCount = 0,
-  onOpenSearch,
   onOpenMenu,
+  popularSearches = [],
 }: TopBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,15 +37,17 @@ export function TopBar({
   }
 
   return (
-    <header className="fixed md:static top-0 left-0 right-0 z-40 w-full px-3 pt-2 pb-1 sm:px-4 md:px-6 md:py-3 max-w-7xl 2xl:max-w-[1780px] mx-auto transition-colors">
+    <header className="fixed md:relative top-0 left-0 right-0 z-40 w-full px-3 pt-2 pb-1 sm:px-4 md:px-6 md:py-3 max-w-7xl 2xl:max-w-[1780px] mx-auto transition-colors">
       {/* ── Main Liquid Glass Slab Console (Reference: Liquid Glass UI Kit) ── */}
-      <div className="relative w-full rounded-2xl md:rounded-full liquid-glass-slab px-3 sm:px-4 md:px-5 lg:px-6 h-15 sm:h-16 flex items-center justify-between overflow-hidden">
-        {/* ── Liquid Glass Iridescent Refraction Caustics ── */}
-        <div className="absolute -top-8 left-12 w-48 h-16 bg-cyan-400/25 dark:bg-cyan-500/15 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-8 right-16 w-52 h-16 bg-purple-500/20 dark:bg-purple-500/15 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-10 bg-rose-400/12 dark:bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
-        {/* Specular hairline light reflection along top rim */}
-        <div className="absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-white/95 dark:via-white/40 to-transparent pointer-events-none" />
+      <div className="relative w-full rounded-2xl md:rounded-full liquid-glass-slab px-3 sm:px-4 md:px-5 lg:px-6 h-15 sm:h-16 flex items-center justify-between">
+        {/* ── Liquid Glass Iridescent Refraction Caustics Container (Clipped to pill) ── */}
+        <div className="absolute inset-0 rounded-2xl md:rounded-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-8 left-12 w-48 h-16 bg-cyan-400/25 dark:bg-cyan-500/15 rounded-full blur-2xl" />
+          <div className="absolute -bottom-8 right-16 w-52 h-16 bg-purple-500/20 dark:bg-purple-500/15 rounded-full blur-2xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-10 bg-rose-400/12 dark:bg-pink-500/10 rounded-full blur-3xl" />
+          {/* Specular hairline light reflection along top rim */}
+          <div className="absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-white/95 dark:via-white/40 to-transparent" />
+        </div>
 
         {/* ── Left Zone: Back Button (Subpages) & Brand Logo Capsule ── */}
         <div className="flex items-center space-x-2 shrink-0 z-10">
@@ -116,33 +119,10 @@ export function TopBar({
           </nav>
         </div>
 
-        {/* ── Right Zone: Search, Theme Toggle & Cart Droplet ── */}
-        <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0 z-10">
-          {/* Desktop Liquid Search Capsule (Expanded on XL+) */}
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            aria-label="Search accessories"
-            className="hidden xl:flex items-center space-x-2.5 px-3.5 h-10 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-white/80 dark:border-white/15 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.9),0_4px_12px_rgba(0,0,0,0.03)] hover:bg-white/70 dark:hover:bg-slate-800/70 hover:shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_6px_20px_rgba(6,182,212,0.22)] hover:scale-[1.01] active:scale-98 transition-all duration-200 cursor-pointer group text-slate-500 dark:text-slate-400"
-          >
-            <Search className="w-4 h-4 stroke-[2.2] text-slate-600 dark:text-slate-300 group-hover:text-cyan-500 transition-colors" />
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate max-w-36">
-              Search gear...
-            </span>
-            <kbd className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-700/70 border border-slate-200/60 dark:border-slate-600/60 text-[10px] font-mono font-bold text-slate-400 dark:text-slate-300 shadow-2xs">
-              ⌘K
-            </kbd>
-          </button>
-
-          {/* Compact Liquid Glass Search Orb (Mobile / Tablet / Laptop) */}
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            aria-label="Search accessories"
-            className="xl:hidden liquid-glass-orb w-10 h-10 rounded-full flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
-          >
-            <Search className="w-4.5 h-4.5 stroke-[2.3] group-hover:scale-105 transition-transform" />
-          </button>
+        {/* ── Right Zone: Search Dropdown, Theme Toggle & Cart Droplet ── */}
+        <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0 z-20">
+          {/* Integrated Liquid Glass Search with Attached Dropdown (No Pop-up Modal) */}
+          <SearchDropdown popularSearches={popularSearches} />
 
           {/* Liquid Glass Theme Toggle Orb */}
           <button

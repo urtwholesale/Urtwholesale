@@ -12,7 +12,6 @@ import { StoreNotConfigured } from "./components/StoreNotConfigured";
 import { TopBar } from "./components/TopBar";
 import { NavigationDock } from "./components/NavigationDock";
 import { StoreMenuDrawer } from "./components/StoreMenuDrawer";
-import { SearchModal } from "./components/SearchModal";
 import { HomePage } from "./pages/HomePage";
 import { MarketplacePage } from "./pages/MarketplacePage";
 import { CategoriesPage } from "./pages/CategoriesPage";
@@ -197,7 +196,6 @@ export default function App() {
   }, [configured]);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
 
   // Read popular searches dynamically from store_settings
@@ -308,8 +306,8 @@ export default function App() {
       {/* ── Fixed Glassmorphism Top Navigation Bar ── */}
       <TopBar
         cartCount={totalCartCount}
-        onOpenSearch={() => setSearchOpen(true)}
         onOpenMenu={() => setMenuDrawerOpen(true)}
+        popularSearches={popularSearches}
       />
 
       {/* ── Main Routed Page Content ── */}
@@ -436,13 +434,6 @@ export default function App() {
           {toastMessage}
         </div>
       )}
-
-      {/* ── Search Modal Drawer with Typo-Tolerant, Synonym-Aware Engine ── */}
-      <SearchModal
-        isOpen={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        popularSearches={popularSearches}
-      />
 
       {/* ── Fixed Glassmorphism Bottom Navigation Dock ── */}
       <NavigationDock
