@@ -349,13 +349,6 @@ export function SearchDropdown({
       ref={resultsContainerRef}
       className="relative flex flex-col max-h-[72vh] overflow-hidden"
     >
-      {/* Specular hairline top rim inside dropdown */}
-      <div className="absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-white/90 dark:via-white/30 to-transparent pointer-events-none" />
-
-      {/* Iridescent background caustics */}
-      <div className="absolute -top-12 -right-12 w-44 h-44 bg-cyan-400/10 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-purple-500/10 dark:bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
       <div className="relative z-10 flex-1 overflow-y-auto space-y-4 p-4 divide-y divide-slate-100/80 dark:divide-slate-800/80">
         {/* ── STATE 1: EMPTY QUERY (Recent Searches, Trending, Quick Categories) ── */}
         {!query.trim() && (
@@ -691,10 +684,10 @@ export function SearchDropdown({
       >
         {/* The Search Bar in TopBar */}
         <div
-          className={`group relative flex items-center h-10 px-3.5 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-white/80 dark:border-white/15 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.9),0_4px_12px_rgba(0,0,0,0.03)] hover:bg-white/70 dark:hover:bg-slate-800/70 hover:shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_6px_20px_rgba(6,182,212,0.22)] transition-all duration-200 ${
+          className={`group relative flex items-center h-9 sm:h-10 px-3 rounded-full bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 text-slate-700 dark:text-slate-200 transition-all duration-200 ${
             isOpen
-              ? "ring-2 ring-cyan-500/40 border-cyan-400/80 dark:border-cyan-500/60 bg-white/80 dark:bg-slate-800/90 shadow-[0_4px_20px_rgba(6,182,212,0.2)]"
-              : ""
+              ? "border-cyan-500 dark:border-cyan-400 bg-white dark:bg-slate-800 ring-2 ring-cyan-500/20 shadow-xs"
+              : "hover:bg-slate-100 dark:hover:bg-slate-800/80"
           }`}
         >
           <Search className="w-4 h-4 stroke-[2.2] text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors shrink-0 mr-2" />
@@ -740,7 +733,7 @@ export function SearchDropdown({
 
         {/* ── DROPDOWN SEARCH OPTIONS PANEL (Desktop) ── */}
         {isOpen && (
-          <div className="absolute top-full mt-2.5 right-0 w-110 lg:w-125 xl:w-135 max-w-[calc(100vw-32px)] z-50 rounded-3xl liquid-glass-slab shadow-[0_24px_60px_-12px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] border border-white/90 dark:border-white/10 animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
+          <div className="absolute top-full mt-2 right-0 w-110 lg:w-125 xl:w-135 max-w-[calc(100vw-32px)] z-50 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden">
             {renderDropdownContent()}
           </div>
         )}
@@ -750,7 +743,7 @@ export function SearchDropdown({
        * MOBILE VIEW: Search Orb in TopBar + Dropdown Menu Underneath
        * ─────────────────────────────────────────────────────────────────── */}
       <div ref={mobileContainerRef} className="md:hidden">
-        {/* Compact Liquid Glass Search Orb */}
+        {/* Compact Flat Search Button */}
         <button
           type="button"
           onClick={() => {
@@ -760,18 +753,18 @@ export function SearchDropdown({
             }
           }}
           aria-label="Search accessories"
-          className="liquid-glass-orb w-10 h-10 rounded-full flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer group"
         >
           {isMobileActive ? (
-            <X className="w-4.5 h-4.5 stroke-[2.3] text-rose-500" />
+            <X className="w-4.5 h-4.5 stroke-[2.2] text-rose-500" />
           ) : (
-            <Search className="w-4.5 h-4.5 stroke-[2.3] group-hover:scale-105 transition-transform" />
+            <Search className="w-4.5 h-4.5 stroke-[2.2] group-hover:scale-105 transition-transform" />
           )}
         </button>
 
         {/* Mobile Dropdown Search Options Drawer (Anchored beneath TopBar) */}
         {isMobileActive && (
-          <div className="fixed top-17 inset-x-2.5 z-50 rounded-3xl liquid-glass-slab shadow-2xl border border-white/90 dark:border-white/10 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+          <div className="fixed top-16 inset-x-2.5 z-50 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xl animate-in fade-in slide-in-from-top-1 duration-200 overflow-hidden">
             {/* Mobile Top Search Input */}
             <div className="p-3 border-b border-slate-100/80 dark:border-slate-800/80 flex items-center space-x-2 bg-white/40 dark:bg-slate-900/40">
               <button
