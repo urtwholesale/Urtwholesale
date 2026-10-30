@@ -200,23 +200,23 @@ export function HomePage({ onAddToCart }: HomePageProps) {
         {loading ? (
           <CategoryChipsSkeleton count={6} />
         ) : categories.length > 0 ? (
-          <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-x-auto scrollbar-none no-scrollbar py-1 px-0.5">
+          <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
             {/* "All Products" Card */}
             <Link
               to="/marketplace"
-              className="group relative shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
+              className="group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
             >
               <img
                 src="/hero-accessories.jpg"
                 alt="All Products"
-                className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
                 decoding="async"
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-black/10 pointer-events-none" />
-              <div className="absolute bottom-2 left-2 right-2 z-10">
-                <Layers className="w-3.5 h-3.5 text-orange-400 mb-1 drop-shadow-sm" />
-                <span className="text-[11px] sm:text-xs font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+              <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
+                <Layers className="w-3 h-3 text-orange-400 mb-0.5 drop-shadow-xs" />
+                <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
                   All Products
                 </span>
               </div>
@@ -227,18 +227,18 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               <Link
                 key={cat.id}
                 to={`/marketplace?category=${cat.slug}`}
-                className="group relative shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
+                className="group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
               >
                 <img
                   src={cat.image_url || "/hero-accessories.jpg"}
                   alt={cat.name}
-                  className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                   decoding="async"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-black/5 pointer-events-none" />
-                <div className="absolute bottom-2 left-2 right-2 z-10">
-                  <span className="text-[11px] sm:text-xs font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+                <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
+                  <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
                     {cat.name}
                   </span>
                 </div>

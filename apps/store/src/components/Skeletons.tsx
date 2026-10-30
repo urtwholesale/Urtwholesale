@@ -33,11 +33,11 @@ export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
 
 export function CategoryChipsSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-hidden py-1 px-0.5">
+    <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-hidden py-0.5 px-0.5">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
+          className="shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
         />
       ))}
     </div>
@@ -48,13 +48,13 @@ export function CategoryTopRailSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
       {/* Top category rail skeleton (Expanded to borders, non-sticky on desktop) */}
-      <div className="sticky md:relative top-16 md:top-auto z-30 w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)]">
+      <div className="sticky md:relative top-16 md:top-auto z-30 w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-2 sm:py-2.5 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)]">
         <div className="w-full max-w-[1780px] mx-auto space-y-2">
-          <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-hidden py-1 px-0.5">
+          <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-hidden py-0.5 px-0.5">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5"
+                className="shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5"
               />
             ))}
           </div>

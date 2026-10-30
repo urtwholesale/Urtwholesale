@@ -337,13 +337,13 @@ export function MarketplacePage({
 
   // Reusable vertical rectangular category cards rail
   const categoryChips = (
-    <div className="flex items-center space-x-2.5 sm:space-x-3.5 overflow-x-auto scrollbar-none no-scrollbar py-1 px-0.5">
+    <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
       {/* "All Products" Vertical Card */}
       <button
         ref={selectedCategory === "all" ? activeCategoryButtonRef : null}
         type="button"
         onClick={() => handleCategoryChange("all")}
-        className={`group relative shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+        className={`group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
           selectedCategory === "all"
             ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
             : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
@@ -353,7 +353,7 @@ export function MarketplacePage({
         <img
           src="/hero-accessories.jpg"
           alt="All Products"
-          className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
           decoding="async"
         />
@@ -364,15 +364,15 @@ export function MarketplacePage({
         {/* Active Glowing Highlight Bar at Top */}
         {selectedCategory === "all" && (
           <div
-            className="absolute top-2 left-2 right-2 h-1 rounded-full z-10 shadow-xs"
+            className="absolute top-1.5 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
             style={{ background: "var(--brand-gradient)" }}
           />
         )}
 
         {/* Category Title Inside the Card at the Bottom */}
-        <div className="absolute bottom-2 left-2 right-2 z-10">
-          <Layers className="w-3.5 h-3.5 text-orange-400 mb-1 drop-shadow-sm" />
-          <span className="text-[11px] sm:text-xs font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+        <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
+          <Layers className="w-3 h-3 text-orange-400 mb-0.5 drop-shadow-xs" />
+          <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
             All Products
           </span>
         </div>
@@ -387,7 +387,7 @@ export function MarketplacePage({
             ref={isSelected ? activeCategoryButtonRef : null}
             type="button"
             onClick={() => handleCategoryChange(cat.slug)}
-            className={`group relative shrink-0 w-24 sm:w-28 md:w-32 h-28 sm:h-34 rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+            className={`group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
               isSelected
                 ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
                 : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
@@ -397,7 +397,7 @@ export function MarketplacePage({
             <img
               src={cat.image_url || "/hero-accessories.jpg"}
               alt={cat.name}
-              className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
               decoding="async"
             />
@@ -408,14 +408,14 @@ export function MarketplacePage({
             {/* Active Glowing Highlight Bar at Top */}
             {isSelected && (
               <div
-                className="absolute top-2 left-2 right-2 h-1 rounded-full z-10 shadow-xs"
+                className="absolute top-1.5 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
                 style={{ background: "var(--brand-gradient)" }}
               />
             )}
 
             {/* Category Title Inside the Card at the Bottom */}
-            <div className="absolute bottom-2 left-2 right-2 z-10">
-              <span className="text-[11px] sm:text-xs font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
+            <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
+              <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
                 {cat.name}
               </span>
             </div>
@@ -428,7 +428,7 @@ export function MarketplacePage({
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-12">
       {/* ── Category & Subcategory Filter Rail (Expanded to Borders, Non-Sticky on Desktop) ── */}
-      <div className="sticky md:relative top-16 md:top-auto z-30 w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-2.5 sm:py-3 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-colors">
+      <div className="sticky md:relative top-16 md:top-auto z-30 w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-2 sm:py-2.5 bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border-y border-slate-200/70 dark:border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-colors">
         <div className="w-full max-w-[1780px] mx-auto space-y-2">
           {/* Row 1: Parent Category Vertical Cards */}
           {categoryChips}
