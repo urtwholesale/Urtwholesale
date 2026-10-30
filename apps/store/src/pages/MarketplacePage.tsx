@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
+import { getCategoryThemeImage } from "../utils/categoryTheme";
 
 interface MarketplacePageProps {
   onAddToCart: (product: Product) => void;
@@ -335,23 +336,23 @@ export function MarketplacePage({
     (priceBracketIndex !== 0 ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0;
 
-  // Reusable vertical rectangular category cards rail
+  // Reusable square category cards rail with unified 3D studio theme
   const categoryChips = (
     <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
-      {/* "All Products" Vertical Card */}
+      {/* "All Products" Square Card */}
       <button
         ref={selectedCategory === "all" ? activeCategoryButtonRef : null}
         type="button"
         onClick={() => handleCategoryChange("all")}
-        className={`group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+        className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
           selectedCategory === "all"
             ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
             : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
         }`}
       >
-        {/* Full-Bleed Catalog Image */}
+        {/* Full-Bleed Themed Studio Image */}
         <img
-          src="/hero-accessories.jpg"
+          src={getCategoryThemeImage("all")}
           alt="All Products"
           className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
@@ -359,7 +360,7 @@ export function MarketplacePage({
         />
 
         {/* Ambient Dark Gradient Vignette for Text Contrast */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-black/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
         {/* Active Glowing Highlight Bar at Top */}
         {selectedCategory === "all" && (
@@ -387,15 +388,15 @@ export function MarketplacePage({
             ref={isSelected ? activeCategoryButtonRef : null}
             type="button"
             onClick={() => handleCategoryChange(cat.slug)}
-            className={`group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
+            className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left ${
               isSelected
                 ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
                 : "border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-85 hover:opacity-100"
             }`}
           >
-            {/* Category Full-Bleed Image */}
+            {/* Category Themed Studio Image */}
             <img
-              src={cat.image_url || "/hero-accessories.jpg"}
+              src={getCategoryThemeImage(cat)}
               alt={cat.name}
               className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
@@ -403,7 +404,7 @@ export function MarketplacePage({
             />
 
             {/* Ambient Dark Gradient Vignette */}
-            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-black/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent pointer-events-none" />
 
             {/* Active Glowing Highlight Bar at Top */}
             {isSelected && (

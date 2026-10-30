@@ -37,7 +37,7 @@ export function CategoryChipsSkeleton({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
+          className="shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
         />
       ))}
     </div>
@@ -54,7 +54,7 @@ export function CategoryTopRailSkeleton() {
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5"
+                className="shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5"
               />
             ))}
           </div>

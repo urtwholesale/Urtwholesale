@@ -10,6 +10,7 @@ import {
   getBanners,
 } from "../services/storeService";
 import { getRecentlyViewed } from "../services/recentViews";
+import { getCategoryThemeImage } from "../utils/categoryTheme";
 import { useSettings } from "../context/SettingsContext";
 import type { Product, Category, Banner } from "@urbanrat/shared";
 import {
@@ -204,16 +205,16 @@ export function HomePage({ onAddToCart }: HomePageProps) {
             {/* "All Products" Card */}
             <Link
               to="/marketplace"
-              className="group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
+              className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
             >
               <img
-                src="/hero-accessories.jpg"
+                src={getCategoryThemeImage("all")}
                 alt="All Products"
                 className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
                 decoding="async"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-black/10 pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
               <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
                 <Layers className="w-3 h-3 text-orange-400 mb-0.5 drop-shadow-xs" />
                 <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
@@ -227,16 +228,16 @@ export function HomePage({ onAddToCart }: HomePageProps) {
               <Link
                 key={cat.id}
                 to={`/marketplace?category=${cat.slug}`}
-                className="group relative shrink-0 w-20 sm:w-24 md:w-26 lg:w-28 h-22 sm:h-25 md:h-26 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
+                className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md"
               >
                 <img
-                  src={cat.image_url || "/hero-accessories.jpg"}
+                  src={getCategoryThemeImage(cat)}
                   alt={cat.name}
                   className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                   decoding="async"
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-black/5 pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/35 to-transparent pointer-events-none" />
                 <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
                   <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-md line-clamp-2 block">
                     {cat.name}
