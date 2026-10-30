@@ -213,10 +213,10 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                       ref={isActive ? activeCategoryButtonRef : null}
                       type="button"
                       onClick={() => handleSelectParent(parent.id)}
-                      className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-slate-100 dark:bg-slate-900 ${
+                      className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
                         isActive
                           ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                          : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-90 hover:opacity-100"
+                          : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
                       }`}
                     >
                       {/* Category Themed Studio Image (Light / Dark Adaptive) */}
@@ -228,20 +228,17 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                         decoding="async"
                       />
 
-                      {/* Ambient Gradient Vignette for Text Contrast */}
-                      <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
                       {/* Active Glowing Highlight Bar at Top */}
                       {isActive && (
                         <div
-                          className="absolute top-1.5 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
+                          className="absolute top-1 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
                           style={{ background: "var(--brand-gradient)" }}
                         />
                       )}
 
-                      {/* Category Title Inside the Card at the Bottom */}
-                      <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
-                        <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 block">
+                      {/* Clean Frosted Floating Caption (Dual Theme) */}
+                      <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs text-center transition-colors">
+                        <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
                           {parent.name}
                         </span>
                       </div>

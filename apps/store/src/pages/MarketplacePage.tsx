@@ -346,10 +346,10 @@ export function MarketplacePage({
         ref={selectedCategory === "all" ? activeCategoryButtonRef : null}
         type="button"
         onClick={() => handleCategoryChange("all")}
-        className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-slate-100 dark:bg-slate-900 ${
+        className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
           selectedCategory === "all"
             ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-            : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-90 hover:opacity-100"
+            : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
         }`}
       >
         {/* Full-Bleed Themed Studio Image (Light / Dark Adaptive) */}
@@ -361,21 +361,18 @@ export function MarketplacePage({
           decoding="async"
         />
 
-        {/* Ambient Dark Gradient Vignette for Text Contrast */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
         {/* Active Glowing Highlight Bar at Top */}
         {selectedCategory === "all" && (
           <div
-            className="absolute top-1.5 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
+            className="absolute top-1 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
             style={{ background: "var(--brand-gradient)" }}
           />
         )}
 
-        {/* Category Title Inside the Card at the Bottom */}
-        <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
-          <Layers className="w-3 h-3 text-orange-400 mb-0.5 drop-shadow-xs" />
-          <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 block">
+        {/* Clean Frosted Floating Caption (Dual Theme: Dark slate text in light mode, crisp white in dark mode) */}
+        <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs flex items-center justify-center space-x-1 transition-colors">
+          <Layers className="w-2.5 h-2.5 text-orange-500 shrink-0" />
+          <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
             All Products
           </span>
         </div>
@@ -390,10 +387,10 @@ export function MarketplacePage({
             ref={isSelected ? activeCategoryButtonRef : null}
             type="button"
             onClick={() => handleCategoryChange(cat.slug)}
-            className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-slate-100 dark:bg-slate-900 ${
+            className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
               isSelected
                 ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md opacity-90 hover:opacity-100"
+                : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
             }`}
           >
             {/* Category Themed Studio Image (Light / Dark Adaptive) */}
@@ -405,20 +402,17 @@ export function MarketplacePage({
               decoding="async"
             />
 
-            {/* Ambient Dark Gradient Vignette */}
-            <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
             {/* Active Glowing Highlight Bar at Top */}
             {isSelected && (
               <div
-                className="absolute top-1.5 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
+                className="absolute top-1 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
                 style={{ background: "var(--brand-gradient)" }}
               />
             )}
 
-            {/* Category Title Inside the Card at the Bottom */}
-            <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10">
-              <span className="text-[10px] sm:text-[11px] font-black text-white leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 block">
+            {/* Clean Frosted Floating Caption (Dual Theme: Dark slate text in light mode, crisp white in dark mode) */}
+            <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs text-center transition-colors">
+              <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
                 {cat.name}
               </span>
             </div>
