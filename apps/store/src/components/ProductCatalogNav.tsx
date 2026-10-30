@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import type { Product, Category } from "@urbanrat/shared";
 import {
   ArrowLeft,
-  ChevronLeft,
   ChevronRight,
   Layers,
   Search,
@@ -35,16 +34,10 @@ export function ProductCatalogNav({
   const activeRailRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
 
-  // Compute current index, prev, and next products in current catalog
+  // Compute current index in current catalog
   const currentIndex = useMemo(() => {
     return catalogProducts.findIndex((p) => p.id === currentProduct.id);
   }, [catalogProducts, currentProduct.id]);
-
-  const prevProduct = currentIndex > 0 ? catalogProducts[currentIndex - 1] : null;
-  const nextProduct =
-    currentIndex >= 0 && currentIndex < catalogProducts.length - 1
-      ? catalogProducts[currentIndex + 1]
-      : null;
 
   // Auto-scroll the active product pill into center of the horizontal rail
   useEffect(() => {
@@ -97,20 +90,8 @@ export function ProductCatalogNav({
           <span className="hidden sm:inline">Back</span>
         </button>
 
-        {/* Center Wing: Symmetrical Quick-Switch Hub */}
-        <div className="flex items-center space-x-1 sm:space-x-1.5 min-w-0">
-          {/* Previous Product Button */}
-          <button
-            type="button"
-            disabled={!prevProduct}
-            onClick={() => prevProduct && handleProductClick(prevProduct.slug)}
-            title={prevProduct ? `Previous: ${prevProduct.name}` : "First product in catalog"}
-            aria-label="Previous product"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white active:scale-90 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
-          >
-            <ChevronLeft className="w-4 h-4 stroke-[2.2]" />
-          </button>
-
+        {/* Center Wing: Quick-Switch Hub */}
+        <div className="flex items-center min-w-0">
           {/* Center Interactive Pill: Catalog & Position Switcher */}
           <button
             type="button"
@@ -118,7 +99,7 @@ export function ProductCatalogNav({
               triggerHaptic("selection");
               setModalOpen(true);
             }}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 active:scale-95 transition cursor-pointer max-w-44 sm:max-w-64 truncate shadow-2xs group"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 active:scale-95 transition cursor-pointer max-w-52 sm:max-w-72 truncate shadow-2xs group"
           >
             <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light shrink-0 group-hover:rotate-12 transition-transform" />
             <span className="text-[11px] sm:text-xs font-bold truncate">
@@ -129,18 +110,6 @@ export function ProductCatalogNav({
             <span className="text-[9px] text-slate-400 dark:text-slate-400 font-extrabold uppercase bg-white dark:bg-slate-900 px-1 rounded border border-slate-200 dark:border-slate-700 shrink-0 hidden sm:inline">
               Switch ▾
             </span>
-          </button>
-
-          {/* Next Product Button */}
-          <button
-            type="button"
-            disabled={!nextProduct}
-            onClick={() => nextProduct && handleProductClick(nextProduct.slug)}
-            title={nextProduct ? `Next: ${nextProduct.name}` : "Last product in catalog"}
-            aria-label="Next product"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white active:scale-90 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
-          >
-            <ChevronRight className="w-4 h-4 stroke-[2.2]" />
           </button>
         </div>
 
