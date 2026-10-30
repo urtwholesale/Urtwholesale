@@ -38,7 +38,7 @@ export function UrbanratPage({ onAddToCart, cartCount = 0 }: UrbanratPageProps) 
   }, [loadBanner]);
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300">
       {/* ── Branded Header Banner from Live Database ── */}
       {loading ? (
         <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 bg-slate-900 border border-cyan-900/40 animate-pulse">
