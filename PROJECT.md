@@ -390,7 +390,7 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 | **Icons** | Lucide React | 1.16 | Cohesive modern icon system |
 | **Backend & DB** | Supabase JS | 2.106 | Realtime PostgreSQL, RLS security, and storage |
 | **Monorepo Manager** | npm workspaces | 10+ / 11+ | Clean multi-package dependency management |
-| **Testing** | Vitest | 3.0 | Unit tests across shared pricing, order creation, validation, keyword normalization, and catalog image parsing/validation (88 tests) |
+| **Testing** | Vitest | 5.0 | Complete test suite across shared pricing, order verification, validation, keyword normalization, catalog image parsing, returns, and catalog parser (204 tests across 13 suites) |
 
 ---
 
@@ -1000,6 +1000,74 @@ Deploy each application as an independent Vercel project on separate subdomains 
     `name.ilike.%${cleanSearch}%,sku.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,specs->>brand_compatibility.ilike.%${cleanSearch}%,specs->>compatibility_group.ilike.%${cleanSearch}%`
   - **PostgREST Query Sanitization**: Added input sanitization stripping commas and parentheses from search terms to ensure PostgREST `.or(...)` filter syntax remains valid and never crashes on user input.
   - **Instant Search Recovery**: Confirmed that searching for `"infinix"` immediately returns all 87 matching Infinix products (`infinix gt 50 pro`, `infinix gt 30/ 30 pro`, `infinix note 50s 5g`, `infinix hot 10i`, etc.) without errors.
+
+---
+
+### Touchpoint 17 — Inline Auto-Suggest Search Dropdown & Canonical Token Architecture
+
+- **Inline Auto-Suggest Dropdown Replacement (`apps/store/src/components/SearchDropdown.tsx`)**:
+  - **UX Evolution**: Replaced full-page modal popup search with an intuitive, anchored dropdown anchored directly beneath the top search bar, eliminating screen disorientation.
+  - **Search Capabilities**: Integrated recent search history with one-tap removal, trending keyword tags, live debounced product matches with thumbnail previews, wholesale unit pricing, and stock status indicators.
+  - **Accessibility & Ergonomics**: Full keyboard navigation (`ArrowUp`, `ArrowDown`, `Enter` to select, `Escape` to close), click-outside listener, and automatic mobile viewport positioning.
+  - **Tailwind CSS v4 Canonical Compliance**: Refactored arbitrary pixel width brackets (`w-[440px]`, `lg:w-[500px]`, `xl:w-[540px]`) to canonical Tailwind tokens (`w-110`, `lg:w-125`, `xl:w-135`).
+
+---
+
+### Touchpoint 18 — Multi-Category Catalog Shuffling & Balanced Feed Discovery
+
+- **Fair Category Balancing & Feed Interleaving (`MarketplacePage.tsx`, `storeService.ts`)**:
+  - **The Problem**: Newly uploaded products within a single category (e.g. 14 AR+AF Lens Rings) monopolized the top rows of the default product grid, pushing other core categories (chargers, cables, audio, power banks) off the first screen.
+  - **"Featured (Mixed)" Default Sort Mode**: Implemented a balanced multi-category interleaving algorithm that groups products by category/subcategory and cycles through them evenly, guaranteeing that shoppers browsing the top of the feed see a diverse assortment of accessories.
+  - **Category Isolation Integrity**: When a specific category or subcategory is explicitly selected, the shuffle respects the scope and balances variants across models rather than leaking unrelated categories.
+
+---
+
+### Touchpoint 19 — Flat Glassmorphic Top Bar & Distraction-Free Navigation
+
+- **Topbar Aesthetic Flattening**:
+  - Removed heavy 3D-styled button bevels and high-contrast drop shadows in favor of a clean, minimalist flat glassmorphic top navigation bar (`backdrop-blur-md`, subtle `border-slate-200/80` and `dark:border-white/10`).
+  - Removed distracting subcategory carousel navigation arrow buttons per user request, delivering a clean, modern mobile-first touch/swipe rail.
+
+---
+
+### Touchpoint 20 — Studio 3D Category Imagery & Dual-Theme Architecture
+
+- **High-Key Apple-Style 3D Studio Renders (`categoryTheme.ts`, `apps/store/public/categories/`)**:
+  - **Light Theme Overhaul**: Replaced previous mathematically inverted/hazy placeholders with authentic, high-key commercial 3D studio renders for all 13 categories.
+  - **Zero Dark Floor Smudges**: Clean seamless platinum-to-white backdrop (`#f8fafc` to `#ffffff`) with delicate, natural contact shadows, eliminating dirty grey halos and dark bottom floor artifacts.
+  - **Dual-Theme Adaptive Resolution**: Implemented `getCategoryThemeImage(cat, isDark)` dynamically serving `/categories/light/{slug}.jpg` in light mode and `/categories/dark/{slug}.jpg` in dark mode.
+- **Seamless Bottom Gradient Scrim & 2-Line Titles**:
+  - Replaced the awkward floating rectangular "sticker" pill captions with a seamless bottom gradient scrim:
+    `bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent`
+  - Enabled 2-line title wrapping (`line-clamp-2`), allowing titles like *"Tempered Glass & UV GLASS"* and *"Mobile holders & Stand"* to display comfortably without ugly ellipsis truncation (`"Tempered Gla..."`).
+- **Symmetric Container Alignment (`UrbanratPage.tsx`, `MarketplacePage.tsx`, `CategoriesPage.tsx`, `Skeletons.tsx`)**:
+  - Eliminated broken full-bleed CSS viewport breakout (`w-screen left-1/2 -translate-x-1/2`) that shifted the category bar off-screen on Windows desktop browsers due to scrollbar width mismatch.
+  - Standardized on a responsive grid-aligned rounded container:
+    `w-full rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-slate-900/65 backdrop-blur-md border border-slate-200/80 dark:border-white/10 p-2.5 sm:p-3.5 shadow-xs`
+  - Harmonized vertical rhythm on `UrbanratPage.tsx` from `space-y-6 sm:space-y-8` to `space-y-4 sm:space-y-5`.
+
+---
+
+### Touchpoint 21 — Hero Stacked Carousel 3D Studio Upgrade & Dynamic Synchronized Headlines
+
+- **Flagship Category Selection & 3:4 Portrait Renders (`apps/store/public/hero/`, `generate_hero_cards.py`)**:
+  - Selected the 5 premier pillars of wholesale electronics:
+    1. **65W GaN Turbo Charger** (`offer-gan-65w`)
+    2. **9H Sapphire Glass Armor** (`offer-diamond-armor`)
+    3. **AirBass Pro ANC Wireless Buds** (`offer-tws-buds`)
+    4. **120W Titanium Super Cord** (`offer-cables`)
+    5. **MagSafe Slim Titanium Power Bank** (`offer-power-bank`)
+  - Generated dedicated vertical 3:4 portrait (900×1200) renders in both light (`/hero/light/`) and dark (`/hero/dark/`) modes, ensuring the 3D subject floats in the upper/middle frame without being obscured by the bottom frosted glass pill.
+- **Dynamic Synchronized Headlines & Feature Badges (`HeroStackedCarousel.tsx`)**:
+  - Dynamic Left Column: As the customer cycles through the stacked cards (`01 / 05` to `05 / 05`), the left column headline, tagline, rich description, and highlight chips automatically animate and update to reflect the active product.
+  - Tailored Product Descriptions: Each card features detailed engineering copy (e.g. GaN III Turbo architecture, high-alumina 9H diamond hardness, 13mm titanium composite acoustic drivers, Kevlar dual-braided ballistic nylon, 15W MagSafe magnetic alignment).
+- **Dual-Theme Refinement & Canonical Classes**:
+  - Light mode: Frosted white pill (`bg-white/95 border-slate-200/90 shadow-xl`), crisp dark slate typography, and clean contrast.
+  - Dark mode: Obsidian frosted glass (`bg-[#070B12]/94 border-white/10 shadow-2xl`), cyan/amber rim highlights, and glowing blue CTAs.
+  - Standardized all gradient overlays to Tailwind v4 canonical `bg-linear-to-t`.
+- **Automated Verification & Test Suite**:
+  - **204 automated unit tests** passing across 13 test suites (`vitest`).
+  - Both `apps/admin` and `apps/store` compile with 0 TypeScript/CSS errors (`npm run build`).
 
 
 
