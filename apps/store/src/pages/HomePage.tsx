@@ -185,9 +185,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
         </div>
       )}
 
-      {/* ── 2. Horizontal Browse by Category Rail (Vertical Rectangular Cards) ── */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
+      {/* ── 2. Horizontal Browse by Category Rail (Square Studio Cards) ── */}
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-0.5">
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
             Browse by Category
           </h2>
@@ -203,48 +203,50 @@ export function HomePage({ onAddToCart }: HomePageProps) {
         {loading ? (
           <CategoryChipsSkeleton count={6} />
         ) : categories.length > 0 ? (
-          <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
-            {/* "All Products" Card */}
-            <Link
-              to="/marketplace"
-              className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
-            >
-              <img
-                src={getCategoryThemeImage("all", isDark)}
-                alt="All Products"
-                className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs flex items-center justify-center space-x-1 transition-colors">
-                <Layers className="w-2.5 h-2.5 text-orange-500 shrink-0" />
-                <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
-                  All Products
-                </span>
-              </div>
-            </Link>
-
-            {/* Parent Category Cards */}
-            {categories.map((cat) => (
+          <div className="w-full rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-slate-900/65 backdrop-blur-md border border-slate-200/80 dark:border-white/10 p-2.5 sm:p-3.5 shadow-xs transition-colors">
+            <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
+              {/* "All Products" Card */}
               <Link
-                key={cat.id}
-                to={`/marketplace?category=${cat.slug}`}
-                className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
+                to="/marketplace"
+                className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
               >
                 <img
-                  src={getCategoryThemeImage(cat, isDark)}
-                  alt={cat.name}
+                  src={getCategoryThemeImage("all", isDark)}
+                  alt="All Products"
                   className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                   decoding="async"
                 />
-                <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs text-center transition-colors">
-                  <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
-                    {cat.name}
+                <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-gradient-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent flex items-center justify-center space-x-1 transition-colors">
+                  <Layers className="w-2.5 h-2.5 text-orange-500 shrink-0" />
+                  <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block truncate">
+                    All Products
                   </span>
                 </div>
               </Link>
-            ))}
+
+              {/* Parent Category Cards */}
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  to={`/marketplace?category=${cat.slug}`}
+                  className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
+                >
+                  <img
+                    src={getCategoryThemeImage(cat, isDark)}
+                    alt={cat.name}
+                    className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-gradient-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
+                    <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block line-clamp-2">
+                      {cat.name}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         ) : null}
       </section>

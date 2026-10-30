@@ -369,10 +369,10 @@ export function MarketplacePage({
           />
         )}
 
-        {/* Clean Frosted Floating Caption (Dual Theme: Dark slate text in light mode, crisp white in dark mode) */}
-        <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs flex items-center justify-center space-x-1 transition-colors">
+        {/* Clean Caption Gradient */}
+        <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-gradient-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent flex items-center justify-center space-x-1 transition-colors">
           <Layers className="w-2.5 h-2.5 text-orange-500 shrink-0" />
-          <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
+          <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block truncate">
             All Products
           </span>
         </div>
@@ -390,7 +390,7 @@ export function MarketplacePage({
             className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
               isSelected
                 ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
+                : "border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
             }`}
           >
             {/* Category Themed Studio Image (Light / Dark Adaptive) */}
@@ -410,9 +410,9 @@ export function MarketplacePage({
               />
             )}
 
-            {/* Clean Frosted Floating Caption (Dual Theme: Dark slate text in light mode, crisp white in dark mode) */}
-            <div className="absolute inset-x-1 bottom-1 z-10 py-0.5 px-1 rounded-lg bg-white/92 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-white/15 shadow-xs text-center transition-colors">
-              <span className="text-[9.5px] sm:text-[10px] font-black text-slate-800 dark:text-slate-100 leading-tight truncate block">
+            {/* Clean Caption Gradient */}
+            <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-gradient-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
+              <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block line-clamp-2">
                 {cat.name}
               </span>
             </div>

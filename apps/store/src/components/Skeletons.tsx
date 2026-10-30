@@ -33,13 +33,15 @@ export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
 
 export function CategoryChipsSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-hidden py-0.5 px-0.5">
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
-        />
-      ))}
+    <div className="w-full rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-slate-900/65 backdrop-blur-md border border-slate-200/80 dark:border-white/10 p-2.5 sm:p-3.5 shadow-xs">
+      <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-hidden py-0.5 px-0.5">
+        {Array.from({ length: count }).map((_, i) => (
+          <div
+            key={i}
+            className="shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800/80 animate-pulse border border-slate-200/60 dark:border-white/5"
+          />
+        ))}
+      </div>
     </div>
   );
 }
