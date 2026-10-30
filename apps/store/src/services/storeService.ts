@@ -44,7 +44,7 @@ export interface ProductFilterOptions {
   isUrbanratBrand?: boolean;
   isFeatured?: boolean;
   search?: string;
-  sort?: "price_asc" | "price_desc" | "newest" | "price-asc" | "price-desc";
+  sort?: "featured" | "price_asc" | "price_desc" | "newest" | "price-asc" | "price-desc";
   priceMin?: number;
   priceMax?: number;
   inStockOnly?: boolean;
@@ -170,7 +170,7 @@ export async function fetchProducts(
     isUrbanratBrand,
     isFeatured,
     search,
-    sort = "newest",
+    sort = "featured",
     priceMin,
     priceMax,
     inStockOnly,
@@ -244,13 +244,19 @@ export async function fetchProducts(
     }
   }
 
-  // Sorting based on products.price (starting price) or created_at
+  // Sorting: featured (mixed discovery), price, or newest
   if (sort === "price_asc" || sort === "price-asc") {
     query = query.order("price", { ascending: true });
   } else if (sort === "price_desc" || sort === "price-desc") {
     query = query.order("price", { ascending: false });
-  } else {
+  } else if (sort === "newest") {
     query = query.order("created_at", { ascending: false });
+  } else {
+    // Default "featured" / mixed distribution
+    // Keeps highlighted products at top, then distributes evenly across categories & models via UUID distribution
+    query = query
+      .order("is_featured", { ascending: false })
+      .order("id", { ascending: true });
   }
 
   query = query.range(offset, offset + limit - 1);

@@ -48,7 +48,7 @@ export function MarketplacePage({
 
   const initialCat = searchParams.get("category") || "all";
   const initialSubCat = searchParams.get("subcategory") || searchParams.get("sub") || null;
-  const initialSort = (searchParams.get("sort") as "newest" | "price_asc" | "price_desc") || "newest";
+  const initialSort = (searchParams.get("sort") as "featured" | "newest" | "price_asc" | "price_desc") || "featured";
 
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [categories, setCategories] = useState<Category[]>([]); // Parent categories
@@ -62,7 +62,7 @@ export function MarketplacePage({
     matchType: "exact" | "fuzzy" | "related" | "popular";
     searchId?: string;
   } | null>(null);
-  const [sortOption, setSortOption] = useState<"newest" | "price_asc" | "price_desc">(initialSort);
+  const [sortOption, setSortOption] = useState<"featured" | "newest" | "price_asc" | "price_desc">(initialSort);
   const [priceBracketIndex, setPriceBracketIndex] = useState(0);
 
   const activeCategoryButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -172,7 +172,7 @@ export function MarketplacePage({
           isUrbanratBrand: brandOnly ? true : undefined,
           minPrice: bracket?.min,
           maxPrice: bracket?.max,
-          sort: sortOption === "newest" ? "relevance" : sortOption,
+          sort: sortOption === "newest" ? "newest" : sortOption === "featured" ? "relevance" : sortOption,
           limit: PAGE_SIZE,
           offset: 0,
         });
@@ -232,7 +232,7 @@ export function MarketplacePage({
           isUrbanratBrand: brandOnly ? true : undefined,
           minPrice: bracket?.min,
           maxPrice: bracket?.max,
-          sort: sortOption === "newest" ? "relevance" : sortOption,
+          sort: sortOption === "newest" ? "newest" : sortOption === "featured" ? "relevance" : sortOption,
           limit: PAGE_SIZE,
           offset: products.length,
         });
@@ -323,7 +323,7 @@ export function MarketplacePage({
     setSelectedSubCategory(null);
     setSearchQuery("");
     setSearchMeta(null);
-    setSortOption("newest");
+    setSortOption("featured");
     setPriceBracketIndex(0);
     setSearchParams(new URLSearchParams());
   }
@@ -331,7 +331,7 @@ export function MarketplacePage({
   const activeFilterCount =
     (selectedSubCategory ? 1 : 0) +
     (searchQuery.trim() ? 1 : 0) +
-    (sortOption !== "newest" ? 1 : 0) +
+    (sortOption !== "featured" ? 1 : 0) +
     (priceBracketIndex !== 0 ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0;
 
@@ -608,12 +608,13 @@ export function MarketplacePage({
             <select
               value={sortOption}
               onChange={(e) =>
-                setSortOption(e.target.value as "newest" | "price_asc" | "price_desc")
+                setSortOption(e.target.value as "featured" | "newest" | "price_asc" | "price_desc")
               }
               aria-label="Sort products"
               className="w-full pl-8 pr-8 py-2.5 text-xs bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark dark:focus:border-brand-light shadow-2xs appearance-none font-semibold cursor-pointer"
             >
-              <option value="newest">Newest</option>
+              <option value="featured">Featured (Mixed)</option>
+              <option value="newest">Newest First</option>
               <option value="price_asc">Price: Low</option>
               <option value="price_desc">Price: High</option>
             </select>
@@ -647,7 +648,7 @@ export function MarketplacePage({
         selectedSubCategory ||
         searchQuery ||
         priceBracketIndex > 0 ||
-        sortOption !== "newest") && (
+        sortOption !== "featured") && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 bg-white px-3.5 py-2.5 rounded-2xl border border-slate-100 shadow-2xs">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             <span className="font-bold text-slate-700 text-[11px]">Filters active:</span>
@@ -964,8 +965,9 @@ export function MarketplacePage({
             {/* 3. Sort Options */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700">Sort By</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
+                  { id: "featured", label: "Featured" },
                   { id: "newest", label: "Newest" },
                   { id: "price_asc", label: "Price ↑" },
                   { id: "price_desc", label: "Price ↓" },
