@@ -125,3 +125,4 @@ for cat_slug, card_id in CATEGORIES:
     generate_hero_card_dark(cat_slug, card_id)
 
 print("All hero cards generated successfully!")
+

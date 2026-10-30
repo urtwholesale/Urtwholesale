@@ -427,7 +427,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                   />
 
                   {/* Gradient Vignette Overlay for High Legibility (Dual Theme) */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-transparent to-white/15 dark:from-black/95 dark:via-black/35 dark:to-black/15 pointer-events-none transition-colors" />
+                  <div className="absolute inset-0 bg-linear-to-t from-white/95 via-transparent to-white/15 dark:from-black/95 dark:via-black/35 dark:to-black/15 pointer-events-none transition-colors" />
 
                   {/* ── Top Pill Badge (e.g. URBANRAT PRO) ── */}
                   <div

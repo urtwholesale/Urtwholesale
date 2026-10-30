@@ -237,7 +237,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                       )}
 
                       {/* Clean Caption Gradient */}
-                      <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-gradient-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
+                      <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
                         <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block line-clamp-2">
                           {parent.name}
                         </span>
