@@ -11,6 +11,8 @@ import {
   ArrowRight,
   Zap,
   ShieldCheck,
+  Flame,
+  Sparkles,
 } from "lucide-react";
 
 export interface OfferCard {
@@ -20,71 +22,139 @@ export interface OfferCard {
   subtitle: string;
   rating: string;
   image: string;
+  darkImage?: string;
+  lightImage?: string;
   ctaText: string;
   ctaLink: string;
   accentColor?: string;
+  tagline?: string;
+  headlineFirst?: string;
+  headlineHighlight?: string;
+  headlineSecond?: string;
+  description?: string;
+  highlights?: Array<{ icon: "Zap" | "ShieldCheck" | "Star" | "Flame" | "Sparkles"; text: string }>;
 }
 
 interface HeroStackedCarouselProps {
   dbBanners?: Banner[];
 }
 
-// Curated high-converting wholesale offer cards matching the Urbanrat aesthetic
+// Curated high-converting wholesale offer cards matching the 3D Studio Premiere aesthetic
 const DEFAULT_OFFER_CARDS: OfferCard[] = [
-  {
-    id: "offer-diamond-armor",
-    badge: "URBANRAT PRO",
-    title: "Urbanrat 9H Diamond Armor T...",
-    subtitle: "Release: January 2026 · ₹199",
-    rating: "4.8",
-    image:
-      "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800&q=80&auto=format&fit=crop",
-    ctaText: "Receive",
-    ctaLink: "/categories",
-  },
   {
     id: "offer-gan-65w",
     badge: "URBANRAT PRO",
-    title: "Urbanrat 65W GaN Pro Super",
-    subtitle: "Release: January 2026 · ₹340",
+    title: "Urbanrat 65W GaN Pro Fast Charger",
+    subtitle: "Release: January 2026 · ₹340 / unit",
     rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=800&q=80&auto=format&fit=crop",
+    image: "/hero/dark/offer-gan-65w.jpg",
+    darkImage: "/hero/dark/offer-gan-65w.jpg",
+    lightImage: "/hero/light/offer-gan-65w.jpg",
     ctaText: "Receive",
-    ctaLink: "/urbanrat",
+    ctaLink: "/marketplace?category=chargers",
+    tagline: "PREMIERES 2026 · ULTRA-FAST GAN CHARGING",
+    headlineFirst: "65W GAN TURBO",
+    headlineHighlight: "POWER ADAPTER",
+    headlineSecond: "2026",
+    description:
+      "Next-generation GaN III Turbo architecture delivering dual-port 65W ultra-fast charging with intelligent thermal regulation and whisper-cool operation.",
+    highlights: [
+      { icon: "Zap", text: "65W GaN Core" },
+      { icon: "Flame", text: "Dual USB-C PD" },
+      { icon: "Star", text: "4.9 Rated" },
+    ],
   },
   {
-    id: "offer-cables",
-    badge: "URBANRAT ORIGINAL",
-    title: "Urbanrat 120W Super Cable",
-    subtitle: "Release: January 2026 · ₹85",
-    rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&q=80&auto=format&fit=crop",
+    id: "offer-diamond-armor",
+    badge: "URBANRAT PRO",
+    title: "Urbanrat 9H Diamond Armor Screen",
+    subtitle: "Release: January 2026 · ₹35 / unit",
+    rating: "4.8",
+    image: "/hero/dark/offer-diamond-armor.jpg",
+    darkImage: "/hero/dark/offer-diamond-armor.jpg",
+    lightImage: "/hero/light/offer-diamond-armor.jpg",
     ctaText: "Receive",
-    ctaLink: "/urbanrat",
+    ctaLink: "/marketplace?category=tempered-glass",
+    tagline: "PREMIERES 2026 · DISPLAY DEFENSE SYSTEM",
+    headlineFirst: "9H SAPPHIRE",
+    headlineHighlight: "GLASS ARMOR",
+    headlineSecond: "2026",
+    description:
+      "Engineered from high-alumina tempered glass with 9H diamond hardness, electroplated oleophobic oil resistance, and seamless 2.5D curved arc edges.",
+    highlights: [
+      { icon: "ShieldCheck", text: "9H Sapphire Armor" },
+      { icon: "Sparkles", text: "2.5D Curved Edge" },
+      { icon: "Star", text: "4.8 Rated" },
+    ],
   },
   {
     id: "offer-tws-buds",
     badge: "URBANRAT PRO",
-    title: "AirBass Pro Wireless TWS",
-    subtitle: "Release: January 2026 · ₹290",
+    title: "AirBass Pro Wireless ANC TWS",
+    subtitle: "Release: January 2026 · ₹290 / unit",
     rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800&q=80&auto=format&fit=crop",
+    image: "/hero/dark/offer-tws-buds.jpg",
+    darkImage: "/hero/dark/offer-tws-buds.jpg",
+    lightImage: "/hero/light/offer-tws-buds.jpg",
     ctaText: "Receive",
-    ctaLink: "/marketplace",
+    ctaLink: "/marketplace?category=buds-tws",
+    tagline: "PREMIERES 2026 · ACOUSTIC MASTERY",
+    headlineFirst: "AIRBASS PRO",
+    headlineHighlight: "ANC WIRELESS",
+    headlineSecond: "2026",
+    description:
+      "Acoustic chamber with 13mm titanium composite drivers delivering deep sub-bass resonance, active environmental noise cancellation, and 38-hour battery playback.",
+    highlights: [
+      { icon: "Zap", text: "13mm Ti Drivers" },
+      { icon: "Sparkles", text: "38H Playtime" },
+      { icon: "Star", text: "4.9 Rated" },
+    ],
   },
   {
-    id: "offer-diwali-pack",
-    badge: "PREMIERE PACK",
-    title: "Dealers Wholesale Special",
-    subtitle: "Release: January 2026 · ₹999",
-    rating: "5.0",
-    image:
-      "https://images.unsplash.com/photo-1622445268069-450f68ff18cf?w=800&q=80&auto=format&fit=crop",
+    id: "offer-cables",
+    badge: "URBANRAT ORIGINAL",
+    title: "Urbanrat 120W Titanium Super Cable",
+    subtitle: "Release: January 2026 · ₹85 / unit",
+    rating: "4.9",
+    image: "/hero/dark/offer-cables.jpg",
+    darkImage: "/hero/dark/offer-cables.jpg",
+    lightImage: "/hero/light/offer-cables.jpg",
     ctaText: "Receive",
-    ctaLink: "/marketplace",
+    ctaLink: "/marketplace?category=cables",
+    tagline: "PREMIERES 2026 · INDESTRUCTIBLE SPEED",
+    headlineFirst: "120W TITANIUM",
+    headlineHighlight: "SUPER CORD",
+    headlineSecond: "2026",
+    description:
+      "Kevlar-reinforced dual-braided ballistic nylon cable with aerospace titanium-finish connector shells and E-Marker smart power management chip.",
+    highlights: [
+      { icon: "Zap", text: "120W PD Delivery" },
+      { icon: "ShieldCheck", text: "Kevlar Reinforced" },
+      { icon: "Star", text: "4.9 Rated" },
+    ],
+  },
+  {
+    id: "offer-power-bank",
+    badge: "PREMIERE PACK",
+    title: "Urbanrat MagSafe Titanium Power Bank",
+    subtitle: "Release: January 2026 · ₹540 / unit",
+    rating: "5.0",
+    image: "/hero/dark/offer-power-bank.jpg",
+    darkImage: "/hero/dark/offer-power-bank.jpg",
+    lightImage: "/hero/light/offer-power-bank.jpg",
+    ctaText: "Receive",
+    ctaLink: "/marketplace?category=power-banks",
+    tagline: "PREMIERES 2026 · WIRELESS MAGNETIC DOCK",
+    headlineFirst: "MAGSAFE SLIM",
+    headlineHighlight: "TITANIUM PACK",
+    headlineSecond: "2026",
+    description:
+      "Ultra-compact 10,000mAh magnetic wireless power bank featuring 15W MagSafe snap alignment, bidirectional 20W Type-C fast charging, and real-time LED percentage readout.",
+    highlights: [
+      { icon: "Zap", text: "15W MagSafe Wireless" },
+      { icon: "Sparkles", text: "LED Digital Display" },
+      { icon: "Star", text: "5.0 Rated" },
+    ],
   },
 ];
 
@@ -218,40 +288,46 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
           <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 backdrop-blur-md border border-slate-700/60 dark:border-white/10 text-[11px] font-bold text-white shadow-xs w-fit">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="tracking-wider uppercase text-slate-200">
-              PREMIERES 2026 · URBANRAT CINEMATIC GEAR
+              {activeCard?.tagline || "PREMIERES 2026 · URBANRAT CINEMATIC GEAR"}
             </span>
           </div>
 
           {/* Main Headline */}
           <div className="space-y-1">
-            <h1 className="text-4xl xl:text-5xl 2xl:text-6xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[1.05]">
-              <div className="tracking-tight">MAJOR GEAR</div>
+            <h1 className="text-4xl xl:text-5xl 2xl:text-6xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[1.05] transition-all duration-300">
+              <div className="tracking-tight">{activeCard?.headlineFirst || "MAJOR GEAR"}</div>
               <div className="text-red-500 dark:text-red-500 drop-shadow-[0_0_24px_rgba(239,68,68,0.55)]">
-                OF PREMIERES
+                {activeCard?.headlineHighlight || "OF PREMIERES"}
               </div>
-              <div className="tracking-tight">2026</div>
+              <div className="tracking-tight">{activeCard?.headlineSecond || "2026"}</div>
             </h1>
           </div>
 
           {/* Subtitle / Paragraph */}
-          <p className="text-sm xl:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg font-medium">
-            Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and 65W GaN ultra-fast charging.
+          <p className="text-sm xl:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg font-medium min-h-12 transition-all duration-300">
+            {activeCard?.description ||
+              "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and 65W GaN ultra-fast charging."}
           </p>
 
           {/* 3 Highlight Chips */}
-          <div className="flex items-center space-x-2.5 flex-wrap gap-y-2 text-xs font-bold">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs">
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>65W GaN Core</span>
-            </div>
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-500" />
-              <span>9H Sapphire Armor</span>
-            </div>
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs">
-              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-              <span>4.9 Rated</span>
-            </div>
+          <div className="flex items-center space-x-2.5 flex-wrap gap-y-2 text-xs font-bold transition-all duration-300">
+            {(activeCard?.highlights || [
+              { icon: "Zap", text: "65W GaN Core" },
+              { icon: "ShieldCheck", text: "9H Sapphire Armor" },
+              { icon: "Star", text: "4.9 Rated" },
+            ]).map((h, i) => (
+              <div
+                key={i}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs"
+              >
+                {h.icon === "Zap" && <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+                {h.icon === "ShieldCheck" && <ShieldCheck className="w-3.5 h-3.5 text-cyan-500" />}
+                {h.icon === "Flame" && <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />}
+                {h.icon === "Sparkles" && <Sparkles className="w-3.5 h-3.5 text-cyan-400" />}
+                {h.icon === "Star" && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
+                <span>{h.text}</span>
+              </div>
+            ))}
           </div>
 
           {/* Controls & CTA Row */}
@@ -304,6 +380,10 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
 
               if (!isVisible) return null;
 
+              const cardImgSrc = isDark
+                ? card.darkImage || card.image
+                : card.lightImage || card.image;
+
               return (
                 <m.div
                   key={card.id}
@@ -331,23 +411,23 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                     if (isLeft) prevSlide();
                     if (isRight) nextSlide();
                   }}
-                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-70 sm:w-82.5 md:w-87.5 lg:w-80 xl:w-86 h-95 sm:h-110 md:h-116.25 lg:h-115 xl:h-120 rounded-3xl overflow-hidden cursor-pointer transition-shadow duration-300 ${
+                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-70 sm:w-82.5 md:w-87.5 lg:w-80 xl:w-86 h-95 sm:h-110 md:h-116.25 lg:h-115 xl:h-120 rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 ${
                     isCenter
-                      ? "shadow-[0_20px_45px_rgba(15,23,42,0.22)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-slate-900/10 dark:ring-white/15"
-                      : "shadow-md hover:opacity-80 transition-opacity"
+                      ? "shadow-[0_20px_45px_rgba(15,23,42,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/90 dark:ring-white/15 bg-slate-50 dark:bg-slate-950"
+                      : "shadow-md hover:opacity-80 transition-opacity bg-slate-50 dark:bg-slate-950"
                   }`}
                 >
                   {/* Card Background Image */}
                   <img
-                    src={card.image}
+                    src={cardImgSrc}
                     alt={card.title}
-                    className="w-full h-full object-cover rounded-3xl"
+                    className="w-full h-full object-cover rounded-3xl transition-transform duration-700"
                     loading={isCenter ? "eager" : "lazy"}
                     decoding="async"
                   />
 
-                  {/* Gradient Vignette Overlay for High Legibility */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/35 to-black/15 pointer-events-none" />
+                  {/* Gradient Vignette Overlay for High Legibility (Dual Theme) */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-transparent to-white/15 dark:from-black/95 dark:via-black/35 dark:to-black/15 pointer-events-none transition-colors" />
 
                   {/* ── Top Pill Badge (e.g. URBANRAT PRO) ── */}
                   <div
@@ -355,30 +435,30 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                       isCenter ? "opacity-100" : "opacity-40"
                     }`}
                   >
-                    <span className="inline-flex items-center px-3 py-1 rounded-xl bg-black/60 dark:bg-black/75 backdrop-blur-md border border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white shadow-sm">
+                    <span className="inline-flex items-center px-3 py-1 rounded-xl bg-white/90 dark:bg-black/75 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-white shadow-sm">
                       {card.badge}
                     </span>
                   </div>
 
                   {/* ── Floating Frosted Glass Bottom Pill Card (Only on front card) ── */}
                   <div
-                    className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-[#0F172A]/92 dark:bg-[#070B12]/94 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-2.5 transition-opacity duration-300 ${
+                    className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-white/95 dark:bg-[#070B12]/94 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-2xl p-3 sm:p-3.5 shadow-xl dark:shadow-2xl flex items-center justify-between gap-2.5 transition-all duration-300 ${
                       isCenter ? "opacity-100" : "opacity-0 pointer-events-none"
                     }`}
                   >
                     {/* Left Metadata: Title, Star Rating, Subtitle */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center space-x-1.5">
-                        <h3 className="font-black text-xs sm:text-sm text-white truncate tracking-tight">
+                        <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate tracking-tight">
                           {card.title}
                         </h3>
-                        <div className="flex items-center space-x-0.5 text-amber-400 font-black text-[11px] shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        <div className="flex items-center space-x-0.5 text-amber-500 dark:text-amber-400 font-black text-[11px] shrink-0">
+                          <Star className="w-3.5 h-3.5 fill-amber-500 dark:fill-amber-400 text-amber-500 dark:text-amber-400" />
                           <span>{card.rating}</span>
                         </div>
                       </div>
 
-                      <p className="text-[10px] sm:text-[11px] font-medium text-slate-300 dark:text-slate-400 truncate mt-0.5">
+                      <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
                         {card.subtitle}
                       </p>
                     </div>
