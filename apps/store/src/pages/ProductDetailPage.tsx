@@ -102,53 +102,76 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedStarFilter, setSelectedStarFilter] = useState<number | null>(null);
 
-  // Derived ratings breakdown for the "Our Customer Reviews" card
-  const totalRatingsCount =
-    reviews.length > 0
-      ? reviews.length
-      : product?.rating_count && product.rating_count > 0
-      ? product.rating_count
-      : 46;
+  // Derived ratings breakdown strictly based on real customer reviews
+  const totalRatingsCount = useMemo(() => {
+    if (reviews.length > 0) return reviews.length;
+    if (product?.rating_count && product.rating_count > 0) return product.rating_count;
+    return 0;
+  }, [reviews, product?.rating_count]);
 
-  const avgScore =
-    reviews.length > 0
-      ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
-      : product?.rating_avg && product.rating_avg > 0
-      ? Number(product.rating_avg).toFixed(1)
-      : "4.3";
+  const numericAvgScore = useMemo(() => {
+    if (reviews.length > 0) {
+      const sum = reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
+      return Math.round((sum / reviews.length) * 10) / 10;
+    }
+    if (product?.rating_avg && Number(product.rating_avg) > 0) {
+      return Math.round(Number(product.rating_avg) * 10) / 10;
+    }
+    return 0;
+  }, [reviews, product?.rating_avg]);
+
+  const avgScore = numericAvgScore > 0 ? numericAvgScore.toFixed(1) : "0.0";
 
   const ratingBreakdown = useMemo(() => {
-    if (reviews.length > 0) {
-      const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      for (const r of reviews) {
-        if (r.rating in counts) {
-          counts[r.rating] = (counts[r.rating] || 0) + 1;
-        }
+    const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    for (const r of reviews) {
+      const star = Number(r.rating);
+      if (star in counts) {
+        counts[star] = (counts[star] || 0) + 1;
       }
-      return [
-        { label: "FIVE", count: counts[5] || 0, pct: Math.round(((counts[5] || 0) / reviews.length) * 100) },
-        { label: "FOUR", count: counts[4] || 0, pct: Math.round(((counts[4] || 0) / reviews.length) * 100) },
-        { label: "THREE", count: counts[3] || 0, pct: Math.round(((counts[3] || 0) / reviews.length) * 100) },
-        { label: "TWO", count: counts[2] || 0, pct: Math.round(((counts[2] || 0) / reviews.length) * 100) },
-        { label: "ONE", count: counts[1] || 0, pct: Math.round(((counts[1] || 0) / reviews.length) * 100) },
-      ];
     }
-    // Proportional breakdown matching reference design
-    const total = totalRatingsCount;
-    const c5 = Math.round(total * 0.65);
-    const c4 = Math.round(total * 0.25);
-    const c3 = Math.round(total * 0.06);
-    const c2 = Math.round(total * 0.03);
-    const c1 = Math.max(0, total - c5 - c4 - c3 - c2);
+
+    const total = reviews.length;
     return [
-      { label: "FIVE", count: c5, pct: Math.round((c5 / total) * 100) },
-      { label: "FOUR", count: c4, pct: Math.round((c4 / total) * 100) },
-      { label: "THREE", count: c3, pct: Math.round((c3 / total) * 100) },
-      { label: "TWO", count: c2, pct: Math.round((c2 / total) * 100) },
-      { label: "ONE", count: c1, pct: Math.round((c1 / total) * 100) },
+      {
+        star: 5,
+        label: "FIVE",
+        count: counts[5] || 0,
+        pct: total > 0 ? Math.round(((counts[5] || 0) / total) * 100) : 0,
+      },
+      {
+        star: 4,
+        label: "FOUR",
+        count: counts[4] || 0,
+        pct: total > 0 ? Math.round(((counts[4] || 0) / total) * 100) : 0,
+      },
+      {
+        star: 3,
+        label: "THREE",
+        count: counts[3] || 0,
+        pct: total > 0 ? Math.round(((counts[3] || 0) / total) * 100) : 0,
+      },
+      {
+        star: 2,
+        label: "TWO",
+        count: counts[2] || 0,
+        pct: total > 0 ? Math.round(((counts[2] || 0) / total) * 100) : 0,
+      },
+      {
+        star: 1,
+        label: "ONE",
+        count: counts[1] || 0,
+        pct: total > 0 ? Math.round(((counts[1] || 0) / total) * 100) : 0,
+      },
     ];
-  }, [reviews, totalRatingsCount]);
+  }, [reviews]);
+
+  const displayedReviews = useMemo(() => {
+    if (selectedStarFilter === null) return reviews;
+    return reviews.filter((r) => r.rating === selectedStarFilter);
+  }, [reviews, selectedStarFilter]);
 
   // Swipe support for mobile gallery
   const touchStartX = useRef<number | null>(null);
@@ -321,12 +344,15 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     setSubmittingReview(true);
     setReviewError(null);
     try {
-      await submitReview({
+      const newReview = await submitReview({
         productId: product.id,
         rating: reviewRating,
         title: reviewTitle.trim() || undefined,
         body: reviewBody.trim() || undefined,
       });
+      if (newReview) {
+        setReviews((prev) => [newReview, ...prev]);
+      }
       setReviewSuccess(true);
       setReviewTitle("");
       setReviewBody("");
@@ -465,27 +491,27 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               </span>
             </div>
 
-            {/* Rating Stars (Only shown if rating_count > 0) */}
-            {Boolean(product.rating_count && product.rating_count > 0) && (
+            {/* Rating Stars (Strictly driven by actual customer reviews) */}
+            {totalRatingsCount > 0 && (
               <div className="flex items-center space-x-2 mb-1.5">
                 <div className="flex items-center text-amber-400">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
                       className={`w-3.5 h-3.5 ${
-                        i < Math.round(Number(product.rating_avg) || 0)
+                        i < Math.round(numericAvgScore)
                           ? "fill-amber-400 text-amber-400"
-                          : "text-slate-200"
+                          : "text-slate-200 dark:text-slate-700"
                       }`}
                     />
                   ))}
                 </div>
-                <span className="text-xs font-black text-slate-800">
-                  {Number(product.rating_avg).toFixed(1)}
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                  {avgScore}
                 </span>
-                <span className="text-xs text-slate-400">
-                  ({product.rating_count}{" "}
-                  {product.rating_count === 1 ? "review" : "reviews"})
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  ({totalRatingsCount}{" "}
+                  {totalRatingsCount === 1 ? "review" : "reviews"})
                 </span>
               </div>
             )}
@@ -1031,90 +1057,171 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
               {/* Right Column (lg:col-span-6 xl:col-span-6): "Our Customer Reviews" Rating Breakdown Card */}
               <div className="lg:col-span-6 xl:col-span-6 bg-white dark:bg-slate-900/90 rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5 transition-colors">
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white text-center tracking-tight">
-                  Our Customer Reviews
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    Our Customer Reviews
+                  </h3>
+                  {selectedStarFilter !== null && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStarFilter(null)}
+                      className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Show All
+                    </button>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
                   {/* Left: Star breakdown bars (FIVE, FOUR, THREE, TWO, ONE) */}
-                  <div className="sm:col-span-7 space-y-2.5">
-                    {ratingBreakdown.map((row) => (
-                      <div key={row.label} className="flex items-center space-x-2 text-xs">
-                        <span className="w-12 text-[11px] font-bold text-slate-700 dark:text-slate-300 tracking-wide uppercase">
-                          {row.label}
-                        </span>
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                        <div className="flex-1 h-2 sm:h-2.5 rounded-full bg-amber-100/60 dark:bg-slate-800 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-linear-to-r from-amber-400 to-amber-500 transition-all duration-500"
-                            style={{ width: `${row.pct}%` }}
-                          />
-                        </div>
-                        <span className="w-9 text-right text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                          {formatCount(row.count)}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="sm:col-span-7 space-y-2">
+                    {ratingBreakdown.map((row) => {
+                      const isFilterActive = selectedStarFilter === row.star;
+                      const hasReviews = row.count > 0;
+                      return (
+                        <button
+                          key={row.label}
+                          type="button"
+                          disabled={!hasReviews}
+                          onClick={() => {
+                            if (hasReviews) {
+                              triggerHaptic("selection");
+                              setSelectedStarFilter((prev) => (prev === row.star ? null : row.star));
+                            }
+                          }}
+                          className={`w-full flex items-center space-x-2 text-xs py-1 px-1.5 rounded-lg transition-all text-left ${
+                            isFilterActive
+                              ? "bg-amber-100/70 dark:bg-amber-950/50 ring-1 ring-amber-400 font-bold"
+                              : hasReviews
+                              ? "hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer"
+                              : "opacity-60 cursor-default"
+                          }`}
+                          title={
+                            hasReviews
+                              ? `Filter to ${row.count} ${row.label.toLowerCase()}-star review${row.count > 1 ? "s" : ""}`
+                              : `No ${row.label.toLowerCase()}-star reviews yet`
+                          }
+                        >
+                          <span className="w-12 text-[11px] font-bold text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                            {row.label}
+                          </span>
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                          <div className="flex-1 h-2 sm:h-2.5 rounded-full bg-amber-100/60 dark:bg-slate-800 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-linear-to-r from-amber-400 to-amber-500 transition-all duration-500"
+                              style={{ width: `${row.pct}%` }}
+                            />
+                          </div>
+                          <span className="w-9 text-right text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                            {formatCount(row.count)}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  {/* Right: Highlight card with Big Score (e.g. 4.3), 5 Stars, and "{count} Ratings" */}
+                  {/* Right: Highlight card with Big Score (Strictly derived from customer reviews), Dynamic Stars, and "{count} Ratings" */}
                   <div className="sm:col-span-5 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-2xl p-5 text-center flex flex-col items-center justify-center shadow-2xs">
                     <span className="text-3xl sm:text-4xl font-black text-amber-500 dark:text-amber-400 tracking-tight leading-none">
                       {avgScore}
                     </span>
                     <div className="flex items-center space-x-1 my-2">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
-                      ))}
+                      {[1, 2, 3, 4, 5].map((i) => {
+                        const isFilled = i <= Math.round(numericAvgScore);
+                        return (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
+                              isFilled
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-slate-200 dark:text-slate-700"
+                            }`}
+                          />
+                        );
+                      })}
                     </div>
                     <span className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
-                      {formatCount(totalRatingsCount)} Ratings
+                      {totalRatingsCount > 0
+                        ? `${formatCount(totalRatingsCount)} ${totalRatingsCount === 1 ? "Rating" : "Ratings"}`
+                        : "No Ratings Yet"}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* If there are approved reviews, display them beneath the 2-column studio */}
+            {/* If there are reviews, display them beneath the 2-column studio */}
             {reviews.length > 0 && (
               <div className="pt-2 space-y-3">
-                <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                  Previous Verified Reviews ({reviews.length})
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {reviews.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-amber-400">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3.5 h-3.5 ${
-                                i < rev.rating
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "text-slate-200 dark:text-slate-700"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          {new Date(rev.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {rev.title && (
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
-                      )}
-                      {rev.body && (
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                          {rev.body}
-                        </p>
-                      )}
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                    Previous Verified Reviews ({reviews.length})
+                  </h4>
+                  {selectedStarFilter !== null && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                        Showing {selectedStarFilter}★ reviews ({displayedReviews.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStarFilter(null)}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
                     </div>
-                  ))}
+                  )}
                 </div>
+
+                {displayedReviews.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {displayedReviews.map((rev) => (
+                      <div
+                        key={rev.id}
+                        className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-amber-400">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${
+                                  i < rev.rating
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-slate-200 dark:text-slate-700"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                            {new Date(rev.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {rev.title && (
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
+                        )}
+                        {rev.body && (
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                            {rev.body}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-center space-y-2 border border-slate-200/60 dark:border-slate-800">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      No reviews found with {selectedStarFilter} stars.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStarFilter(null)}
+                      className="text-xs font-bold text-orange-500 hover:underline cursor-pointer"
+                    >
+                      Show All Reviews
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
