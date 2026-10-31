@@ -815,7 +815,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
         {/* Approved Reviews List */}
         {reviews.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl">
             {reviews.map((rev) => (
               <div
                 key={rev.id}
@@ -850,63 +850,76 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400 shadow-xs transition-colors">
+          <div className="max-w-xl bg-slate-50/70 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 dark:text-slate-500 transition-colors">
             No approved reviews yet. Verified buyers can submit feedback below!
           </div>
         )}
 
         {/* Write a Review Section */}
-        <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-3 transition-colors">
-          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">
-            Write a Wholesale Review
-          </h3>
+        <div className="max-w-xl bg-white dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3 transition-colors">
+          {/* Header with Title on Left and Compact Star Rating Capsule on Right */}
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight">
+                Write a Wholesale Review
+              </h3>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Share quality, packaging & margin feedback
+              </p>
+            </div>
+
+            {currentUser && !reviewSuccess && (
+              <div className="flex items-center space-x-0.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/70 dark:border-slate-700/60 shadow-2xs shrink-0">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("selection");
+                      setReviewRating(star);
+                    }}
+                    className="p-0.5 cursor-pointer hover:scale-115 active:scale-90 transition-transform"
+                    title={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                  >
+                    <Star
+                      className={`w-3.5 h-3.5 ${
+                        star <= reviewRating
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-slate-300 dark:text-slate-600 hover:text-amber-300 transition-colors"
+                      }`}
+                    />
+                  </button>
+                ))}
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 ml-1">
+                  {reviewRating}.0
+                </span>
+              </div>
+            )}
+          </div>
 
           {currentUser ? (
             reviewSuccess ? (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-semibold flex items-center space-x-2">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>
-                  Thank you! Your review has been submitted and will appear once approved by moderation.
+                  Thank you! Your wholesale review has been submitted for moderation.
                 </span>
               </div>
             ) : (
-              <form onSubmit={handleReviewSubmit} className="space-y-3">
+              <form onSubmit={handleReviewSubmit} className="space-y-2.5">
                 {reviewError && (
                   <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
                     {reviewError}
                   </p>
                 )}
 
-                {/* Rating Stars Input */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Rating:</span>
-                  <div className="flex items-center space-x-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        className="p-1 cursor-pointer focus:outline-none"
-                      >
-                        <Star
-                          className={`w-5 h-5 ${
-                            star <= reviewRating
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-slate-300 dark:text-slate-700 hover:text-amber-300 transition-colors"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div>
                   <input
                     type="text"
                     value={reviewTitle}
                     onChange={(e) => setReviewTitle(e.target.value)}
-                    placeholder="Review headline (optional)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-brand-light dark:focus:ring-orange-500/50 dark:focus:border-orange-500 focus:outline-none transition-colors"
+                    placeholder="Review headline e.g. Solid build & premium packaging (optional)"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all"
                   />
                 </div>
 
@@ -914,32 +927,31 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   <textarea
                     value={reviewBody}
                     onChange={(e) => setReviewBody(e.target.value)}
-                    rows={3}
+                    rows={2}
                     placeholder="Share your experience regarding build quality, margins, or packaging..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-brand-light dark:focus:ring-orange-500/50 dark:focus:border-orange-500 focus:outline-none resize-none transition-colors"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none resize-none transition-all"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={submittingReview}
-                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-sm hover:shadow-md active:scale-95 transition disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-                  style={{
-                    background: "var(--brand-gradient, linear-gradient(to bottom, #5ADBE5, #0A82A8))",
-                    boxShadow: "var(--brand-shadow, 0 4px 14px rgba(30, 175, 199, 0.25))",
-                  }}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>
-                    {submittingReview ? "Submitting..." : "Submit Review"}
+                <div className="flex items-center justify-between pt-0.5">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
+                    Verified wholesale trade review
                   </span>
-                </button>
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center space-x-1.5 ml-auto sm:ml-0 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>{submittingReview ? "Submitting..." : "Submit Review"}</span>
+                  </button>
+                </div>
               </form>
             )
           ) : (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 pt-0.5">
               Please{" "}
-              <Link to="/menu" className="font-bold text-brand-dark dark:text-orange-400 underline">
+              <Link to="/menu" className="font-bold text-orange-500 dark:text-orange-400 hover:underline">
                 sign in to your customer account
               </Link>{" "}
               to write a review.
