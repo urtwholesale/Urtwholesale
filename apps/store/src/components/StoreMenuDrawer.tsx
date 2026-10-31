@@ -545,29 +545,6 @@ export function StoreMenuDrawer({
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
                   </button>
-
-                  {/* Merchant Admin Portal */}
-                  <a
-                    href={import.meta.env.PROD ? "/admin" : "http://localhost:5174"}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center">
-                        <ExternalLink className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                          Merchant Admin Portal
-                        </span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          Inventory, orders &amp; settings
-                        </span>
-                      </div>
-                    </div>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-300 dark:text-slate-500" />
-                  </a>
                 </div>
 
                 {/* ── Quick Store Policies Strip ── */}

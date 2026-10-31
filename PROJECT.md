@@ -1107,5 +1107,16 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - Full TypeScript & Vite build passing (`npm run build:store`).
   - Full automated Vitest test suite passing (204 tests across 13 suites).
 
+---
+
+### Touchpoint 23 — Removal of Merchant Admin Link from Customer Storefront Menu
+
+- **Storefront Privacy & Isolation (`StoreMenuDrawer.tsx`)**:
+  - **The Problem**: The customer-facing menu drawer displayed a prominent `"Merchant Admin Portal (Inventory, orders & settings)"` shortcut leading to the backend admin interface (`/admin` or `localhost:5174`). Public storefront visitors should never see administrative merchant links.
+  - **The Fix**: Completely removed the admin portal entry and external navigation link from the customer menu drawer, preserving an uncompromised customer-facing browsing experience while maintaining full access to store policies, terms, account details, and support channels.
+- **Verification**:
+  - TypeScript & Vite build passing (`npm run build:store`).
+  - 204 Vitest unit and integration tests passing across 13 suites.
+
 
 
