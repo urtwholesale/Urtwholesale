@@ -1446,6 +1446,37 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
+### Touchpoint 41 — Dedicated Home Page Bestsellers Curation & Catalog Management
+
+- **Admin Home Bestsellers Curation Suite (`ContentEditor.tsx`, `ProductList.tsx`, `ProductEditor.tsx`, `adminService.ts`, `HomePage.tsx`, `MarketplacePage.tsx`)**:
+  - **The Requirement**: Provide merchants with a comprehensive, frictionless way to choose and manage which products appear in the "Bestsellers" section on the storefront homepage (from user request "Add an option in the admin panel to choose pass sellers on the home page").
+  - **The Implementation**:
+    1. **Dedicated Storefront Content Management View (`ContentEditor.tsx`)**:
+       - Added a **"Home Bestsellers"** sub-tab in the Admin Content Hub alongside Banners, Store Pages, Searches, and Image Compressor.
+       - Integrated an autocomplete search input with debounced querying to search any catalog product by title or SKU.
+       - Built a quick-add search results dropdown displaying image thumbnails, SKUs, wholesale pricing, brand indicators, and 1-click **"+ Add to Bestsellers"** buttons with loading states.
+       - Created a responsive active bestsellers showcase grid displaying rank badges (`#1`, `#2`, `#3`...), product photos, wholesale pricing, volume tiers count, and 1-click **"Remove from Bestsellers"** buttons with instant local state updates and toast notifications.
+       - Added live "Preview Storefront" link opening the homepage directly.
+    2. **1-Click Bestseller Promotion in Products Table (`ProductList.tsx`)**:
+       - Added a **"Bestsellers"** filter checkbox in the toolbar alongside "Urbanrat Only" and "Low Stock", with URL state sync (`?bestseller=1`).
+       - Added 1-click **Star action buttons** on every desktop table row and mobile product card to instantly toggle any product's bestseller status without entering full edit mode.
+       - Added golden **"Bestseller" star badges** next to product titles across both desktop and mobile views.
+    3. **Product Editor Form Alignment (`ProductEditor.tsx`)**:
+       - Redesigned the featured checkbox into an amber-highlighted card with star icon: **"Home Bestseller (Featured)"** and subtitle explaining that it showcases the product in the homepage Bestsellers slider.
+    4. **Service & Query Layer (`adminService.ts`, `@urbanrat/shared`)**:
+       - Added `isFeatured?: boolean` to `ProductListFilters` in `@urbanrat/shared`.
+       - Exported `fetchBestsellerProducts()`, `toggleProductBestseller()`, and `searchProductsForBestseller()`.
+       - Updated `fetchProductsPage` and `fetchProductIdsForFilter` in `adminService.ts` to seamlessly handle `filters.isFeatured`.
+    5. **Storefront Homepage & Marketplace Flow (`HomePage.tsx`, `MarketplacePage.tsx`)**:
+       - Increased homepage bestseller limit to 24 items so all curated bestsellers are dynamically included in the slider.
+       - Updated the "See more ->" header link on the homepage Bestsellers slider to navigate to `/marketplace?bestseller=1`.
+       - Enabled `MarketplacePage.tsx` to read `?bestseller=1`, pass `isFeatured: true`, and render an active **"🏆 Bestsellers"** filter chip with 1-click clear.
+  - **Verification**:
+    - Full monorepo production build passing (`npm run build`, 0 errors).
+    - 207 Vitest tests passing across all 13 test suites (100% pass rate).
+
+
+
 
 
 

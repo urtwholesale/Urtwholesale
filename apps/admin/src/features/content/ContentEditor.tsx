@@ -12,9 +12,12 @@ import {
   fetchTopZeroResultSearches,
   addSearchSynonym,
   refreshSearchVocabulary,
+  fetchBestsellerProducts,
+  toggleProductBestseller,
+  searchProductsForBestseller,
   type ZeroResultSearchRecord,
 } from "../../lib/adminService";
-import type { Banner, StorePage } from "@urbanrat/shared";
+import type { Banner, StorePage, Product } from "@urbanrat/shared";
 import {
   Image as ImageIcon,
   FileText,
@@ -30,11 +33,13 @@ import {
   RefreshCw,
   Sparkles,
   Star,
+  Award,
+  X,
 } from "lucide-react";
 import { ImageCompressorTool } from "./ImageCompressorTool";
 
 export function ContentEditor() {
-  const [subTab, setSubTab] = useState<"banners" | "pages" | "searches" | "compressor">("banners");
+  const [subTab, setSubTab] = useState<"banners" | "pages" | "searches" | "compressor" | "bestsellers">("banners");
 
   // 1. Banners state
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -63,6 +68,14 @@ export function ContentEditor() {
   const [synonymInput, setSynonymInput] = useState<string>("");
   const [savingSynonym, setSavingSynonym] = useState(false);
 
+  // 5. Home Bestsellers Curation state
+  const [bestsellers, setBestsellers] = useState<Product[]>([]);
+  const [loadingBestsellers, setLoadingBestsellers] = useState(false);
+  const [bestsellerSearchQuery, setBestsellerSearchQuery] = useState("");
+  const [bestsellerSearchResults, setBestsellerSearchResults] = useState<Product[]>([]);
+  const [isSearchingBestsellers, setIsSearchingBestsellers] = useState(false);
+  const [togglingBestsellerId, setTogglingBestsellerId] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,19 +85,33 @@ export function ContentEditor() {
     setTimeout(() => setToastMessage(null), 3000);
   }
 
+  const loadBestsellers = useCallback(async () => {
+    setLoadingBestsellers(true);
+    try {
+      const data = await fetchBestsellerProducts();
+      setBestsellers(data);
+    } catch (err: any) {
+      console.warn("Failed to load bestsellers:", err);
+    } finally {
+      setLoadingBestsellers(false);
+    }
+  }, []);
+
   const loadAllContent = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [bannersData, pagesData, settingsData] = await Promise.all([
+      const [bannersData, pagesData, settingsData, bestsellersData] = await Promise.all([
         fetchBanners(),
         fetchStorePages(),
         fetchStoreSettings(),
+        fetchBestsellerProducts().catch(() => [] as Product[]),
       ]);
 
       setBanners(bannersData);
       setPages(pagesData);
       setPopularSearches(settingsData.popular_searches || []);
+      setBestsellers(bestsellersData);
     } catch (err: any) {
       console.error("Failed to load content management data:", err);
       setError(err?.message || "Failed to load content records.");
@@ -96,6 +123,55 @@ export function ContentEditor() {
   useEffect(() => {
     loadAllContent();
   }, [loadAllContent]);
+
+  // Debounced search for products to add to bestsellers
+  useEffect(() => {
+    if (!bestsellerSearchQuery.trim()) {
+      setBestsellerSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingBestsellers(true);
+      try {
+        const exclude = bestsellers.map((b) => b.id);
+        const results = await searchProductsForBestseller(bestsellerSearchQuery, exclude);
+        setBestsellerSearchResults(results);
+      } catch (err) {
+        console.warn("Error searching products for bestsellers:", err);
+      } finally {
+        setIsSearchingBestsellers(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [bestsellerSearchQuery, bestsellers]);
+
+  async function handleAddBestseller(product: Product) {
+    setTogglingBestsellerId(product.id);
+    try {
+      await toggleProductBestseller(product.id, true);
+      const updated = { ...product, is_featured: true };
+      setBestsellers((prev) => [updated, ...prev]);
+      setBestsellerSearchResults((prev) => prev.filter((p) => p.id !== product.id));
+      showToast(`Added "${product.name}" to Home Bestsellers!`);
+    } catch (err: any) {
+      setError(err?.message || "Failed to add product to bestsellers.");
+    } finally {
+      setTogglingBestsellerId(null);
+    }
+  }
+
+  async function handleRemoveBestseller(product: Product) {
+    setTogglingBestsellerId(product.id);
+    try {
+      await toggleProductBestseller(product.id, false);
+      setBestsellers((prev) => prev.filter((p) => p.id !== product.id));
+      showToast(`Removed "${product.name}" from Home Bestsellers.`);
+    } catch (err: any) {
+      setError(err?.message || "Failed to remove product from bestsellers.");
+    } finally {
+      setTogglingBestsellerId(null);
+    }
+  }
 
   // Banner modification
   function handleBannerChange(id: string, field: keyof Banner, val: any) {
@@ -385,6 +461,19 @@ export function ContentEditor() {
           >
             <Zap className="w-3.5 h-3.5" />
             <span>Image Compressor Tool</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab("bestsellers")}
+            className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              subTab === "bestsellers"
+                ? "bg-amber-500 text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>Home Bestsellers ({bestsellers.length})</span>
           </button>
         </div>
       </div>
@@ -1060,6 +1149,279 @@ export function ContentEditor() {
               SUB-TAB 4: IMAGE COMPRESSOR & OPTIMIZER TOOL
              ══════════════════════════════════════════════════════════════════ */}
           {subTab === "compressor" && <ImageCompressorTool />}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              SUB-TAB 5: HOME BESTSELLERS CURATION
+             ══════════════════════════════════════════════════════════════════ */}
+          {subTab === "bestsellers" && (
+            <div className="space-y-6">
+              {/* Header Box */}
+              <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 rounded-3xl border border-amber-200/60 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start space-x-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/20">
+                      <Award className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                          Home Page Bestsellers Showcase
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-200">
+                          {bestsellers.length} Curated
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Curate the high-margin products displayed in the &ldquo;Bestsellers&rdquo; slider on your storefront homepage. Products selected here instantly appear on the home page.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={loadBestsellers}
+                      disabled={loadingBestsellers}
+                      className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+                      title="Refresh bestsellers list"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loadingBestsellers ? "animate-spin" : ""}`} />
+                      <span className="hidden sm:inline">Refresh</span>
+                    </button>
+                    <a
+                      href="/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-sm shadow-amber-500/20"
+                    >
+                      <span>Preview Storefront</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Autocomplete Search to Add Products */}
+                <div className="relative pt-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Search &amp; Add Products to Bestsellers
+                  </label>
+                  <div className="relative flex items-center">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={bestsellerSearchQuery}
+                      onChange={(e) => setBestsellerSearchQuery(e.target.value)}
+                      placeholder="Type product name, model, or SKU to search and add (e.g. Type-C, Earphones, Glass)..."
+                      className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-white border border-amber-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs"
+                    />
+                    {bestsellerSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setBestsellerSearchQuery("")}
+                        className="absolute right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Autocomplete Results Panel */}
+                  {bestsellerSearchQuery.trim() && (
+                    <div className="mt-2 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden z-20 max-h-80 overflow-y-auto">
+                      {isSearchingBestsellers ? (
+                        <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                          <span>Searching catalog products...</span>
+                        </div>
+                      ) : bestsellerSearchResults.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-400">
+                          No matching un-featured products found for &ldquo;{bestsellerSearchQuery}&rdquo;
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          <div className="px-3 py-1.5 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            Found {bestsellerSearchResults.length} Catalog Matches
+                          </div>
+                          {bestsellerSearchResults.map((prod) => {
+                            const isAdding = togglingBestsellerId === prod.id;
+                            const imgUrl = prod.images?.[0] || "/placeholder.png";
+                            return (
+                              <div
+                                key={prod.id}
+                                className="p-3 flex items-center justify-between hover:bg-amber-50/40 transition gap-3"
+                              >
+                                <div className="flex items-center space-x-3 min-w-0">
+                                  <img
+                                    src={imgUrl}
+                                    alt={prod.name}
+                                    className="w-10 h-10 rounded-xl object-cover bg-slate-100 border border-slate-200 shrink-0"
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = "/placeholder.png";
+                                    }}
+                                  />
+                                  <div className="min-w-0">
+                                    <h4 className="text-xs font-bold text-slate-800 truncate">
+                                      {prod.name}
+                                    </h4>
+                                    <div className="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
+                                      <span className="font-mono text-slate-600 font-semibold">{prod.sku || "NO-SKU"}</span>
+                                      <span>•</span>
+                                      <span className="text-emerald-600 font-bold">₹{prod.price}</span>
+                                      {prod.is_urbanrat_brand && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-brand-dark font-semibold">Urbanrat</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddBestseller(prod)}
+                                  disabled={isAdding}
+                                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center space-x-1 shrink-0 cursor-pointer disabled:opacity-50 shadow-xs"
+                                >
+                                  {isAdding ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Adding...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Add to Bestsellers</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Curated Bestsellers Grid */}
+              <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                      Active Home Bestsellers ({bestsellers.length})
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      These products are rendered in order inside the Home Page Bestsellers slider
+                    </p>
+                  </div>
+                </div>
+
+                {loadingBestsellers ? (
+                  <div className="p-12 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                    <span>Loading curated bestsellers...</span>
+                  </div>
+                ) : bestsellers.length === 0 ? (
+                  <div className="p-12 text-center rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+                      <Star className="w-6 h-6 fill-amber-400 text-amber-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800">No Bestsellers Curated Yet</h4>
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                        Use the search bar above or the star icon in the Products table to choose products for the Home Page Bestsellers section.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {bestsellers.map((prod, index) => {
+                      const isRemoving = togglingBestsellerId === prod.id;
+                      const imgUrl = prod.images?.[0] || "/placeholder.png";
+                      return (
+                        <div
+                          key={prod.id}
+                          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 flex flex-col justify-between hover:shadow-md transition group"
+                        >
+                          <div>
+                            {/* Top badge bar */}
+                            <div className="flex items-center justify-between mb-2.5">
+                              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-amber-100 text-amber-800 border border-amber-200">
+                                <Award className="w-3 h-3 text-amber-600" />
+                                <span>#{index + 1} Bestseller</span>
+                              </span>
+                              {prod.is_urbanrat_brand && (
+                                <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
+                                  Urbanrat
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Image & Title */}
+                            <div className="aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2.5 border border-slate-100">
+                              <img
+                                src={imgUrl}
+                                alt={prod.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = "/placeholder.png";
+                                }}
+                              />
+                            </div>
+
+                            <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug mb-1">
+                              {prod.name}
+                            </h4>
+                            <p className="text-[11px] font-mono text-slate-400 mb-2">
+                              {prod.sku || "NO-SKU"}
+                            </p>
+
+                            <div className="flex items-baseline space-x-2 mb-3">
+                              <span className="text-sm font-black text-slate-900">
+                                ₹{prod.price}
+                              </span>
+                              {prod.mrp && prod.mrp > prod.price && (
+                                <span className="text-[11px] text-slate-400 line-through">
+                                  ₹{prod.mrp}
+                                </span>
+                              )}
+                              {prod.price_tiers && prod.price_tiers.length > 0 && (
+                                <span className="text-[10px] font-semibold text-brand-dark bg-brand-light/20 px-1.5 py-0.5 rounded">
+                                  {prod.price_tiers.length} Tiers
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBestseller(prod)}
+                            disabled={isRemoving}
+                            className="w-full py-2 px-3 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            {isRemoving ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Removing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove from Bestsellers</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

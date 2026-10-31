@@ -83,7 +83,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       // Parallelize fetching curated collections
       const [featuredRes, arrivalsProducts, cablesRes, speakersRes, banners] =
         await Promise.all([
-          fetchProducts({ isFeatured: true, limit: 12 }),
+          fetchProducts({ isFeatured: true, limit: 24 }),
           fetchNewArrivalsAcrossCategories(cats, 2, 24),
           cableCat
             ? fetchProducts({ categoryId: cableCat.id, limit: 12 })
@@ -259,7 +259,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
         badgeTag="🏆 #1 Bestseller"
         icon={<Award className="w-4 h-4 stroke-[2.2]" />}
         products={featuredProducts}
-        seeMoreUrl="/marketplace?sort=price_desc"
+        seeMoreUrl="/marketplace?bestseller=1"
         themeColor="amber"
         onAddToCart={onAddToCart}
         isLoading={loading}

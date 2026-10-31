@@ -369,119 +369,128 @@ export async function fetchProductsPage(
   const pageSize = Math.max(1, filters.pageSize || 25);
   const offset = (page - 1) * pageSize;
 
-  try {
-    const { data, error } = await supabase.rpc("admin_list_products", {
-      p_category_id: filters.categoryId || null,
-      p_include_descendants: filters.includeDescendants !== false,
-      p_uncategorized_only: Boolean(filters.uncategorizedOnly),
-      p_search: filters.search?.trim() || null,
-      p_urbanrat_only: Boolean(filters.isUrbanrat),
-      p_low_stock_only: Boolean(filters.lowStock),
-      p_status: filters.status || "all",
-      p_sort: filters.sort || "updated_at_desc",
-      p_limit: pageSize,
-      p_offset: offset,
-    });
+  // If not filtering by isFeatured, attempt fast RPC first
+  if (filters.isFeatured === undefined) {
+    try {
+      const { data, error } = await supabase.rpc("admin_list_products", {
+        p_category_id: filters.categoryId || null,
+        p_include_descendants: filters.includeDescendants !== false,
+        p_uncategorized_only: Boolean(filters.uncategorizedOnly),
+        p_search: filters.search?.trim() || null,
+        p_urbanrat_only: Boolean(filters.isUrbanrat),
+        p_low_stock_only: Boolean(filters.lowStock),
+        p_status: filters.status || "all",
+        p_sort: filters.sort || "updated_at_desc",
+        p_limit: pageSize,
+        p_offset: offset,
+      });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    const rows = (data || []) as any[];
-    const totalCount = rows.length > 0 ? Number(rows[0].total_count || 0) : 0;
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+      const rows = (data || []) as any[];
+      const totalCount = rows.length > 0 ? Number(rows[0].total_count || 0) : 0;
+      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-    const products = rows.map((p) => ({
-      ...p,
-      price_tiers: Array.isArray(p.price_tiers)
-        ? p.price_tiers.sort((a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty)
-        : [],
-    })) as Product[];
+      const products = rows.map((p) => ({
+        ...p,
+        price_tiers: Array.isArray(p.price_tiers)
+          ? p.price_tiers.sort((a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty)
+          : [],
+      })) as Product[];
 
-    return {
-      products,
-      totalCount,
-      page,
-      pageSize,
-      totalPages,
-    };
-  } catch (err) {
-    console.warn("admin_list_products RPC failed, falling back to direct table query:", err);
-    let query = supabase
-      .from("products")
-      .select("*, price_tiers:product_price_tiers(*)", { count: "exact" });
-
-    // Category filter: support categoryIds array or auto-resolve descendants
-    let matchedCategoryIds: string[] | null = null;
-    if (filters.categoryIds && filters.categoryIds.length > 0) {
-      matchedCategoryIds = filters.categoryIds;
-    } else if (filters.categoryId) {
-      if (filters.includeDescendants !== false) {
-        matchedCategoryIds = await getCategoryAndDescendantIdsForAdmin(filters.categoryId);
-      } else {
-        matchedCategoryIds = [filters.categoryId];
-      }
+      return {
+        products,
+        totalCount,
+        page,
+        pageSize,
+        totalPages,
+      };
+    } catch (err) {
+      console.warn("admin_list_products RPC failed, falling back to direct table query:", err);
     }
-
-    if (filters.uncategorizedOnly) {
-      query = query.is("category_id", null);
-    } else if (matchedCategoryIds && matchedCategoryIds.length > 0) {
-      if (matchedCategoryIds.length === 1) {
-        query = query.eq("category_id", matchedCategoryIds[0]);
-      } else {
-        query = query.in("category_id", matchedCategoryIds);
-      }
-    } else if (filters.categoryId) {
-      query = query.eq("category_id", filters.categoryId);
-    }
-
-    if (filters.search?.trim()) {
-      query = query.ilike("name", `%${filters.search.trim()}%`);
-    }
-
-    if (filters.isUrbanrat !== undefined) {
-      query = query.eq("is_urbanrat_brand", filters.isUrbanrat);
-    }
-
-    if (filters.status === "active") {
-      query = query.eq("is_active", true);
-    } else if (filters.status === "inactive") {
-      query = query.eq("is_active", false);
-    }
-
-    if (filters.sort === "name_asc") query = query.order("name", { ascending: true });
-    else if (filters.sort === "name_desc") query = query.order("name", { ascending: false });
-    else if (filters.sort === "price_asc") query = query.order("price", { ascending: true });
-    else if (filters.sort === "price_desc") query = query.order("price", { ascending: false });
-    else if (filters.sort === "stock_asc") query = query.order("stock", { ascending: true });
-    else if (filters.sort === "stock_desc") query = query.order("stock", { ascending: false });
-    else query = query.order("updated_at", { ascending: false });
-
-    query = query.range(offset, offset + pageSize - 1);
-
-    const { data, count, error } = await query;
-    if (error) throw error;
-
-    let products = (data || []).map((p: any) => ({
-      ...p,
-      price_tiers: (p.price_tiers || []).sort(
-        (a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty
-      ),
-    })) as Product[];
-
-    if (filters.lowStock) {
-      products = products.filter((p) => p.stock <= (p.low_stock_threshold || 5));
-    }
-
-    const totalCount = count ?? products.length;
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
-    return {
-      products,
-      totalCount,
-      page,
-      pageSize,
-      totalPages,
-    };
   }
+
+  // Direct table query (handles isFeatured filter, RPC failures, or customized criteria)
+  let query = supabase
+    .from("products")
+    .select("*, price_tiers:product_price_tiers(*)", { count: "exact" });
+
+  // Category filter: support categoryIds array or auto-resolve descendants
+  let matchedCategoryIds: string[] | null = null;
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    matchedCategoryIds = filters.categoryIds;
+  } else if (filters.categoryId) {
+    if (filters.includeDescendants !== false) {
+      matchedCategoryIds = await getCategoryAndDescendantIdsForAdmin(filters.categoryId);
+    } else {
+      matchedCategoryIds = [filters.categoryId];
+    }
+  }
+
+  if (filters.uncategorizedOnly) {
+    query = query.is("category_id", null);
+  } else if (matchedCategoryIds && matchedCategoryIds.length > 0) {
+    if (matchedCategoryIds.length === 1) {
+      query = query.eq("category_id", matchedCategoryIds[0]);
+    } else {
+      query = query.in("category_id", matchedCategoryIds);
+    }
+  } else if (filters.categoryId) {
+    query = query.eq("category_id", filters.categoryId);
+  }
+
+  if (filters.search?.trim()) {
+    query = query.or(`name.ilike.%${filters.search.trim()}%,sku.ilike.%${filters.search.trim()}%`);
+  }
+
+  if (filters.isUrbanrat !== undefined) {
+    query = query.eq("is_urbanrat_brand", filters.isUrbanrat);
+  }
+
+  if (filters.isFeatured !== undefined) {
+    query = query.eq("is_featured", filters.isFeatured);
+  }
+
+  if (filters.status === "active") {
+    query = query.eq("is_active", true);
+  } else if (filters.status === "inactive") {
+    query = query.eq("is_active", false);
+  }
+
+  if (filters.sort === "name_asc") query = query.order("name", { ascending: true });
+  else if (filters.sort === "name_desc") query = query.order("name", { ascending: false });
+  else if (filters.sort === "price_asc") query = query.order("price", { ascending: true });
+  else if (filters.sort === "price_desc") query = query.order("price", { ascending: false });
+  else if (filters.sort === "stock_asc") query = query.order("stock", { ascending: true });
+  else if (filters.sort === "stock_desc") query = query.order("stock", { ascending: false });
+  else query = query.order("updated_at", { ascending: false });
+
+  query = query.range(offset, offset + pageSize - 1);
+
+  const { data, count, error } = await query;
+  if (error) throw error;
+
+  let products = (data || []).map((p: any) => ({
+    ...p,
+    price_tiers: (p.price_tiers || []).sort(
+      (a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty
+    ),
+  })) as Product[];
+
+  if (filters.lowStock) {
+    products = products.filter((p) => p.stock <= (p.low_stock_threshold || 5));
+  }
+
+  const totalCount = count ?? products.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  return {
+    products,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function bulkMoveProducts(
@@ -540,56 +549,62 @@ export async function fetchProductIdsForFilter(
   filters: ProductListFilters = {},
   limit: number = 5000
 ): Promise<string[]> {
-  try {
-    const { data, error } = await supabase.rpc("admin_list_product_ids", {
-      p_filters: filters,
-      p_limit: limit,
-    });
-    if (error) throw error;
-    return (data || []).map((row: any) => row.product_id);
-  } catch (err) {
-    console.warn("admin_list_product_ids RPC error, falling back to query:", err);
-    let query = supabase.from("products").select("id").limit(limit);
-
-    // Category filter: support categoryIds array or auto-resolve descendants
-    let matchedCategoryIds: string[] | null = null;
-    if (filters.categoryIds && filters.categoryIds.length > 0) {
-      matchedCategoryIds = filters.categoryIds;
-    } else if (filters.categoryId) {
-      if (filters.includeDescendants !== false) {
-        matchedCategoryIds = await getCategoryAndDescendantIdsForAdmin(filters.categoryId);
-      } else {
-        matchedCategoryIds = [filters.categoryId];
-      }
+  if (filters.isFeatured === undefined) {
+    try {
+      const { data, error } = await supabase.rpc("admin_list_product_ids", {
+        p_filters: filters,
+        p_limit: limit,
+      });
+      if (error) throw error;
+      return (data || []).map((row: any) => row.product_id);
+    } catch (err) {
+      console.warn("admin_list_product_ids RPC error, falling back to query:", err);
     }
-
-    if (filters.uncategorizedOnly) {
-      query = query.is("category_id", null);
-    } else if (matchedCategoryIds && matchedCategoryIds.length > 0) {
-      if (matchedCategoryIds.length === 1) {
-        query = query.eq("category_id", matchedCategoryIds[0]);
-      } else {
-        query = query.in("category_id", matchedCategoryIds);
-      }
-    } else if (filters.categoryId) {
-      query = query.eq("category_id", filters.categoryId);
-    }
-    if (filters.isUrbanrat) {
-      query = query.eq("is_urbanrat_brand", true);
-    }
-    if (filters.status === "active") {
-      query = query.eq("is_active", true);
-    } else if (filters.status === "inactive") {
-      query = query.eq("is_active", false);
-    }
-    if (filters.search) {
-      query = query.ilike("name", `%${filters.search}%`);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []).map((row: any) => row.id);
   }
+
+  let query = supabase.from("products").select("id").limit(limit);
+
+  // Category filter: support categoryIds array or auto-resolve descendants
+  let matchedCategoryIds: string[] | null = null;
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    matchedCategoryIds = filters.categoryIds;
+  } else if (filters.categoryId) {
+    if (filters.includeDescendants !== false) {
+      matchedCategoryIds = await getCategoryAndDescendantIdsForAdmin(filters.categoryId);
+    } else {
+      matchedCategoryIds = [filters.categoryId];
+    }
+  }
+
+  if (filters.uncategorizedOnly) {
+    query = query.is("category_id", null);
+  } else if (matchedCategoryIds && matchedCategoryIds.length > 0) {
+    if (matchedCategoryIds.length === 1) {
+      query = query.eq("category_id", matchedCategoryIds[0]);
+    } else {
+      query = query.in("category_id", matchedCategoryIds);
+    }
+  } else if (filters.categoryId) {
+    query = query.eq("category_id", filters.categoryId);
+  }
+  if (filters.isUrbanrat) {
+    query = query.eq("is_urbanrat_brand", true);
+  }
+  if (filters.isFeatured !== undefined) {
+    query = query.eq("is_featured", filters.isFeatured);
+  }
+  if (filters.status === "active") {
+    query = query.eq("is_active", true);
+  } else if (filters.status === "inactive") {
+    query = query.eq("is_active", false);
+  }
+  if (filters.search) {
+    query = query.ilike("name", `%${filters.search}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).map((row: any) => row.id);
 }
 
 export async function bulkUpdateProducts(
@@ -3811,3 +3826,76 @@ export async function adminDeleteReview(reviewId: string): Promise<void> {
     console.error("Failed to delete local review:", err);
   }
 }
+
+// ----------------------------------------------------------------------------
+// HOME BESTSELLERS CURATION SERVICES
+// ----------------------------------------------------------------------------
+
+/**
+ * Fetch all products currently curated as Home Bestsellers (is_featured = true)
+ */
+export async function fetchBestsellerProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, price_tiers:product_price_tiers(*)")
+    .eq("is_featured", true)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map((p: any) => ({
+    ...p,
+    price_tiers: (p.price_tiers || []).sort(
+      (a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty
+    ),
+  })) as Product[];
+}
+
+/**
+ * 1-click toggle or set a product's Home Bestseller status (is_featured)
+ */
+export async function toggleProductBestseller(
+  productId: string,
+  isFeatured: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from("products")
+    .update({ is_featured: isFeatured, updated_at: new Date().toISOString() })
+    .eq("id", productId);
+
+  if (error) throw error;
+}
+
+/**
+ * Search active catalog products to add to Home Bestsellers
+ */
+export async function searchProductsForBestseller(
+  searchQuery: string,
+  excludeIds: string[] = []
+): Promise<Product[]> {
+  let query = supabase
+    .from("products")
+    .select("*, price_tiers:product_price_tiers(*)")
+    .eq("is_active", true)
+    .limit(12);
+
+  const trimmed = searchQuery.trim();
+  if (trimmed) {
+    query = query.or(`name.ilike.%${trimmed}%,sku.ilike.%${trimmed}%`);
+  }
+
+  const validIds = excludeIds.filter(Boolean);
+  if (validIds.length > 0) {
+    query = query.not("id", "in", `(${validIds.join(",")})`);
+  }
+
+  const { data, error } = await query.order("name", { ascending: true });
+  if (error) throw error;
+
+  return (data || []).map((p: any) => ({
+    ...p,
+    price_tiers: (p.price_tiers || []).sort(
+      (a: PriceTier, b: PriceTier) => a.min_qty - b.min_qty
+    ),
+  })) as Product[];
+}
+

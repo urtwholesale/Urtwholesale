@@ -54,11 +54,13 @@ export function MarketplacePage({
   const initialCat = searchParams.get("category") || "all";
   const initialSubCat = searchParams.get("subcategory") || searchParams.get("sub") || null;
   const initialSort = (searchParams.get("sort") as "featured" | "newest" | "price_asc" | "price_desc") || "featured";
+  const initialBestseller = searchParams.get("bestseller") === "1" || searchParams.get("is_featured") === "true";
 
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [categories, setCategories] = useState<Category[]>([]); // Parent categories
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCat);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(initialSubCat);
+  const [bestsellerOnly, setBestsellerOnly] = useState<boolean>(initialBestseller);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [searchMeta, setSearchMeta] = useState<{
     normalizedQuery: string;
@@ -231,6 +233,7 @@ export function MarketplacePage({
         const res = await fetchProducts({
           categorySlug: targetSlug,
           isUrbanratBrand: brandOnly ? true : undefined,
+          isFeatured: bestsellerOnly ? true : undefined,
           search: undefined,
           sort: sortOption,
           priceMin: bracket?.min,
@@ -253,7 +256,7 @@ export function MarketplacePage({
   // Load products whenever filters change
   useEffect(() => {
     loadInitialProducts();
-  }, [selectedCategory, selectedSubCategory, searchQuery, sortOption, priceBracketIndex, brandOnly]);
+  }, [selectedCategory, selectedSubCategory, searchQuery, sortOption, priceBracketIndex, brandOnly, bestsellerOnly]);
 
   // Infinite scroll auto-loader
   const handleLoadMore = useCallback(async () => {
@@ -281,6 +284,7 @@ export function MarketplacePage({
         const res = await fetchProducts({
           categorySlug: targetSlug,
           isUrbanratBrand: brandOnly ? true : undefined,
+          isFeatured: bestsellerOnly ? true : undefined,
           sort: sortOption,
           priceMin: bracket?.min,
           priceMax: bracket?.max,
@@ -361,6 +365,7 @@ export function MarketplacePage({
     triggerHaptic("selection");
     setSelectedCategory("all");
     setSelectedSubCategory(null);
+    setBestsellerOnly(false);
     setSearchQuery("");
     setSearchMeta(null);
     setSortOption("featured");
@@ -369,6 +374,7 @@ export function MarketplacePage({
   }
 
   const activeFilterCount =
+    (bestsellerOnly ? 1 : 0) +
     (selectedSubCategory ? 1 : 0) +
     (searchQuery.trim() ? 1 : 0) +
     (sortOption !== "featured" ? 1 : 0) +
@@ -678,7 +684,8 @@ export function MarketplacePage({
       </div>
 
       {/* ── Active Filters Bar (if active) ── */}
-      {(selectedCategory !== "all" ||
+      {(bestsellerOnly ||
+        selectedCategory !== "all" ||
         selectedSubCategory ||
         searchQuery ||
         priceBracketIndex > 0 ||
@@ -686,6 +693,20 @@ export function MarketplacePage({
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-3.5 py-2.5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-2xs">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">Filters active:</span>
+
+            {bestsellerOnly && (
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800/50">
+                <span>🏆 Bestsellers</span>
+                <button
+                  type="button"
+                  onClick={() => setBestsellerOnly(false)}
+                  className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-200 cursor-pointer ml-0.5"
+                  title="Clear bestsellers filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
 
             {selectedCategory !== "all" && (
               <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-[11px]">

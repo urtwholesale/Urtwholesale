@@ -31,6 +31,7 @@ import {
   Link2,
   Clipboard,
   Palette,
+  Star,
 } from "lucide-react";
 
 interface ProductEditorProps {
@@ -1468,14 +1469,20 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                 <span className="font-bold text-slate-800">Urbanrat Brand</span>
               </label>
 
-              <label className="flex items-center space-x-2 p-3 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer">
+              <label className="flex items-center space-x-2.5 p-3 rounded-2xl bg-amber-50/60 border border-amber-200/80 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="rounded text-brand-dark focus:ring-brand-light"
+                  className="rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
                 />
-                <span className="font-bold text-slate-800">Featured</span>
+                <div className="flex flex-col">
+                  <span className="font-bold text-amber-900 flex items-center gap-1 text-xs">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                    Home Bestseller (Featured)
+                  </span>
+                  <span className="text-[10px] text-slate-500">Showcases this product in the Home Page Bestsellers slider</span>
+                </div>
               </label>
 
               <label className="flex items-center space-x-2 p-3 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer">

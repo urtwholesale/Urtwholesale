@@ -54,6 +54,7 @@ export interface ProductListFilters {
   uncategorizedOnly?: boolean;
   search?: string;
   isUrbanrat?: boolean;
+  isFeatured?: boolean;
   lowStock?: boolean;
   status?: "all" | "active" | "inactive";
   sort?:

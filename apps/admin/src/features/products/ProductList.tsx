@@ -23,6 +23,7 @@ import {
   adminBulkUpdateStock,
   fetchProductIdsForFilter,
   undoBulkOperation,
+  toggleProductBestseller,
 } from "../../lib/adminService";
 import { triggerHaptic } from "../../utils/haptics";
 import { ProductEditor } from "./ProductEditor";
@@ -54,6 +55,7 @@ import {
   RotateCcw,
   Sliders,
   CheckCircle2,
+  Star,
 } from "lucide-react";
 
 export function ProductList() {
@@ -96,9 +98,13 @@ export function ProductList() {
   const [urbanratOnly, setUrbanratOnly] = useState<boolean>(
     initialParams.get("urbanrat") === "1"
   );
+  const [bestsellerOnly, setBestsellerOnly] = useState<boolean>(
+    initialParams.get("bestseller") === "1"
+  );
   const [lowStockOnly, setLowStockOnly] = useState<boolean>(
     initialParams.get("lowstock") === "1"
   );
+  const [togglingBestsellerId, setTogglingBestsellerId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">(
     (initialParams.get("status") as any) || "all"
   );
@@ -178,6 +184,7 @@ export function ProductList() {
     if (!includeDescendants) params.set("sub", "0");
     if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
     if (urbanratOnly) params.set("urbanrat", "1");
+    if (bestsellerOnly) params.set("bestseller", "1");
     if (lowStockOnly) params.set("lowstock", "1");
     if (statusFilter !== "all") params.set("status", statusFilter);
     if (sortOption !== "updated_at_desc") params.set("sort", sortOption);
@@ -193,6 +200,7 @@ export function ProductList() {
     includeDescendants,
     debouncedSearch,
     urbanratOnly,
+    bestsellerOnly,
     lowStockOnly,
     statusFilter,
     sortOption,
@@ -246,6 +254,7 @@ export function ProductList() {
         includeDescendants,
         search: debouncedSearch.trim() || undefined,
         isUrbanrat: urbanratOnly ? true : undefined,
+        isFeatured: bestsellerOnly ? true : undefined,
         lowStock: lowStockOnly ? true : undefined,
         status: statusFilter,
         sort: sortOption,
@@ -270,6 +279,7 @@ export function ProductList() {
     categoryTree,
     debouncedSearch,
     urbanratOnly,
+    bestsellerOnly,
     lowStockOnly,
     statusFilter,
     sortOption,
@@ -382,6 +392,7 @@ export function ProductList() {
         includeDescendants,
         search: debouncedSearch.trim() || undefined,
         isUrbanrat: urbanratOnly ? true : undefined,
+        isFeatured: bestsellerOnly ? true : undefined,
         lowStock: lowStockOnly ? true : undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
       };
@@ -394,6 +405,24 @@ export function ProductList() {
       alert(err?.message || "Failed to fetch all product IDs.");
     } finally {
       setIsFetchingAllCategoryIds(false);
+    }
+  }
+
+  async function handleToggleBestseller(product: Product) {
+    const nextFeatured = !product.is_featured;
+    setTogglingBestsellerId(product.id);
+    triggerHaptic("selection");
+    try {
+      await toggleProductBestseller(product.id, nextFeatured);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, is_featured: nextFeatured } : p))
+      );
+      triggerHaptic("success");
+    } catch (err: any) {
+      console.error("Failed to toggle bestseller:", err);
+      alert(err?.message || "Failed to toggle bestseller status.");
+    } finally {
+      setTogglingBestsellerId(null);
     }
   }
 
@@ -794,6 +823,22 @@ export function ProductList() {
 
             {/* Toggles */}
             <div className="flex items-center space-x-3 shrink-0">
+              <label className="flex items-center space-x-1.5 cursor-pointer font-bold text-amber-600">
+                <input
+                  type="checkbox"
+                  checked={bestsellerOnly}
+                  onChange={(e) => {
+                    setBestsellerOnly(e.target.checked);
+                    setPage(1);
+                  }}
+                  className="rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                />
+                <span className="flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                  Bestsellers
+                </span>
+              </label>
+
               <label className="flex items-center space-x-1.5 cursor-pointer font-bold text-slate-700">
                 <input
                   type="checkbox"
@@ -1037,6 +1082,12 @@ export function ProductList() {
                                       <span>Urbanrat</span>
                                     </span>
                                   )}
+                                  {p.is_featured && (
+                                    <span className="inline-flex items-center space-x-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200 mt-0.5 ml-1">
+                                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-500" />
+                                      <span>Bestseller</span>
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -1092,6 +1143,24 @@ export function ProductList() {
                             {/* Actions */}
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end space-x-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleBestseller(p)}
+                                  disabled={togglingBestsellerId === p.id}
+                                  className={`p-1.5 rounded-lg transition cursor-pointer flex items-center space-x-1 text-[11px] font-bold ${
+                                    p.is_featured
+                                      ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                                      : "text-slate-400 hover:text-amber-600 hover:bg-amber-50/50"
+                                  }`}
+                                  title={p.is_featured ? "Remove from Home Bestsellers" : "Promote to Home Bestsellers"}
+                                >
+                                  <Star
+                                    className={`w-3.5 h-3.5 ${
+                                      p.is_featured ? "fill-amber-400 text-amber-500" : "text-slate-400"
+                                    } ${togglingBestsellerId === p.id ? "animate-spin" : ""}`}
+                                  />
+                                  <span>{p.is_featured ? "Bestseller" : "Make Bestseller"}</span>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1196,6 +1265,12 @@ export function ProductList() {
                                     <span>Urbanrat</span>
                                   </span>
                                 )}
+                                {p.is_featured && (
+                                  <span className="inline-flex items-center space-x-0.5 px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200">
+                                    <Star className="w-2 h-2 fill-amber-400 text-amber-500" />
+                                    <span>Bestseller</span>
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1218,8 +1293,8 @@ export function ProductList() {
                             <span
                               className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
                                 isLow
-                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
-                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               }`}
                             >
                               {p.stock} in stock
@@ -1238,6 +1313,19 @@ export function ProductList() {
 
                         {/* Edit and Delete Actions (kept reachable) */}
                         <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-50">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBestseller(p)}
+                            disabled={togglingBestsellerId === p.id}
+                            className={`px-2.5 py-1.5 rounded-xl border transition cursor-pointer flex items-center space-x-1 text-xs font-bold ${
+                              p.is_featured
+                                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                : "border-slate-200 bg-white text-slate-500 hover:text-amber-600 hover:bg-amber-50/40"
+                            }`}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${p.is_featured ? "fill-amber-400 text-amber-500" : ""}`} />
+                            <span>{p.is_featured ? "Bestseller" : "Set Bestseller"}</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => {
