@@ -134,6 +134,7 @@ export {
   getCategoryPath,
   getCategoryBreadcrumbs,
   getCategoryAndDescendantIds,
+  filterCategoriesByActiveProductCategoryIds,
 } from "./categoryTree";
 
 export type {

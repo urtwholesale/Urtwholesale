@@ -1180,4 +1180,32 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 204 Vitest unit and integration tests passing across 13 suites.
 
 
+### Touchpoint 28 — Dynamic Category Filtering for Urbanrat Brand Section
+
+- **Show Only Categories with Uploaded Products (`MarketplacePage.tsx`, `storeService.ts`, `categoryTree.ts`)**:
+  - **The Requirement**: In the Urbanrat section (`/urbanrat`), show only the categories in which products are uploaded. Until products are uploaded into a category, it must not be shown in the Urbanrat section, while the general marketplace (`/marketplace`) remains completely unaffected.
+  - **The Problem**: Previously, `MarketplacePage` loaded all catalog categories indiscriminately, displaying 11 empty parent categories (Tempered Glass, BUDS & tws, Neckbands, Speakers, OTG connectors, Mobile holders & Stand, Power banks, Watches, Battery, etc.) and empty subcategory pills in the Urbanrat brand section where no Urbanrat products existed.
+  - **The Implementation**:
+    1. **`filterCategoriesByActiveProductCategoryIds` in `@urbanrat/shared/src/categoryTree.ts`**:
+       - Hierarchically filters categories using a recursive parent-child lookup map.
+       - A subcategory is retained if products are uploaded directly into it.
+       - A parent category is retained if products are uploaded directly into it or into any of its descendant subcategories.
+       - Empty categories and subcategories with 0 uploaded products are cleanly excluded.
+    2. **`fetchActiveProductCategoryIds` in `apps/store/src/services/storeService.ts`**:
+       - Queries active product records in Supabase filtered by `is_urbanrat_brand = true` and `is_active = true`, returning a `Set<string>` of category IDs.
+    3. **Urbanrat Section Integration in `MarketplacePage.tsx`**:
+       - When `brandOnly === true`, fetches active Urbanrat category IDs and filters `categories` (parent cards), `allCategories`, and `subCategories`.
+       - Parent category carousel only displays parents with products (`Cables & Cords`, `Mobile chargers`), plus the `"All Products"` card.
+       - Subcategory strip only displays subcategories with products (`Type-C to Type-C 100W`, `Single USB charger`, `USB to type-C`, `USB to V8`, `type-C to iphone`).
+       - Filter modal and mobile bottom sheet dropdowns only list populated categories.
+       - URL search parameter safety: if a URL parameter points to a category with no Urbanrat products, it gracefully resets to `"all"`.
+       - General Marketplace (`/marketplace`, `brandOnly === false`) remains completely untouched with all categories accessible.
+       - Completely dynamic: as soon as products are uploaded to new categories with `is_urbanrat_brand = true`, those categories automatically appear without any code modifications.
+- **Verification**:
+  - Added 3 new unit tests to `packages/shared/src/categoryTree.test.ts` testing recursive parent inclusion and empty category exclusion.
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+  - TypeScript & Vite production build passing (`npm run build:store`, built in 6.97s).
+
+
+
 

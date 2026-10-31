@@ -5,6 +5,7 @@ import {
   getCategoryPath,
   getCategoryBreadcrumbs,
   getCategoryAndDescendantIds,
+  filterCategoriesByActiveProductCategoryIds,
 } from "./categoryTree";
 
 describe("categoryTree helpers", () => {
@@ -321,6 +322,46 @@ describe("categoryTree helpers", () => {
       expect(ids).toContain("cat-l4");
       expect(ids).toContain("cat-l2-cables");
       expect(ids.length).toBe(5);
+    });
+  });
+
+  describe("filterCategoriesByActiveProductCategoryIds", () => {
+    it("returns empty array if input categories or active IDs is empty", () => {
+      expect(filterCategoriesByActiveProductCategoryIds([], new Set(["cat-1"]))).toEqual([]);
+      expect(filterCategoriesByActiveProductCategoryIds(mockCategories4Levels, new Set())).toEqual([]);
+      expect(filterCategoriesByActiveProductCategoryIds(mockCategories4Levels, [])).toEqual([]);
+    });
+
+    it("includes parent categories if descendant leaf subcategory has products", () => {
+      // Products only in cat-l4 (UV Curved Glass)
+      const filtered = filterCategoriesByActiveProductCategoryIds(
+        mockCategories4Levels,
+        new Set(["cat-l4"])
+      );
+      const filteredIds = filtered.map((c) => c.id);
+
+      // cat-l1 (Electronics) -> cat-l2 (Mobile Accessories) -> cat-l3 (Tempered Glass) -> cat-l4
+      expect(filteredIds).toContain("cat-l1");
+      expect(filteredIds).toContain("cat-l2");
+      expect(filteredIds).toContain("cat-l3");
+      expect(filteredIds).toContain("cat-l4");
+      // cat-l2-cables has no products and no children with products, so it should be excluded
+      expect(filteredIds).not.toContain("cat-l2-cables");
+    });
+
+    it("excludes empty categories and subcategories when another subcategory has products", () => {
+      // Products only in Cables & Cords
+      const filtered = filterCategoriesByActiveProductCategoryIds(
+        mockCategories4Levels,
+        ["cat-l2-cables"]
+      );
+      const filteredIds = filtered.map((c) => c.id);
+
+      expect(filteredIds).toContain("cat-l1");
+      expect(filteredIds).toContain("cat-l2-cables");
+      expect(filteredIds).not.toContain("cat-l2");
+      expect(filteredIds).not.toContain("cat-l3");
+      expect(filteredIds).not.toContain("cat-l4");
     });
   });
 });

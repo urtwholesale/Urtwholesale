@@ -213,3 +213,41 @@ export function getCategoryAndDescendantIds(
   return Array.from(result);
 }
 
+/**
+ * Filters a list of categories so only categories and subcategories that contain active products are retained.
+ * A leaf category is included if its ID is in activeCategoryIds.
+ * A parent category is included if its ID is in activeCategoryIds OR if any of its descendant subcategories has active products.
+ */
+export function filterCategoriesByActiveProductCategoryIds(
+  categories: Category[],
+  activeCategoryIds: Set<string> | string[]
+): Category[] {
+  if (!categories || categories.length === 0) return [];
+  const activeSet =
+    activeCategoryIds instanceof Set ? activeCategoryIds : new Set(activeCategoryIds);
+  if (activeSet.size === 0) return [];
+
+  // Group children by parent_id
+  const childrenMap = new Map<string, string[]>();
+  for (const cat of categories) {
+    if (cat.parent_id) {
+      const list = childrenMap.get(cat.parent_id) || [];
+      list.push(cat.id);
+      childrenMap.set(cat.parent_id, list);
+    }
+  }
+
+  // Recursive check: has active products directly or in any descendant
+  function hasActiveProducts(catId: string): boolean {
+    if (activeSet.has(catId)) return true;
+    const children = childrenMap.get(catId);
+    if (children && children.length > 0) {
+      return children.some((childId) => hasActiveProducts(childId));
+    }
+    return false;
+  }
+
+  return categories.filter((cat) => hasActiveProducts(cat.id));
+}
+
+

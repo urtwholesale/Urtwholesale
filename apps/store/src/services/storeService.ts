@@ -119,6 +119,39 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 /**
+ * Fetches distinct category IDs of active products, optionally filtered by brand (e.g. Urbanrat).
+ */
+export async function fetchActiveProductCategoryIds(isUrbanratBrand?: boolean): Promise<Set<string>> {
+  ensureConfigured();
+
+  let query = supabase
+    .from("products")
+    .select("category_id")
+    .eq("is_active", true)
+    .limit(10000);
+
+  if (isUrbanratBrand !== undefined) {
+    query = query.eq("is_urbanrat_brand", isUrbanratBrand);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("Error fetching active product category IDs:", error);
+    return new Set<string>();
+  }
+
+  const ids = new Set<string>();
+  if (data) {
+    for (const item of data) {
+      if (item.category_id) {
+        ids.add(item.category_id);
+      }
+    }
+  }
+  return ids;
+}
+
+/**
  * Resolves category ID and all its recursive descendant subcategory IDs.
  * Ensures products filed under Level 3/4 categories appear when browsing parent categories.
  */

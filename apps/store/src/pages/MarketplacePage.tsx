@@ -6,11 +6,13 @@ import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import {
   fetchCategories,
+  fetchActiveProductCategoryIds,
   fetchProducts,
   searchProductsV2,
   logSearchClick,
 } from "../services/storeService";
 import type { Product, Category } from "@urbanrat/shared";
+import { filterCategoriesByActiveProductCategoryIds } from "@urbanrat/shared";
 import {
   Search,
   SlidersHorizontal,
@@ -94,18 +96,38 @@ export function MarketplacePage({
     async function loadCats() {
       try {
         const cats = await fetchCategories();
-        setAllCategories(cats);
-        const parents = cats.filter((c) => c.parent_id === null);
+
+        let displayCats = cats;
+        if (brandOnly) {
+          const activeCatIds = await fetchActiveProductCategoryIds(true);
+          displayCats = filterCategoriesByActiveProductCategoryIds(cats, activeCatIds);
+        }
+
+        setAllCategories(displayCats);
+        const parents = displayCats.filter((c) => c.parent_id === null);
         setCategories(parents);
 
         // If initial category in URL was actually a subcategory slug, resolve parent
         if (initialCat && initialCat !== "all") {
-          const sub = cats.find((c) => c.slug === initialCat && c.parent_id !== null);
+          const sub = displayCats.find((c) => c.slug === initialCat && c.parent_id !== null);
           if (sub) {
-            const parent = cats.find((p) => p.id === sub.parent_id);
+            const parent = displayCats.find((p) => p.id === sub.parent_id);
             if (parent) {
               setSelectedCategory(parent.slug);
               setSelectedSubCategory(sub.slug);
+            }
+          } else {
+            const parent = parents.find((p) => p.slug === initialCat);
+            if (!parent && brandOnly) {
+              setSelectedCategory("all");
+              setSelectedSubCategory(null);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("category");
+                next.delete("subcategory");
+                next.delete("sub");
+                return next;
+              }, { replace: true });
             }
           }
         }
@@ -114,23 +136,38 @@ export function MarketplacePage({
       }
     }
     loadCats();
-  }, []);
+  }, [brandOnly]);
 
   // Sync category, subcategory and search query from URL params if changed externally
   useEffect(() => {
     const urlCat = searchParams.get("category") || "all";
     const urlSub = searchParams.get("subcategory") || searchParams.get("sub") || null;
     const urlQ = searchParams.get("q") || "";
-    if (urlCat !== selectedCategory) {
-      setSelectedCategory(urlCat);
+
+    let targetCat = urlCat;
+    let targetSub = urlSub;
+
+    // In brand-only mode, protect against URLs pointing to categories without uploaded products
+    if (brandOnly && allCategories.length > 0) {
+      if (urlCat !== "all" && !allCategories.some((c) => c.slug === urlCat)) {
+        targetCat = "all";
+        targetSub = null;
+      }
+      if (targetSub && !allCategories.some((c) => c.slug === targetSub)) {
+        targetSub = null;
+      }
     }
-    if (urlSub !== selectedSubCategory) {
-      setSelectedSubCategory(urlSub);
+
+    if (targetCat !== selectedCategory) {
+      setSelectedCategory(targetCat);
+    }
+    if (targetSub !== selectedSubCategory) {
+      setSelectedSubCategory(targetSub);
     }
     if (urlQ !== searchQuery) {
       setSearchQuery(urlQ);
     }
-  }, [searchParams]);
+  }, [searchParams, brandOnly, allCategories]);
 
   // Debounce syncing searchQuery to URL search params
   useEffect(() => {
