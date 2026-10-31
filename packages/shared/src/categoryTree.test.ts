@@ -93,7 +93,7 @@ describe("categoryTree helpers", () => {
     const tree = buildCategoryTree(mockCategories4Levels, mockCounts);
 
     expect(tree).toHaveLength(1);
-    const l1 = tree[0];
+    const l1 = tree[0]!;
     expect(l1.id).toBe("cat-l1");
     expect(l1.level).toBe(1);
     expect(l1.total_count).toBe(150);
@@ -111,7 +111,7 @@ describe("categoryTree helpers", () => {
 
     // L3
     expect(l2.children).toHaveLength(1);
-    const l3 = l2.children[0];
+    const l3 = l2.children[0]!;
     expect(l3.id).toBe("cat-l3");
     expect(l3.level).toBe(3);
     expect(l3.total_count).toBe(80);
@@ -119,7 +119,7 @@ describe("categoryTree helpers", () => {
 
     // L4
     expect(l3.children).toHaveLength(1);
-    const l4 = l3.children[0];
+    const l4 = l3.children[0]!;
     expect(l4.id).toBe("cat-l4");
     expect(l4.level).toBe(4);
     expect(l4.total_count).toBe(60);
@@ -156,7 +156,7 @@ describe("categoryTree helpers", () => {
     const tree = buildCategoryTree(mockCategories4Levels);
     expect(tree).toHaveLength(1);
 
-    const l1 = tree[0];
+    const l1 = tree[0]!;
     expect(l1.direct_count).toBe(0);
     expect(l1.total_count).toBe(0);
     expect(l1.active_count).toBe(0);

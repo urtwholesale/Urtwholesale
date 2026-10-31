@@ -64,7 +64,7 @@ describe("bulkOps pure helpers", () => {
         value: 10,
       });
 
-      expect(adjusted[0].price).toBe(0.01);
+      expect(adjusted[0]!.price).toBe(0.01);
     });
   });
 

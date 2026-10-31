@@ -4,8 +4,6 @@ import {
   filterOrders,
   calculateCustomerLifetimeStats,
   generatePackingSlipHtml,
-  ORDER_STATUS_LABELS,
-  ORDER_STATUS_BADGES,
 } from "./orders";
 import type { Order } from "./types/order";
 
