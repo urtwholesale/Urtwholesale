@@ -28,6 +28,65 @@ export interface CompressionResult {
   height: number;
 }
 
+export const COMPRESSION_STORAGE_KEY = "urt_image_compression_settings";
+
+export const DEFAULT_COMPRESSION_SETTINGS: Required<
+  Pick<CompressImageOptions, "maxWidth" | "quality" | "mimeType">
+> = {
+  maxWidth: 1600,
+  quality: 0.82,
+  mimeType: "image/webp",
+};
+
+/**
+ * Retrieve saved compression settings from localStorage or fallback to defaults
+ */
+export function getStoredCompressionSettings(): Required<
+  Pick<CompressImageOptions, "maxWidth" | "quality" | "mimeType">
+> {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return DEFAULT_COMPRESSION_SETTINGS;
+  }
+  try {
+    const raw = window.localStorage.getItem(COMPRESSION_STORAGE_KEY);
+    if (!raw) return DEFAULT_COMPRESSION_SETTINGS;
+    const parsed = JSON.parse(raw);
+    return {
+      maxWidth:
+        typeof parsed.maxWidth === "number" && parsed.maxWidth > 0
+          ? parsed.maxWidth
+          : DEFAULT_COMPRESSION_SETTINGS.maxWidth,
+      quality:
+        typeof parsed.quality === "number" && parsed.quality > 0 && parsed.quality <= 1
+          ? parsed.quality
+          : DEFAULT_COMPRESSION_SETTINGS.quality,
+      mimeType: parsed.mimeType === "image/jpeg" ? "image/jpeg" : "image/webp",
+    };
+  } catch {
+    return DEFAULT_COMPRESSION_SETTINGS;
+  }
+}
+
+/**
+ * Persist compression settings into localStorage
+ */
+export function setStoredCompressionSettings(
+  settings: Partial<CompressImageOptions>
+): void {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    const current = getStoredCompressionSettings();
+    const updated = {
+      maxWidth: settings.maxWidth ?? current.maxWidth,
+      quality: settings.quality ?? current.quality,
+      mimeType: settings.mimeType ?? current.mimeType,
+    };
+    window.localStorage.setItem(COMPRESSION_STORAGE_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.error("Failed to persist image compression settings:", err);
+  }
+}
+
 export function formatBytes(bytes: number, decimals = 1): string {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -58,11 +117,12 @@ export async function compressImage(
   file: File,
   options: CompressImageOptions = {}
 ): Promise<CompressionResult> {
+  const stored = getStoredCompressionSettings();
   const {
-    maxWidth = 1600,
-    maxHeight = 1600,
-    quality = 0.82,
-    mimeType = isWebpSupported() ? "image/webp" : "image/jpeg",
+    maxWidth = stored.maxWidth,
+    maxHeight = options.maxHeight ?? options.maxWidth ?? stored.maxWidth,
+    quality = stored.quality,
+    mimeType = options.mimeType ?? (isWebpSupported() ? stored.mimeType : "image/jpeg"),
   } = options;
 
   const originalSize = file.size;

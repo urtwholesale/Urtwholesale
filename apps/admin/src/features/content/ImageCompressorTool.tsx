@@ -9,10 +9,14 @@ import {
   Copy,
   Sliders,
   Sparkles,
+  Save,
 } from "lucide-react";
 import {
   compressImage,
   type CompressionResult,
+  getStoredCompressionSettings,
+  setStoredCompressionSettings,
+  DEFAULT_COMPRESSION_SETTINGS,
 } from "../../utils/imageCompressor";
 import { supabase } from "../../lib/supabase";
 
@@ -23,10 +27,16 @@ export function ImageCompressorTool() {
   const [result, setResult] = useState<CompressionResult | null>(null);
   const [compressing, setCompressing] = useState(false);
 
-  // Settings
-  const [quality, setQuality] = useState<number>(0.82);
-  const [maxWidth, setMaxWidth] = useState<number>(1600);
-  const [mimeType, setMimeType] = useState<"image/webp" | "image/jpeg">("image/webp");
+  // Settings initialized from stored preferences
+  const initial = useRef(getStoredCompressionSettings()).current;
+  const [quality, setQuality] = useState<number>(initial.quality);
+  const [maxWidth, setMaxWidth] = useState<number>(initial.maxWidth);
+  const [mimeType, setMimeType] = useState<"image/webp" | "image/jpeg">(initial.mimeType);
+
+  // Track saved state to highlight dirty/unsaved changes
+  const [savedSettings, setSavedSettings] = useState(initial);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Upload to Supabase state
   const [uploadingToStorage, setUploadingToStorage] = useState(false);
@@ -35,6 +45,36 @@ export function ImageCompressorTool() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load any remote store_settings override on mount
+  useEffect(() => {
+    async function loadRemoteSettings() {
+      try {
+        const { data } = await supabase
+          .from("store_settings")
+          .select("value")
+          .eq("key", "image_compression_settings")
+          .maybeSingle();
+
+        if (data?.value && typeof data.value === "object") {
+          const val = data.value as any;
+          const remoteSettings = {
+            quality: typeof val.quality === "number" ? val.quality : initial.quality,
+            maxWidth: typeof val.maxWidth === "number" ? val.maxWidth : initial.maxWidth,
+            mimeType: val.mimeType === "image/jpeg" ? ("image/jpeg" as const) : ("image/webp" as const),
+          };
+          setStoredCompressionSettings(remoteSettings);
+          setQuality(remoteSettings.quality);
+          setMaxWidth(remoteSettings.maxWidth);
+          setMimeType(remoteSettings.mimeType);
+          setSavedSettings(remoteSettings);
+        }
+      } catch (err) {
+        // Fallback safely to localStorage settings
+      }
+    }
+    loadRemoteSettings();
+  }, []);
+
   // Clean up object URLs when unmounting or changing
   useEffect(() => {
     return () => {
@@ -42,6 +82,54 @@ export function ImageCompressorTool() {
       if (previewCompressedUrl) URL.revokeObjectURL(previewCompressedUrl);
     };
   }, [previewOriginalUrl, previewCompressedUrl]);
+
+  const isDirty =
+    quality !== savedSettings.quality ||
+    maxWidth !== savedSettings.maxWidth ||
+    mimeType !== savedSettings.mimeType;
+
+  async function handleSaveSettings() {
+    setSavingSettings(true);
+    const newSettings = { quality, maxWidth, mimeType };
+
+    try {
+      // 1. Immediately persist locally
+      setStoredCompressionSettings(newSettings);
+      setSavedSettings(newSettings);
+
+      // 2. Persist to store_settings in Supabase
+      await supabase.from("store_settings").upsert(
+        {
+          key: "image_compression_settings",
+          value: newSettings,
+          description: "Default image compression quality and max dimensions for catalog uploads",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" }
+      );
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+
+      // Re-compress currently staged image if present
+      if (file) {
+        processCompression(file);
+      }
+    } catch (err) {
+      console.error("Failed to sync compression settings to database:", err);
+      // Local storage already succeeded
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  function handleResetDefaults() {
+    setQuality(DEFAULT_COMPRESSION_SETTINGS.quality);
+    setMaxWidth(DEFAULT_COMPRESSION_SETTINGS.maxWidth);
+    setMimeType(DEFAULT_COMPRESSION_SETTINGS.mimeType);
+  }
 
   async function processCompression(selectedFile: File) {
     setCompressing(true);
@@ -170,11 +258,54 @@ export function ImageCompressorTool() {
 
       {/* ── Compression Tuning Controls ── */}
       <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-4">
-        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
-          <Sliders className="w-4 h-4 text-brand-dark" />
-          <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-            Compression &amp; Dimensions Settings
-          </h4>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <Sliders className="w-4 h-4 text-brand-dark" />
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
+              Compression &amp; Dimensions Settings
+            </h4>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {isDirty && (
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                Unsaved Changes
+              </span>
+            )}
+            {saveSuccess && (
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                <Check className="w-3 h-3 text-emerald-600" />
+                <span>Saved as Default</span>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                isDirty
+                  ? "bg-brand-dark hover:bg-brand text-white shadow-brand-dark/20 hover:scale-[1.02] active:scale-95"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95"
+              }`}
+            >
+              {savingSettings ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Saved!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Settings</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -254,19 +385,58 @@ export function ImageCompressorTool() {
           </div>
         </div>
 
-        {file && (
-          <div className="pt-2 flex justify-end">
+        {/* ── Footer Actions Bar: Reset Defaults & Primary Save Changes ── */}
+        <div className="pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={handleResetDefaults}
+            className="text-xs text-slate-400 hover:text-slate-700 font-semibold cursor-pointer underline-offset-2 hover:underline transition-colors"
+          >
+            Reset to Defaults
+          </button>
+
+          <div className="flex items-center space-x-2">
+            {file && (
+              <button
+                type="button"
+                onClick={handleRecompress}
+                disabled={compressing}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition cursor-pointer active:scale-95"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${compressing ? "animate-spin" : ""}`} />
+                <span>Re-compress Current Image</span>
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={handleRecompress}
-              disabled={compressing}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition cursor-pointer"
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                isDirty
+                  ? "bg-brand-dark hover:bg-brand text-white shadow-brand-dark/20 hover:scale-[1.02] active:scale-95"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95"
+              }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${compressing ? "animate-spin" : ""}`} />
-              <span>Apply New Settings</span>
+              {savingSettings ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving Settings...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Settings Saved!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Compression Settings</span>
+                </>
+              )}
             </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Dropzone / File Picker ── */}

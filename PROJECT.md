@@ -1281,33 +1281,27 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
-### Touchpoint 33 — 100% Dynamic, Live Customer-Driven Reviews & Rating Breakdown Functions
+### Touchpoint 34 — Persistent Image Compression Settings & Dedicated Save Actions
 
-- **Full Real-Data Binding for Review Studio (`ProductDetailPage.tsx`)**:
-  - **The Requirement**: Every function, metric, and visual element of the customer reviews section must be strictly and dynamically calculated according to the actual reviews submitted by customers, with zero mock or synthetic fallback numbers (e.g. removing the synthetic `46 Ratings`, `4.3`, and `30, 12, 3, 1, 0` distributions).
-  - **The Implementation**:
-    1. **Strict Real Ratings Count (`totalRatingsCount`)**:
-       - Replaced hardcoded fallback `46` with live database aggregation (`reviews.length`, or `product.rating_count`, defaulting strictly to `0`).
-       - Renders dynamic count label: `{count} Ratings`, `1 Rating`, or `No Ratings Yet` when zero reviews exist.
-    2. **Exact Mathematical Average Score (`avgScore` & `numericAvgScore`)**:
-       - Replaced synthetic `"4.3"` fallback with the exact arithmetic mean of customer reviews: `(sum / reviews.length).toFixed(1)`.
-       - If no reviews exist, cleanly displays `0.0`.
-       - Under-title product rating stars also synchronize dynamically with this live score.
-    3. **100% Customer-Derived Star Breakdown Bars (FIVE to ONE)**:
-       - Star counts (`counts[star]`) and percentage widths (`pct`) are calculated exclusively from matching reviews in `reviews`.
-       - When 0 reviews exist, every bar defaults to `0` count and `0%` width.
-    4. **Dynamic Star Icons in Score Box**:
-       - Replaced static 5 gold stars with dynamically filled stars matching `Math.round(numericAvgScore)` (all unfilled when 0 reviews exist).
-    5. **Interactive Star Filtering**:
-       - Each breakdown bar (FIVE, FOUR, THREE, TWO, ONE) functions as an interactive filter button.
-       - Clicking a bar filters the review cards to show only reviews with that star rating.
-       - Displays an active filter badge with a `"Clear"` / `"Show All"` action.
-    6. **Optimistic Real-Time Reflection**:
-       - Upon form submission via `handleReviewSubmit`, the new review is immediately appended to local `reviews` state.
-       - The rating score, star bars, ratings count, and review cards recalculate and update immediately in real time.
+- **Admin Image Compression Settings Persistence (`ImageCompressorTool.tsx` & `imageCompressor.ts`)**:
+  - **The Requirement**: Provide a direct, visible button to save changes made to image compression settings (Quality slider, Max Dimensions presets, and Target Output Format).
+  - **The Problem**: In `ImageCompressorTool.tsx`, settings adjustments were only retained in component memory. There was no save button, meaning closing the tab or refreshing lost all settings. Furthermore, "Apply New Settings" only appeared after an image was already dropped.
+  - **The Solution**:
+    1. **Two Prominent Save Actions**:
+       - **Header Action**: An executive-styled `"Save Settings"` button located in the header of the "COMPRESSION & DIMENSIONS SETTINGS" card alongside an `"Unsaved Changes"` / `"Saved as Default"` status badge.
+       - **Footer Action**: A full-width footer action bar featuring `"Reset to Defaults"`, `"Re-compress Current Image"` (when an image is staged), and a prominent `"Save Compression Settings"` button.
+    2. **Dual-Layer Persistence (Local & Cloud)**:
+       - **Local Fast Path**: Persists settings to `localStorage` under `urt_image_compression_settings`, ensuring settings like `95% Quality` or `1920px` load synchronously without delay.
+       - **Cloud Storage Synchronization**: Persists to Supabase `store_settings` table under key `image_compression_settings`.
+    3. **Global Engine Integration**:
+       - `compressImage()` in `imageCompressor.ts` automatically consumes stored settings as defaults, allowing saved settings to propagate across catalog uploads.
+    4. **Instant Visual Feedback**:
+       - Real-time `isDirty` detection highlights the save button in brand cyan and shows an amber `"Unsaved Changes"` indicator whenever settings differ from saved values.
+       - Successful save triggers a 3-second green `"Saved!"` / `"Settings Saved!"` checkmark confirmation and re-compresses any currently loaded image.
 - **Verification**:
-  - TypeScript & Vite production build passing (`npm run build:store`, built in 7.68s).
+  - TypeScript & Vite production build passing (`npm run build:admin`, built in 8.12s).
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
 
 
 
