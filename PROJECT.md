@@ -1166,5 +1166,18 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - TypeScript & Vite build passing (`npm run build:store`, built in 7.74s).
   - 204 Vitest unit and integration tests passing across 13 suites.
 
+---
+
+### Touchpoint 27 — Tuned Brisk Autoplay Frequency for Hero 3D Showcase
+
+- **Autoplay Rotation & Spring Snappiness (`HeroStackedCarousel.tsx`)**:
+  - **The Requirement**: User requested a faster, lively rotation frequency for the hero image carousel ("fast, not very fast, but should be fast").
+  - **The Changes**:
+    1. **Autoplay Interval**: Reduced cycle interval from 5000ms (5.0s) to **3000ms (3.0s)**, providing a brisk, dynamic product rotation without feeling frantic or rushed.
+    2. **Snappy Spring Physics**: Tuned Framer Motion spring physics (`stiffness: 260`, `damping: 28`, `mass: 0.8`), ensuring cards glide smoothly and settle cleanly into position within ~350ms.
+- **Verification**:
+  - TypeScript & Vite build passing (`npm run build:store`, built in 7.05s).
+  - 204 Vitest unit and integration tests passing across 13 suites.
+
 
 

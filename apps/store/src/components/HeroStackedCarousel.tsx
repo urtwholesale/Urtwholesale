@@ -330,6 +330,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
   }, []);
 
   // Autoplay with pause on hover/interaction & background tab protection
+  // Tuned to a brisk 3.0s (3000ms) frequency for lively, engaging hero showcase
   useEffect(() => {
     if (isPaused || total <= 1) return;
 
@@ -337,7 +338,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
       // Guard against background tab execution
       if (typeof document !== "undefined" && document.hidden) return;
       setActiveIndex((prev) => (prev + 1) % total);
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [isPaused, total]);
@@ -537,9 +538,9 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                   }}
                   transition={{
                     type: "spring",
-                    stiffness: 220,
-                    damping: 26,
-                    mass: 0.9,
+                    stiffness: 260,
+                    damping: 28,
+                    mass: 0.8,
                     restDelta: 0.001,
                   }}
                   onClick={() => {
