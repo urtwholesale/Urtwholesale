@@ -9,7 +9,11 @@ export function LoginPage() {
   const navigate = useNavigate();
 
   // Determine return target (e.g. /cart, /account, /addresses)
-  const from = (location.state as { from?: string })?.from || "/account";
+  const searchParams = new URLSearchParams(location.search);
+  const from =
+    (location.state as { from?: string })?.from ||
+    searchParams.get("from") ||
+    "/account";
 
   useEffect(() => {
     if (!loading && user) {
@@ -28,6 +32,7 @@ export function LoginPage() {
   return (
     <div className="w-full max-w-lg mx-auto py-6 sm:py-10 px-2 sm:px-4">
       <CustomerAuth
+        redirectTo={`${window.location.origin}/login?from=${encodeURIComponent(from)}`}
         onAuthSuccess={() => {
           navigate(from, { replace: true });
         }}

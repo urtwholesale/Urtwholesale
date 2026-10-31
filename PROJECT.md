@@ -1378,6 +1378,29 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
+### Touchpoint 38 — Google OAuth Sign-In Integration across Storefront & Admin Portal
+
+- **Federated Google Authentication (`CustomerAuth.tsx`, `AuthContext.tsx`, `LoginPage.tsx` & `AdminLogin.tsx`)**:
+  - **The Requirement**: Add a Google sign-in option to the login page for effortless, one-tap authentication.
+  - **The Implementation**:
+    1. **Auth Context Layer (`apps/store/src/context/AuthContext.tsx`)**:
+       - Added `signInWithGoogle(redirectTo?: string)` to `AuthContextValue` and `AuthProvider`.
+       - Calls Supabase `supabase.auth.signInWithOAuth()` with provider `'google'`, setting `access_type: 'offline'`, `prompt: 'select_account'`, and dynamic redirect target preservation.
+    2. **Customer Storefront Login Experience (`CustomerAuth.tsx` & `LoginPage.tsx`)**:
+       - **Prominent Google Action Button**: Rendered with official 4-color Google G icon vector, smooth tactile haptics (`triggerHaptic('medium')`), loading spinner state (`Connecting to Google...`), and contextual action labels (`Sign in with Google` on login mode, `Sign up with Google` on signup mode).
+       - **Elegant Divider**: `"or continue with email"` separating federated social login from standard email/password inputs.
+       - **OAuth State & Deep-Link Preservation**: `LoginPage.tsx` inspects `location.state.from` as well as query parameter `?from=` to construct the exact return URL (`/login?from=${encodeURIComponent(from)}`). When Google OAuth finishes, the buyer is redirected straight to their intended destination (e.g. `/cart` or `/account`).
+       - **Automated Error Surfacing**: Captures any OAuth failure or user cancellation parameters (`error_description` or `error` query params) and displays user-friendly alert badges.
+       - **Backend User Provisioning**: Backed by PostgreSQL trigger `handle_new_user()` which auto-extracts Google profile metadata (`name`, `full_name`, `avatar_url`) and inserts/syncs the public profile record on initial sign-in.
+    3. **Admin Portal Google Authentication (`apps/admin/src/features/auth/AdminLogin.tsx`)**:
+       - Added matching Google Sign-In button on the Admin Portal login dialog.
+       - Automatically verifies that the authenticated Google account holds `role === 'admin'` via `profiles` verification in `App.tsx`.
+- **Verification**:
+  - Monorepo production build passing (`npm run build`, built in 16.78s with 0 errors).
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
+
+
 
 
 
