@@ -1152,5 +1152,19 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - TypeScript & Vite build passing (`npm run build:store`, built in 6.93s).
   - 204 Vitest unit and integration tests passing across 13 suites.
 
+---
+
+### Touchpoint 26 — Minimalist Ultra-Premium Hero 3D Card Title Capsule
+
+- **Hero Image Detail Elimination (`HeroStackedCarousel.tsx`)**:
+  - **The Problem**: The floating pill at the bottom of the 3D card image was cluttered with secondary details, star rating icons (`⭐ 5.0`), and a blue `"Receive"` button, causing visual noise and crowding out the title into an awkward ellipsis (`"Urbanrat MagSafe Tit..."`).
+  - **The Fix**:
+    1. **Stripped All Clutter**: Removed the rating section (`⭐ 5.0`), the action button section (`Receive`), and subtitle text from the card image.
+    2. **Minimalist Title Capsule**: Transformed the bottom pill into a clean, centered, ultra-premium frosted glass title capsule (`bg-white/95 dark:bg-[#070B12]/92 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-2xl py-2.5 sm:py-3 px-4`).
+    3. **Full Title Visibility**: The entire product title now has 100% of the capsule width with zero truncation, creating an uncluttered luxury aesthetic inspired by Apple and flagship design showcases.
+- **Verification**:
+  - TypeScript & Vite build passing (`npm run build:store`, built in 7.74s).
+  - 204 Vitest unit and integration tests passing across 13 suites.
+
 
 

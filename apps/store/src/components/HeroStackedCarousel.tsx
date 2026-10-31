@@ -575,44 +575,23 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                     </span>
                   </div>
 
-                  {/* ── Floating Frosted Glass Bottom Pill Card (Only on front card) ── */}
-                  <div
-                    className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-white/95 dark:bg-[#070B12]/94 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-2xl p-3 sm:p-3.5 shadow-xl dark:shadow-2xl flex items-center justify-between gap-2.5 transition-all duration-300 ${
+                  {/* ── Minimalist Premium Title Capsule (Only on front card) ── */}
+                  <Link
+                    to={card.ctaLink}
+                    onClick={(e) => {
+                      if (!isCenter) {
+                        e.preventDefault();
+                        goToSlide(idx);
+                      }
+                    }}
+                    className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-white/95 dark:bg-[#070B12]/92 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-2xl py-2.5 sm:py-3 px-3.5 sm:px-4 shadow-xl dark:shadow-2xl flex items-center justify-center text-center hover:bg-white dark:hover:bg-[#0d131f] hover:scale-[1.01] active:scale-98 transition-all duration-300 cursor-pointer ${
                       isCenter ? "opacity-100" : "opacity-0 pointer-events-none"
                     }`}
                   >
-                    {/* Left Metadata: Title, Star Rating, Subtitle */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center space-x-1.5">
-                        <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate tracking-tight">
-                          {card.title}
-                        </h3>
-                        <div className="flex items-center space-x-0.5 text-amber-500 dark:text-amber-400 font-black text-[11px] shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-amber-500 dark:fill-amber-400 text-amber-500 dark:text-amber-400" />
-                          <span>{card.rating}</span>
-                        </div>
-                      </div>
-
-                      <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        {card.subtitle}
-                      </p>
-                    </div>
-
-                    {/* Right Action Button (Vibrant Glowing Blue Pill) */}
-                    <Link
-                      to={card.ctaLink}
-                      onClick={(e) => {
-                        // Only navigate if center card is clicked
-                        if (!isCenter) {
-                          e.preventDefault();
-                          goToSlide(idx);
-                        }
-                      }}
-                      className="shrink-0 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-black text-xs text-white bg-blue-600 shadow-[0_0_16px_rgba(37,99,235,0.6)] hover:bg-blue-500 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
-                    >
-                      {card.ctaText}
-                    </Link>
-                  </div>
+                    <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate max-w-full">
+                      {card.title}
+                    </h3>
+                  </Link>
                 </m.div>
               );
             })}
