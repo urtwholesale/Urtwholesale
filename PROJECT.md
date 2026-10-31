@@ -1224,6 +1224,26 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
+### Touchpoint 30 — On-Demand Review Expansion Button & Clean Detail Form Reveal
+
+- **On-Demand Review Interaction (`ProductDetailPage.tsx`)**:
+  - **The Requirement**: Instead of having the full review form permanently visible on the page, provide an executive review button. Clicking the button reveals the review detail section with full description, rating, headline, and submission controls.
+  - **The Implementation**:
+    1. **Header Action Button**: Added a dedicated, styled `"Write a Review"` button in the Customer Reviews section header (alongside the aggregate rating score). When clicked, it toggles `showReviewForm` state with haptic feedback.
+    2. **Toggle & Collapse Mechanism**:
+       - When closed (`showReviewForm === false`), the page remains clean and uncluttered. Only existing reviews or a zero-reviews invitation note are displayed.
+       - The button transitions into a `"Close"` state with an `X` icon when open, and a secondary `"Cancel"` button is available inside the form footer.
+    3. **Animated Detail Form Reveal**:
+       - When triggered, the review detail section expands smoothly (`animate-in fade-in slide-in-from-top-2 duration-200`) in a focused `max-w-xl` luxury container.
+       - Includes 1-5 interactive star rating capsule (`5.0`), headline input, 3-row detailed review textarea, and a vibrant `"Submit Review"` button.
+       - Upon submission success, presents a confirmation alert with a `"Done"` button to dismiss the card.
+       - Signed-out state displays a direct shortcut to sign in before leaving feedback.
+- **Verification**:
+  - TypeScript & Vite production build passing (`npm run build:store`, built in 7.12s).
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
+
+
 
 
 
