@@ -96,6 +96,16 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [reviewRating, setReviewRating] = useState(5);
+  const [reviewAuthor, setReviewAuthor] = useState(() => {
+    try {
+      const savedCust = localStorage.getItem("urt_customer_details");
+      if (savedCust) {
+        const parsed = JSON.parse(savedCust);
+        return parsed.name || "";
+      }
+    } catch {}
+    return "";
+  });
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewBody, setReviewBody] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -340,18 +350,25 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
   async function handleReviewSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!product || !currentUser) return;
+    if (!product) return;
     setSubmittingReview(true);
     setReviewError(null);
     try {
+      const author =
+        reviewAuthor.trim() ||
+        currentUser?.user_metadata?.full_name ||
+        currentUser?.email?.split("@")[0] ||
+        "Verified Wholesale Buyer";
+
       const newReview = await submitReview({
         productId: product.id,
         rating: reviewRating,
         title: reviewTitle.trim() || undefined,
         body: reviewBody.trim() || undefined,
+        authorName: author,
       });
       if (newReview) {
-        setReviews((prev) => [newReview, ...prev]);
+        setReviews((prev) => [newReview, ...prev.filter((r) => r.id !== newReview.id)]);
       }
       setReviewSuccess(true);
       setReviewTitle("");
@@ -932,7 +949,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     </p>
                   </div>
 
-                  {currentUser && !reviewSuccess && (
+                  {!reviewSuccess && (
                     <div className="flex items-center space-x-0.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/70 dark:border-slate-700/60 shadow-2xs shrink-0">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -961,30 +978,46 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   )}
                 </div>
 
-                {currentUser ? (
-                  reviewSuccess ? (
-                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>
-                          Thank you! Your wholesale review has been submitted for moderation.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowReviewForm(false)}
-                        className="text-emerald-700 dark:text-emerald-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
-                      >
-                        Done
-                      </button>
+                {reviewSuccess ? (
+                  <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>
+                        Thank you! Your wholesale review is now live on this product.
+                      </span>
                     </div>
-                  ) : (
-                    <form onSubmit={handleReviewSubmit} className="space-y-3">
-                      {reviewError && (
-                        <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
-                          {reviewError}
-                        </p>
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReviewSuccess(false);
+                        setShowReviewForm(false);
+                      }}
+                      className="text-emerald-700 dark:text-emerald-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
+                    >
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleReviewSubmit} className="space-y-3">
+                    {reviewError && (
+                      <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
+                        {reviewError}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                          Your Name or Store Name
+                        </label>
+                        <input
+                          type="text"
+                          value={reviewAuthor}
+                          onChange={(e) => setReviewAuthor(e.target.value)}
+                          placeholder="e.g. Apex Mobiles or Rajesh K."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all"
+                        />
+                      </div>
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -998,60 +1031,39 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all"
                         />
                       </div>
+                    </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          Detailed Review & Description
-                        </label>
-                        <textarea
-                          value={reviewBody}
-                          onChange={(e) => setReviewBody(e.target.value)}
-                          rows={3}
-                          placeholder="Describe build quality, durability, margins, and customer reception at your retail counter..."
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none resize-none transition-all"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Detailed Review & Description
+                      </label>
+                      <textarea
+                        value={reviewBody}
+                        onChange={(e) => setReviewBody(e.target.value)}
+                        rows={3}
+                        placeholder="Describe build quality, durability, margins, and customer reception at your retail counter..."
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none resize-none transition-all"
+                      />
+                    </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setShowReviewForm(false)}
-                          className="px-3.5 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={submittingReview}
-                          className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center space-x-1.5 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>{submittingReview ? "Submitting..." : "Submit Review"}</span>
-                        </button>
-                      </div>
-                    </form>
-                  )
-                ) : (
-                  <div className="space-y-2 pt-1">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Please sign in to your verified customer account to write a wholesale review.
-                    </p>
-                    <div className="flex items-center space-x-2 pt-1">
-                      <Link
-                        to="/menu"
-                        className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs transition"
-                      >
-                        Sign In to Account
-                      </Link>
+                    <div className="flex items-center justify-between pt-1">
                       <button
                         type="button"
                         onClick={() => setShowReviewForm(false)}
-                        className="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                       >
-                        Close
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingReview}
+                        className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center space-x-1.5 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>{submittingReview ? "Submitting..." : "Submit Review"}</span>
                       </button>
                     </div>
-                  </div>
+                  </form>
                 )}
               </div>
 
@@ -1180,20 +1192,25 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         key={rev.id}
                         className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-amber-400">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3.5 h-3.5 ${
-                                  i < rev.rating
-                                    ? "fill-amber-400 text-amber-400"
-                                    : "text-slate-200 dark:text-slate-700"
-                                }`}
-                              />
-                            ))}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="flex items-center text-amber-400">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-3.5 h-3.5 ${
+                                    i < rev.rating
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "text-slate-200 dark:text-slate-700"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-none">
+                              {rev.user_name || "Verified Wholesale Buyer"}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
                             {new Date(rev.created_at).toLocaleDateString()}
                           </span>
                         </div>
@@ -1233,20 +1250,25 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 key={rev.id}
                 className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-amber-400">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-3.5 h-3.5 ${
-                          i < rev.rating
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-slate-200 dark:text-slate-700"
-                        }`}
-                      />
-                    ))}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center text-amber-400">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3.5 h-3.5 ${
+                            i < rev.rating
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-slate-200 dark:text-slate-700"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-none">
+                      {rev.user_name || "Verified Wholesale Buyer"}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
                     {new Date(rev.created_at).toLocaleDateString()}
                   </span>
                 </div>

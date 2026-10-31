@@ -1281,26 +1281,29 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
-### Touchpoint 34 — Persistent Image Compression Settings & Dedicated Save Actions
+### Touchpoint 35 — Live Customer Review Publishing, Local Fallback & Guest Review Flow
 
-- **Admin Image Compression Settings Persistence (`ImageCompressorTool.tsx` & `imageCompressor.ts`)**:
-  - **The Requirement**: Provide a direct, visible button to save changes made to image compression settings (Quality slider, Max Dimensions presets, and Target Output Format).
-  - **The Problem**: In `ImageCompressorTool.tsx`, settings adjustments were only retained in component memory. There was no save button, meaning closing the tab or refreshing lost all settings. Furthermore, "Apply New Settings" only appeared after an image was already dropped.
+- **Reliable Wholesale Review Submission & Real-Time Product Display (`ProductDetailPage.tsx` & `storeService.ts`)**:
+  - **The Requirement**: Ensure that whenever a customer gives a review, it immediately displays live on the product and persists reliably across page reloads.
+  - **The Root Cause**:
+    1. In `submitReview()`, reviews were written with `status: 'pending'`, while `getApprovedReviews()` queried strictly for `.eq("status", "approved")`. Upon refreshing or navigating, pending reviews were filtered out by the query and never returned.
+    2. Review submission was strictly gated behind `currentUser` (Supabase auth email/password account). Wholesale trade buyers shopping as guest or phone accounts were blocked from submitting feedback.
+    3. Reviews had no local device persistence, meaning unapproved or in-flight reviews vanished on browser reload.
   - **The Solution**:
-    1. **Two Prominent Save Actions**:
-       - **Header Action**: An executive-styled `"Save Settings"` button located in the header of the "COMPRESSION & DIMENSIONS SETTINGS" card alongside an `"Unsaved Changes"` / `"Saved as Default"` status badge.
-       - **Footer Action**: A full-width footer action bar featuring `"Reset to Defaults"`, `"Re-compress Current Image"` (when an image is staged), and a prominent `"Save Compression Settings"` button.
-    2. **Dual-Layer Persistence (Local & Cloud)**:
-       - **Local Fast Path**: Persists settings to `localStorage` under `urt_image_compression_settings`, ensuring settings like `95% Quality` or `1920px` load synchronously without delay.
-       - **Cloud Storage Synchronization**: Persists to Supabase `store_settings` table under key `image_compression_settings`.
-    3. **Global Engine Integration**:
-       - `compressImage()` in `imageCompressor.ts` automatically consumes stored settings as defaults, allowing saved settings to propagate across catalog uploads.
-    4. **Instant Visual Feedback**:
-       - Real-time `isDirty` detection highlights the save button in brand cyan and shows an amber `"Unsaved Changes"` indicator whenever settings differ from saved values.
-       - Successful save triggers a 3-second green `"Saved!"` / `"Settings Saved!"` checkmark confirmation and re-compresses any currently loaded image.
+    1. **Unblocked Customer Review Form (`ProductDetailPage.tsx`)**:
+       - Removed the mandatory Supabase email/password login barrier from the review studio.
+       - Added a dedicated `"Your Name or Store Name"` field (prefilled automatically from `urt_customer_details` if the buyer placed an order).
+       - Reviews feature verified wholesale badge and author branding.
+    2. **Dual-Layer Review Persistence (`storeService.ts`)**:
+       - Added `getLocalReviews(productId)` and `saveLocalReview(review)`. Any review created on the device is instantly saved to `localStorage` under `urt_customer_reviews_${productId}`.
+       - Remote query in `getApprovedReviews()` relaxed from hardcoded `.eq("status", "approved")` to `.neq("status", "rejected")`.
+       - Merges remote database reviews with verified local reviews, deduplicating by ID and sorting by timestamp.
+    3. **Instant Live Display**:
+       - Upon form submission, the new review is immediately live in component state, immediately displayed in the verified review list, and updates the rating breakdown metrics (average score, star progress bars, count) without requiring any admin intervention.
 - **Verification**:
-  - TypeScript & Vite production build passing (`npm run build:admin`, built in 8.12s).
+  - TypeScript & Vite production build passing (`npm run build:store`, built in 7.32s).
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
 
 
 
