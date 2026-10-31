@@ -172,21 +172,42 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
           b.badges?.find((x) => x.icon === "Star" || x.label === "rating")?.text ||
           "4.9";
 
+        // Enrich with matching default curated card if available
+        const matchedDef = DEFAULT_OFFER_CARDS.find(
+          (d) =>
+            d.id === b.id ||
+            d.title.toLowerCase().trim() === b.title.toLowerCase().trim() ||
+            (b.image_url && (b.image_url.includes(d.id) || d.image.includes(b.image_url)))
+        );
+
         list.push({
           id: b.id,
-          badge: b.badge_text || "URBANRAT PRO",
+          badge: b.badge_text || matchedDef?.badge || "URBANRAT PRO",
           title: b.title,
-          subtitle: b.subtitle || "Release: January 2026",
+          subtitle: b.subtitle || matchedDef?.subtitle || "Release: January 2026",
           rating: customRating,
           image: b.image_url!,
-          ctaText: b.cta_text || "Receive",
-          ctaLink: b.cta_link || b.link_url || "/urbanrat",
+          darkImage: matchedDef?.darkImage || b.image_url!,
+          lightImage: matchedDef?.lightImage || b.image_url!,
+          ctaText: b.cta_text || matchedDef?.ctaText || "Receive",
+          ctaLink: b.cta_link || b.link_url || matchedDef?.ctaLink || "/urbanrat",
+          tagline: matchedDef?.tagline,
+          headlineFirst: matchedDef?.headlineFirst,
+          headlineHighlight: matchedDef?.headlineHighlight,
+          headlineSecond: matchedDef?.headlineSecond,
+          description: matchedDef?.description,
+          highlights: matchedDef?.highlights,
         });
       });
 
     // Append defaults to ensure stacked carousel has at least 5 rich cards
     DEFAULT_OFFER_CARDS.forEach((def) => {
-      if (!list.some((existing) => existing.id === def.id)) {
+      const alreadyPresent = list.some(
+        (existing) =>
+          existing.id === def.id ||
+          existing.title.toLowerCase().trim() === def.title.toLowerCase().trim()
+      );
+      if (!alreadyPresent) {
         list.push(def);
       }
     });
@@ -197,6 +218,8 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
   const { isDark } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const isHoveredRef = useRef(false);
   const total = cards.length;
 
   const nextSlide = useCallback(() => {
@@ -214,11 +237,61 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
     setActiveIndex(idx);
   }, []);
 
-  // Autoplay with pause on hover/interaction
+  // Sync autoplay with Page Visibility API & Window Focus:
+  // Prevents the carousel from advancing or freezing when the user switches browser tabs
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab backgrounded: pause carousel so timers don't queue or desync
+        setIsPaused(true);
+      } else {
+        // Tab restored: check if user's cursor is physically over the carousel
+        const isCurrentlyHovered = Boolean(
+          sectionRef.current &&
+            typeof sectionRef.current.matches === "function" &&
+            sectionRef.current.matches(":hover")
+        );
+        isHoveredRef.current = isCurrentlyHovered;
+        setIsPaused(isCurrentlyHovered);
+      }
+    };
+
+    const handleWindowBlur = () => {
+      // User switched to another window/app/tab
+      setIsPaused(true);
+    };
+
+    const handleWindowFocus = () => {
+      // Window regained focus
+      if (!document.hidden) {
+        const isCurrentlyHovered = Boolean(
+          sectionRef.current &&
+            typeof sectionRef.current.matches === "function" &&
+            sectionRef.current.matches(":hover")
+        );
+        isHoveredRef.current = isCurrentlyHovered;
+        setIsPaused(isCurrentlyHovered);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, []);
+
+  // Autoplay with pause on hover/interaction & background tab protection
   useEffect(() => {
     if (isPaused || total <= 1) return;
 
     const interval = setInterval(() => {
+      // Guard against background tab execution
+      if (typeof document !== "undefined" && document.hidden) return;
       setActiveIndex((prev) => (prev + 1) % total);
     }, 5000);
 
@@ -228,6 +301,16 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
   // Touch drag tracking for mobile swipe gesture
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+
+  function handleMouseEnter() {
+    isHoveredRef.current = true;
+    setIsPaused(true);
+  }
+
+  function handleMouseLeave() {
+    isHoveredRef.current = false;
+    setIsPaused(false);
+  }
 
   function handleTouchStart(e: React.TouchEvent) {
     setIsPaused(true);
@@ -258,17 +341,25 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
     touchEndX.current = null;
   }
 
+  function handleTouchCancel() {
+    setIsPaused(false);
+    touchStartX.current = null;
+    touchEndX.current = null;
+  }
+
   const activeCard = cards[activeIndex] || cards[0];
 
   return (
     <section
+      ref={sectionRef}
       aria-label="Wholesale Offers Showcase"
       className="relative w-full py-4 sm:py-6 select-none overflow-hidden lg:overflow-visible"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       {/* ── Ambient Radial Atmosphere Glow (Theme Aware) ── */}
       <div
@@ -387,7 +478,6 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               return (
                 <m.div
                   key={card.id}
-                  layout
                   initial={false}
                   animate={{
                     x: isCenter ? "0%" : isLeft ? "-22%" : "22%",
@@ -406,6 +496,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                     stiffness: 220,
                     damping: 26,
                     mass: 0.9,
+                    restDelta: 0.001,
                   }}
                   onClick={() => {
                     if (isLeft) prevSlide();

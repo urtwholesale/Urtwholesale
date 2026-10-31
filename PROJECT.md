@@ -1118,5 +1118,25 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - TypeScript & Vite build passing (`npm run build:store`).
   - 204 Vitest unit and integration tests passing across 13 suites.
 
+---
+
+### Touchpoint 24 — Hero Stacked Carousel Browser Tab-Switching & Visibility Synchronization
+
+- **Tab Switching & Visibility Freeze Fix (`HeroStackedCarousel.tsx`)**:
+  - **The Problem**: When switching between browser tabs or windows, the Hero stacked cards carousel became frozen or stuck in an off-center transform state upon returning to the site.
+  - **Root Causes**:
+    1. *Stale Pause State*: When moving the cursor towards the browser tab strip, `onMouseEnter` fired and set `isPaused(true)`. Because the window lost focus without a DOM `mouseleave` event, `isPaused` remained permanently stuck as `true`.
+    2. *Background Timer Queueing*: Modern browsers throttle `setInterval` in background tabs while pausing `requestAnimationFrame`. State updates fired in the background without rendering, resulting in desynchronized state and clock spikes when the tab was restored.
+    3. *Framer Motion `layout` Projection Conflict*: The `<m.div layout ...>` prop triggered FLIP bounding box calculations. During tab backgrounding, layout calculations returned frozen rects, causing cards to get stuck in intermediate transforms.
+  - **The Fix**:
+    1. Integrated the native **Page Visibility API** (`visibilitychange`) and window `focus`/`blur` listeners. When `document.hidden` is true, the autoplay interval safely stops.
+    2. When the tab becomes visible or regains window focus, dynamically evaluates `sectionRef.current.matches(':hover')`: if the cursor is not physically over the carousel, `isPaused` is immediately reset to `false` and autoplay resumes cleanly.
+    3. Added `touchcancel` handler to prevent gesture cancellations from locking the pause state.
+    4. Removed the conflicting `layout` prop from absolute carousel cards and set `restDelta: 0.001` on spring physics to eliminate runaway velocities upon tab restoration.
+    5. Enriched database banners with matching default metadata (headlines, taglines, highlights, descriptions) and deduplicated by title and ID to prevent redundant slides.
+- **Verification**:
+  - TypeScript & Vite build passing (`npm run build:store`, built in 8.27s).
+  - 204 Vitest unit and integration tests passing across 13 suites.
+
 
 
