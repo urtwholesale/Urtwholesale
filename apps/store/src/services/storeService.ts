@@ -308,6 +308,102 @@ export async function fetchProducts(
 }
 
 /**
+ * Fetches newly arrived products distributed evenly across every listed parent category.
+ * Instead of a single category monopolizing the new arrivals carousel, this retrieves the newest
+ * arrivals per category family and interleaves them (Round 1: 1st newest from each category,
+ * Round 2: 2nd newest from each category, etc.) ensuring full representation across all categories.
+ */
+export async function fetchNewArrivalsAcrossCategories(
+  allCategories?: Category[],
+  limitPerCategory: number = 2,
+  maxTotal: number = 24
+): Promise<Product[]> {
+  ensureConfigured();
+
+  try {
+    // 1. Get categories if not preloaded
+    const cats =
+      allCategories && allCategories.length > 0
+        ? allCategories
+        : await fetchCategories();
+
+    const parentCategories = cats
+      .filter((c) => !c.parent_id && c.is_active !== false)
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+    if (parentCategories.length === 0) {
+      const fallback = await fetchProducts({ limit: maxTotal, sort: "newest" });
+      return fallback.products;
+    }
+
+    // 2. Build family category ID list for each parent (parent + all children + grandchildren)
+    const familyMap = new Map<string, string[]>();
+    for (const parent of parentCategories) {
+      const childIds = cats
+        .filter((c) => c.parent_id === parent.id)
+        .map((c) => c.id);
+      const grandchildIds = cats
+        .filter((c) => c.parent_id && childIds.includes(c.parent_id))
+        .map((c) => c.id);
+      familyMap.set(parent.id, [parent.id, ...childIds, ...grandchildIds]);
+    }
+
+    // 3. Parallel fetch newest active products from each parent category family
+    const familyPromises = parentCategories.map(async (parent) => {
+      const categoryIds = familyMap.get(parent.id) || [parent.id];
+      const { data, error } = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .in("category_id", categoryIds)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(limitPerCategory);
+
+      if (error || !data) {
+        return { parent, products: [] };
+      }
+      return { parent, products: data.map(formatProduct) };
+    });
+
+    const results = await Promise.all(familyPromises);
+
+    // 4. Interleave products round-robin across categories
+    const interleaved: Product[] = [];
+    for (let round = 0; round < limitPerCategory; round++) {
+      for (const res of results) {
+        const prod = res.products[round];
+        if (prod) {
+          interleaved.push(prod);
+          if (interleaved.length >= maxTotal) break;
+        }
+      }
+      if (interleaved.length >= maxTotal) break;
+    }
+
+    // If for any reason interleaved count is low (e.g. empty categories), backfill with general newest
+    if (interleaved.length < 5) {
+      const fallback = await fetchProducts({ limit: maxTotal, sort: "newest" });
+      const existingIds = new Set(interleaved.map((p) => p.id));
+      for (const p of fallback.products) {
+        if (!existingIds.has(p.id)) {
+          interleaved.push(p);
+          if (interleaved.length >= maxTotal) break;
+        }
+      }
+    }
+
+    return interleaved;
+  } catch (err) {
+    console.warn(
+      "[storeService] Error fetching diverse new arrivals across categories, falling back to standard newest:",
+      err
+    );
+    const fallback = await fetchProducts({ limit: maxTotal, sort: "newest" });
+    return fallback.products;
+  }
+}
+
+/**
  * Fetch a single product by slug with price tiers
  */
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {

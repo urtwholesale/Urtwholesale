@@ -1400,6 +1400,33 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
+### Touchpoint 39 — Multi-Category Balanced New Arrivals Showcase on Home Page
+
+- **Evenly Distributed Cross-Category New Arrivals Engine (`storeService.ts`, `HomePage.tsx` & `023_diverse_new_arrivals.sql`)**:
+  - **The Requirement**: New Arrivals on the home page must represent every listed category rather than having a single category (such as bulk-uploaded lens rings / tempered glass) monopolize all visible cards in the carousel.
+  - **The Root Cause**:
+    - Previously, the New Arrivals slider fetched products with a simple global `order("created_at", { ascending: false }).limit(12)`.
+    - Because a single category (Tempered Glass & Lens Rings) had over 1,500 products with hundreds of items added in recent uploads, all top 12 newest products in the database belonged to that single category, leaving chargers, audio, neckbands, buds, cables, smart watches, power banks, stands, earphones, batteries, and OTG connectors completely excluded from the home page.
+  - **The Implementation**:
+    1. **Hierarchical Category Interleaving Engine (`fetchNewArrivalsAcrossCategories` in `storeService.ts`)**:
+       - Dynamically resolves all active parent categories listed by the merchant (sorted by `sort_order`).
+       - Maps each parent category to its entire family tree (parent ID + direct child category IDs + grandchild IDs).
+       - Fetches the newest active products from each parent category family in parallel with foreign-key joined price tiers (`product_price_tiers`).
+       - Interleaves products round-robin across categories:
+         - **Round 1**: 1st newest product from every single parent category (Card 1: Tempered Glass/Lens Ring, Card 2: Cables & Cords, Card 3: Mobile Chargers, Card 4: Buds & TWS, Card 5: Neckbands, Card 6: Speakers, Card 7: OTG Connectors, Card 8: Mobile Holders & Stand, Card 9: Power Banks, Card 10: Smart Watches, Card 11: Earphones, Card 12: Batteries).
+         - **Round 2**: 2nd newest product from each category, providing up to 24 diverse, fresh items.
+       - Guarantees that the first 5 visible cards on screen are 5 completely different, high-value wholesale product categories.
+    2. **Home Page Integration (`HomePage.tsx`)**:
+       - Uses `fetchNewArrivalsAcrossCategories(cats, 2, 24)`, passing already-fetched categories to avoid redundant network overhead.
+       - Updated the slider subtitle: `"Freshly stocked wholesale accessories across every category & collection"`.
+    3. **PostgreSQL Recursive RPC Migration (`supabase/migrations/023_diverse_new_arrivals.sql`)**:
+       - Created recursive CTE function `get_new_arrivals_by_category(items_per_category)` using window partitioning `row_number() over (partition by ct.root_parent_id order by p.created_at desc)`.
+- **Verification**:
+  - Monorepo production build passing (`npm run build`, built in 21.18s with 0 errors).
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
+
+
 
 
 

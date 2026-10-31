@@ -7,6 +7,7 @@ import { CategoryProductSlider } from "../components/CategoryProductSlider";
 import {
   fetchCategories,
   fetchProducts,
+  fetchNewArrivalsAcrossCategories,
   getBanners,
 } from "../services/storeService";
 import { getRecentlyViewed } from "../services/recentViews";
@@ -80,10 +81,10 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       setSpeakerCategory(speakerCat);
 
       // Parallelize fetching curated collections
-      const [featuredRes, arrivalsRes, cablesRes, speakersRes, banners] =
+      const [featuredRes, arrivalsProducts, cablesRes, speakersRes, banners] =
         await Promise.all([
           fetchProducts({ isFeatured: true, limit: 12 }),
-          fetchProducts({ limit: 12, sort: "newest" }),
+          fetchNewArrivalsAcrossCategories(cats, 2, 24),
           cableCat
             ? fetchProducts({ categoryId: cableCat.id, limit: 12 })
             : Promise.resolve({ products: [], total: 0 }),
@@ -94,7 +95,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
         ]);
 
       setFeaturedProducts(featuredRes.products);
-      setNewArrivals(arrivalsRes.products);
+      setNewArrivals(arrivalsProducts);
       setCableProducts(cablesRes.products);
       setSpeakerProducts(speakersRes.products);
       setAllBanners(banners);
@@ -343,7 +344,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       {/* ── 7. New Arrivals Slider (Single Card View, Rose Theme) ── */}
       <CategoryProductSlider
         title="New Arrivals"
-        subtitle="Freshly stocked wholesale accessories direct from factory lines"
+        subtitle="Freshly stocked wholesale accessories across every category & collection"
         badgeTag="🔥 Fresh Factory Drop"
         icon={<Flame className="w-4 h-4 stroke-[2.2]" />}
         products={newArrivals}
