@@ -1069,5 +1069,43 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - **204 automated unit tests** passing across 13 test suites (`vitest`).
   - Both `apps/admin` and `apps/store` compile with 0 TypeScript/CSS errors (`npm run build`).
 
+---
+
+### Touchpoint 22 — Comprehensive Dark Mode Theme Adoption Across Storefront Subsystems
+
+- **The Problem**:
+  - While primary storefront pages adopted dark mode, several key sub-pages, secondary forms, policy accordions, order lists, and filter panels had residual unstyled pure-white containers (`bg-white`), glaring white backgrounds, light borders (`border-slate-200`), and dark text that looked high-contrast, harsh, or illegible when switching to dark mode (`dark:bg-[#06090e]`).
+- **Pages & Components Fully Overhauled for Dark Mode**:
+  1. **My Orders & Order History (`MyOrdersPage.tsx`)**:
+     - Upgraded order status sidebar filter panel with deep obsidian cards (`dark:bg-slate-900 dark:border-white/10 dark:text-white`).
+     - Fixed Guest Quick Track card (`dark:bg-slate-800/80 dark:border-slate-700`).
+     - Fixed Search Orders bar and text input with dark surfaces (`dark:bg-slate-800/80 dark:text-white`).
+     - Fully dark-themed order list cards: order codes (`#id`), placed dates, tier chips, status badges, line items, and invoice/reorder action buttons.
+     - Dark-themed pagination bar and mobile filter drawer.
+  2. **Policies & Legal Terms (`PolicyPage.tsx`)**:
+     - Replaced glaring white policy card with dark obsidian backdrop (`dark:bg-slate-900 dark:border-white/10`).
+     - Polished hero header card with subtle dark gradient aura, verified policy pill, and orange document icon container.
+     - Added full dark mode typography via Tailwind Typography invert (`dark:prose-invert text-slate-700 dark:text-slate-300`).
+     - Dark-themed WhatsApp support banner and related policies navigation grid.
+  3. **Menu & Account Hub (`MenuPage.tsx`)**:
+     - Dark-themed recent orders summary cards and row items (`dark:bg-slate-900 dark:bg-slate-800/80 dark:border-white/10`).
+     - Dark-themed accordion policy cards (About Us, Terms of Service, Privacy Policy) with dark borders and readable text.
+  4. **Customer Authentication Modal (`CustomerAuth.tsx`)**:
+     - Main authentication dialog, inputs, and tab switches updated with `dark:bg-slate-900`, `dark:bg-slate-800/80`, `dark:border-slate-700`, `dark:text-white`, and `dark:placeholder:text-slate-500`.
+  5. **Order Tracking & Details (`OrderPage.tsx`)**:
+     - Polished single order tracking timeline, address info, dynamic UPI payment QR card, items summary, and price details with dark slate styling.
+  6. **Dealer Application Form (`DealerApplicationPage.tsx`)**:
+     - Success screen, dealer privilege cards, and multi-field trade application form upgraded to dark slate cards and inputs.
+  7. **Quantity Input Counter (`QuantityInput.tsx`)**:
+     - Dark background, borders, input text, and plus/minus icons (`dark:bg-slate-800/80 dark:border-white/10 dark:text-white`).
+  8. **Marketplace Active Filters & Mobile Drawer (`MarketplacePage.tsx`)**:
+     - Updated active filter strip (`dark:bg-slate-900 dark:border-white/10 dark:text-slate-400`).
+     - Updated mobile filter drawer with dark container, subcategory pills, sort buttons, and price bracket selectors.
+  9. **Product Detail Page Carousel & Thumbnail Controls (`ProductDetailPage.tsx`)**:
+     - Updated image carousel navigation buttons, thumbnail borders, and SKU tags with dark mode variants.
+- **Verification**:
+  - Full TypeScript & Vite build passing (`npm run build:store`).
+  - Full automated Vitest test suite passing (204 tests across 13 suites).
+
 
 

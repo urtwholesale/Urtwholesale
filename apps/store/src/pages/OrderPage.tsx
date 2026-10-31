@@ -451,16 +451,16 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   if (!orderId || error || !order) {
     return (
       <div className="max-w-2xl mx-auto py-10 px-4 space-y-8 animate-in fade-in">
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-100 dark:border-amber-900/40">
             <Package className="w-7 h-7" />
           </div>
 
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {orderId ? "Order Not Found" : "Track Wholesale Order"}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">
               {orderId
                 ? `We couldn't locate an active order with code #${orderId}. Check your SMS confirmation or enter your order code below.`
                 : "Enter your 6-digit or full order tracking code to view live delivery timeline and download invoices."}
@@ -469,7 +469,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
           <form onSubmit={handleQuickLookup} className="max-w-md mx-auto space-y-3">
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={lookupQuery}
@@ -478,11 +478,11 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                   setLookupError(null);
                 }}
                 placeholder="Enter Order Code (e.g. 748291 or OD432970)"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 outline-none focus:border-brand-dark focus:bg-white transition"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-dark dark:focus:border-brand-light focus:bg-white dark:focus:bg-slate-800 transition"
               />
             </div>
             {lookupError && (
-              <p className="text-xs text-rose-600 font-semibold text-left pl-1">
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold text-left pl-1">
                 {lookupError}
               </p>
             )}
@@ -496,10 +496,10 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             </button>
           </form>
 
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-center space-x-6 text-xs text-slate-500">
+          <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-center space-x-6 text-xs text-slate-500 dark:text-slate-400">
             <Link
               to="/my-orders"
-              className="text-brand-dark font-bold hover:underline inline-flex items-center space-x-1"
+              className="text-brand-dark dark:text-brand-light font-bold hover:underline inline-flex items-center space-x-1"
             >
               <span>View My Orders List</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -507,7 +507,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             <span>&bull;</span>
             <Link
               to="/marketplace"
-              className="text-slate-600 font-semibold hover:text-slate-900"
+              className="text-slate-600 dark:text-slate-400 font-semibold hover:text-slate-900 dark:hover:text-white"
             >
               Browse Catalog
             </Link>
@@ -705,7 +705,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                     ? "Replacement Request In Progress"
                     : "Return Request In Progress"}
                 </span>
-                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-white/80 border border-current">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-current">
                   {existingReturn.return_code}
                 </span>
               </div>
@@ -726,28 +726,28 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
           <Link
             to={`/returns/${existingReturn.id}`}
             onClick={() => triggerHaptic("selection")}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-white text-slate-900 font-bold text-xs border border-slate-200 shadow-2xs hover:bg-slate-50 transition self-start sm:self-auto cursor-pointer"
+            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 transition self-start sm:self-auto cursor-pointer"
           >
             <span>Track Return</span>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-500" />
           </Link>
         </div>
       )}
 
       {/* ── Top Header / Quick Action Bar ── */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-3 flex-wrap gap-y-1">
-            <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
               <span>Order #{order.id}</span>
               <button
                 type="button"
                 onClick={() => handleCopyOrderId(order.id)}
                 title="Copy Order ID"
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
               >
                 {copiedId ? (
-                  <Check className="w-4 h-4 text-emerald-600" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
@@ -762,7 +762,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             </span>
           </div>
 
-          <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-1.5">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             <span>Placed on {formattedOrderDate}</span>
             <span className="text-slate-300">&bull;</span>
@@ -835,39 +835,39 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
         <div className="lg:col-span-8 space-y-5">
           {/* Main Focused Product Card (Screenshot 2 Model) */}
           {primaryItem && (
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-5">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 p-5 sm:p-6 shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                 <div className="space-y-1.5 min-w-0 flex-1">
                   {/* Status Badge */}
-                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-black text-[10px] uppercase tracking-wider">
+                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-[10px] uppercase tracking-wider">
                     {order.status === "returned"
                       ? "REPLACEMENT / RETURN"
                       : "PRIMARY PRODUCT"}
                   </span>
 
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
                     {primaryItem.name}
                   </h2>
 
-                  <div className="flex items-center space-x-3 text-xs text-slate-500 flex-wrap gap-y-1">
+                  <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap gap-y-1">
                     {primaryItem.sku && (
                       <span>
-                        SKU: <strong className="text-slate-800">{primaryItem.sku}</strong>
+                        SKU: <strong className="text-slate-800 dark:text-slate-200">{primaryItem.sku}</strong>
                       </span>
                     )}
                     {primaryItem.tier_min_qty && (
-                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 font-bold text-[11px] border border-sky-100">
-                        <Sparkles className="w-3 h-3 text-sky-600" />
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-sky-50 dark:bg-orange-500/15 text-sky-800 dark:text-orange-300 font-bold text-[11px] border border-sky-100 dark:border-orange-500/30">
+                        <Sparkles className="w-3 h-3 text-sky-600 dark:text-orange-400" />
                         <span>Tier applied: {primaryItem.tier_min_qty}+ pcs</span>
                       </span>
                     )}
                     <span>
-                      Seller: <strong className="text-slate-800">URT Direct</strong>
+                      Seller: <strong className="text-slate-800 dark:text-slate-200">URT Direct</strong>
                     </span>
                   </div>
 
                   <div className="pt-1 flex items-baseline space-x-2">
-                    <span className="text-lg font-black text-slate-900">
+                    <span className="text-lg font-black text-slate-900 dark:text-white">
                       ₹
                       {(
                         primaryItem.unit_price ||
@@ -875,8 +875,8 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                         0
                       ).toLocaleString("en-IN")}
                     </span>
-                    <span className="text-xs text-slate-500">
-                      per unit &bull; Qty: <strong>{primaryItem.quantity}</strong> (Total: ₹
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      per unit &bull; Qty: <strong className="text-slate-800 dark:text-slate-200">{primaryItem.quantity}</strong> (Total: ₹
                       {(
                         primaryItem.line_total ||
                         (primaryItem.unit_price || primaryItem.price || 0) *
@@ -888,7 +888,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                 </div>
 
                 {/* Product Thumbnail */}
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                   {primaryItem.image ? (
                     <img
                       src={primaryItem.image}
@@ -896,18 +896,18 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Package className="w-8 h-8 text-slate-300" />
+                    <Package className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                   )}
                 </div>
               </div>
 
               {/* ── Vertical Timeline (Screenshot 2: Green connected line) ── */}
-              <div className="pt-4 border-t border-slate-100 space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Order Progression
                 </h3>
 
-                <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2.75 sm:before:left-3.75 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2.75 sm:before:left-3.75 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                   {timelineMilestones.map((step) => {
                     const isCompleted = step.completed;
                     const isCurrent = step.current;
@@ -924,14 +924,14 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                               : isCompleted
                               ? "bg-emerald-600 text-white shadow-sm"
                               : isCurrent
-                              ? "bg-white border-2 border-emerald-600 text-emerald-600 animate-pulse"
-                              : "bg-white border-2 border-slate-300 text-slate-300"
+                              ? "bg-white dark:bg-slate-900 border-2 border-emerald-600 text-emerald-600 animate-pulse"
+                              : "bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 text-slate-300 dark:text-slate-600"
                           }`}
                         >
                           {isCompleted ? (
                             <Check className="w-3.5 h-3.5 stroke-3" />
                           ) : (
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
                           )}
                         </div>
 
@@ -1049,15 +1049,15 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
           {/* ── Additional Items in this Order (if any) ── */}
           {otherItems.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-4">
-              <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
-                <ShoppingBag className="w-4 h-4 text-brand-dark" />
-                <h3 className="font-extrabold text-sm text-slate-900">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 p-5 shadow-xs space-y-4">
+              <div className="flex items-center space-x-2 pb-2 border-b border-slate-100 dark:border-white/10">
+                <ShoppingBag className="w-4 h-4 text-brand-dark dark:text-brand-light" />
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
                   Other Items In This Order ({otherItems.length})
                 </h3>
               </div>
 
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-white/10">
                 {otherItems.map((item, idx) => {
                   const unitPrice = item.unit_price || item.price || 0;
                   const lineTotal = item.line_total || unitPrice * item.quantity;
@@ -1068,7 +1068,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                       className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center space-x-3 min-w-0">
-                        <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-center overflow-hidden shrink-0">
+                        <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                           {item.image ? (
                             <img
                               src={item.image}
@@ -1076,25 +1076,25 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <Package className="w-6 h-6 text-slate-300" />
+                            <Package className="w-6 h-6 text-slate-300 dark:text-slate-600" />
                           )}
                         </div>
 
                         <div className="min-w-0 space-y-0.5">
-                          <p className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                          <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                             {item.name}
                           </p>
-                          <div className="flex items-center space-x-2 text-[11px] text-slate-500">
+                          <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400">
                             {item.sku && <span>SKU: {item.sku}</span>}
                             <span>&bull;</span>
-                            <span>Qty: <strong>{item.quantity}</strong></span>
+                            <span>Qty: <strong className="text-slate-800 dark:text-slate-200">{item.quantity}</strong></span>
                             {item.tier_min_qty && (
-                              <span className="text-sky-700 font-semibold">
+                              <span className="text-sky-700 dark:text-orange-400 font-semibold">
                                 ({item.tier_min_qty}+ tier)
                               </span>
                             )}
                           </div>
-                          <p className="text-xs font-black text-slate-900 sm:hidden pt-0.5">
+                          <p className="text-xs font-black text-slate-900 dark:text-white sm:hidden pt-0.5">
                             ₹{lineTotal.toLocaleString("en-IN")}
                           </p>
                         </div>
@@ -1102,10 +1102,10 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
                       <div className="flex items-center justify-between sm:justify-end space-x-3 shrink-0 pt-2 sm:pt-0">
                         <div className="text-right hidden sm:block">
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">
                             ₹{unitPrice.toLocaleString("en-IN")} × {item.quantity}
                           </p>
-                          <p className="font-black text-sm text-slate-900">
+                          <p className="font-black text-sm text-slate-900 dark:text-white">
                             ₹{lineTotal.toLocaleString("en-IN")}
                           </p>
                         </div>
@@ -1113,7 +1113,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                         <button
                           type="button"
                           onClick={() => handleReorderSingleItem(item)}
-                          className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
+                          className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition cursor-pointer"
                         >
                           + Reorder Item
                         </button>
@@ -1129,26 +1129,26 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
         {/* ── Right Column (Collapsible Details - Screenshot 2) ── */}
         <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-6">
           {/* ── Delivery Details Card ── */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs overflow-hidden transition">
             <button
               type="button"
               onClick={() => {
                 triggerHaptic("selection");
                 setDeliveryOpen(!deliveryOpen);
               }}
-              className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-slate-50/50 transition cursor-pointer"
+              className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition cursor-pointer"
             >
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900">
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
                   Delivery details
                 </h3>
                 {order.customer && (
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Delivered to {order.customer.name}
                   </p>
                 )}
               </div>
-              <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+              <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
                 {deliveryOpen ? (
                   <ChevronUp className="w-4 h-4" />
                 ) : (
@@ -1158,39 +1158,39 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             </button>
 
             {deliveryOpen && (
-              <div className="px-5 pb-5 pt-1 border-t border-slate-100 text-xs space-y-3">
+              <div className="px-5 pb-5 pt-1 border-t border-slate-100 dark:border-white/10 text-xs space-y-3">
                 {order.customer ? (
-                  <div className="space-y-2 text-slate-600">
+                  <div className="space-y-2 text-slate-600 dark:text-slate-300">
                     <div>
-                      <p className="font-bold text-slate-900 text-xs sm:text-sm">
+                      <p className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
                         {order.customer.name}
                       </p>
-                      <p className="text-slate-500 text-[11px] mt-0.5">
+                      <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
                         +91 {order.customer.phone}
                       </p>
                     </div>
 
-                    <div className="pt-1 text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div className="pt-1 text-slate-700 dark:text-slate-200 leading-relaxed bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-100 dark:border-white/10">
                       <p className="font-medium">{order.customer.address}</p>
                       {order.customer.pincode && (
-                        <p className="font-bold text-slate-900 mt-1">
+                        <p className="font-bold text-slate-900 dark:text-white mt-1">
                           PIN Code: {order.customer.pincode}
                         </p>
                       )}
                     </div>
 
                     {(order.customer.business_name || order.customer.gstin) && (
-                      <div className="pt-2 border-t border-slate-100 space-y-1">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <div className="pt-2 border-t border-slate-100 dark:border-white/10 space-y-1">
+                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                           Wholesale Entity
                         </p>
                         {order.customer.business_name && (
-                          <p className="font-semibold text-slate-800">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">
                             {order.customer.business_name}
                           </p>
                         )}
                         {order.customer.gstin && (
-                          <p className="text-[11px] font-mono text-slate-600">
+                          <p className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
                             GSTIN: <span className="font-bold">{order.customer.gstin}</span>
                           </p>
                         )}
@@ -1198,7 +1198,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                     )}
                   </div>
                 ) : (
-                  <p className="text-slate-500 italic">
+                  <p className="text-slate-500 dark:text-slate-400 italic">
                     Recipient details provided at checkout.
                   </p>
                 )}
@@ -1207,63 +1207,63 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
           </div>
 
           {/* ── "Pay now" Dynamic UPI & QR Code Card ── */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs p-5 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-sm">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm">
                   ₹
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm text-slate-900">
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
                     Pay now
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     Scan with GPay, PhonePe, Paytm, or BHIM UPI
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
                 ₹{total.toLocaleString("en-IN")}
               </span>
             </div>
 
             {/* QR Code container (Dynamic QR generated from UPI link with static fallback) */}
-            <div className="flex flex-col items-center justify-center p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
-              <div className="w-48 sm:w-52 h-48 sm:h-52 rounded-xl overflow-hidden shadow-xs border border-slate-200 bg-white flex items-center justify-center p-2">
+            <div className="flex flex-col items-center justify-center p-3.5 bg-slate-50/80 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-white/10 space-y-2">
+              <div className="w-48 sm:w-52 h-48 sm:h-52 rounded-xl overflow-hidden shadow-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-2">
                 <img
                   src={!qrError && qrDataUrl ? qrDataUrl : "/payment-qr.png"}
                   alt={`UPI Payment QR Code for Order #${order.id}`}
                   className="w-full h-full object-contain"
                 />
               </div>
-              <p className="text-[11px] font-semibold text-slate-500 text-center">
-                Scan to pay <strong>₹{total.toLocaleString("en-IN")}</strong> for Order #{order.id}
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 text-center">
+                Scan to pay <strong className="text-slate-800 dark:text-white">₹{total.toLocaleString("en-IN")}</strong> for Order #{order.id}
               </p>
             </div>
 
             {/* UPI ID copy box */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                 UPI ID for Payment
               </label>
-              <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2">
-                <span className="text-xs font-mono font-bold text-slate-800 truncate mr-2">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-2">
+                <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-100 truncate mr-2">
                   {upiId}
                 </span>
                 <button
                   type="button"
                   onClick={handleCopyUpi}
-                  className="shrink-0 text-xs font-bold text-brand-dark hover:text-brand-dark/80 flex items-center space-x-1 cursor-pointer transition"
+                  className="shrink-0 text-xs font-bold text-brand-dark dark:text-brand-light hover:text-brand-dark/80 flex items-center space-x-1 cursor-pointer transition"
                 >
                   {copiedUpi ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-600 text-[11px]">Copied</span>
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-emerald-600 dark:text-emerald-400 text-[11px]">Copied</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5 text-slate-500" />
-                      <span className="text-slate-600 text-[11px]">Copy</span>
+                      <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                      <span className="text-slate-600 dark:text-slate-300 text-[11px]">Copy</span>
                     </>
                   )}
                 </button>
@@ -1280,24 +1280,24 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
           </div>
 
           {/* ── Price Details Card ── */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs overflow-hidden transition">
             <button
               type="button"
               onClick={() => {
                 triggerHaptic("selection");
                 setPriceOpen(!priceOpen);
               }}
-              className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-slate-50/50 transition cursor-pointer"
+              className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition cursor-pointer"
             >
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900">
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
                   Price details
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Paid ₹{total.toLocaleString("en-IN")}
                 </p>
               </div>
-              <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+              <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
                 {priceOpen ? (
                   <ChevronUp className="w-4 h-4" />
                 ) : (
@@ -1307,17 +1307,17 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             </button>
 
             {priceOpen && (
-              <div className="px-5 pb-5 pt-1 border-t border-slate-100 text-xs space-y-3">
-                <div className="space-y-2 text-slate-600">
+              <div className="px-5 pb-5 pt-1 border-t border-slate-100 dark:border-white/10 text-xs space-y-3">
+                <div className="space-y-2 text-slate-600 dark:text-slate-300">
                   <div className="flex justify-between">
                     <span>Items Subtotal</span>
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-semibold text-slate-800 dark:text-white">
                       ₹{subtotal.toLocaleString("en-IN")}
                     </span>
                   </div>
 
                   {savings > 0 && (
-                    <div className="flex justify-between text-emerald-600 font-semibold">
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
                       <span>Wholesale Volume Savings</span>
                       <span>-₹{savings.toLocaleString("en-IN")}</span>
                     </div>

@@ -349,7 +349,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                       (prev) => (prev - 1 + images.length) % images.length
                     )
                   }
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-700 hover:bg-white active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer border border-slate-200/50 dark:border-white/10"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -359,7 +359,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   onClick={() =>
                     setActiveImageIndex((prev) => (prev + 1) % images.length)
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-700 hover:bg-white active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition opacity-80 group-hover:opacity-100 cursor-pointer border border-slate-200/50 dark:border-white/10"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -382,10 +382,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   key={idx}
                   type="button"
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`w-14 h-14 rounded-2xl overflow-hidden border-2 bg-white transition cursor-pointer shrink-0 ${
+                  className={`w-14 h-14 rounded-2xl overflow-hidden border-2 bg-white dark:bg-slate-800 transition cursor-pointer shrink-0 ${
                     activeImageIndex === idx
                       ? "border-brand-dark shadow-xs ring-2 ring-brand-light/40"
-                      : "border-slate-200/80 opacity-70 hover:opacity-100"
+                      : "border-slate-200/80 dark:border-slate-700 opacity-70 hover:opacity-100"
                   }`}
                 >
                   <img
@@ -403,7 +403,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         <div className="space-y-5 lg:col-span-7 xl:col-span-7">
           <div>
             <div className="flex items-center gap-2 mb-2 sm:hidden">
-              <span className="text-[11px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 shadow-2xs">
+              <span className="text-[11px] font-mono text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-700 shadow-2xs">
                 SKU: {product.sku || "UR-ACCESSORY"}
               </span>
             </div>

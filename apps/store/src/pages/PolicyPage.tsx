@@ -257,7 +257,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
             triggerHaptic("selection");
             navigate(-1);
           }}
-          className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+          className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 px-3 py-1.5 rounded-full shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back</span>
@@ -267,7 +267,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
           <Link
             to="/dealers"
             onClick={() => triggerHaptic("selection")}
-            className="text-xs font-bold text-brand-dark hover:underline flex items-center space-x-1"
+            className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1"
           >
             <span>Become a Dealer</span>
             <ChevronRight className="w-3 h-3" />
@@ -276,33 +276,33 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
       </div>
 
       {/* ── Hero Header Card ── */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-xs relative overflow-hidden">
         {/* Subtle decorative gradient aura */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-br from-brand-light/10 to-brand-dark/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-br from-brand-light/10 to-brand-dark/5 dark:from-orange-500/10 dark:to-orange-700/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-light/15 text-brand-dark border border-brand-light/30">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-light/15 dark:bg-orange-500/15 text-brand-dark dark:text-brand-light border border-brand-light/30 dark:border-orange-500/30">
                 {fallback.category}
               </span>
-              <span className="text-[11px] text-slate-400 font-medium flex items-center space-x-1">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center space-x-1">
                 <Clock className="w-3 h-3" />
                 <span>Verified Policy</span>
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               {title}
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
               {summary}
             </p>
           </div>
 
           <div className="shrink-0 self-start sm:self-center">
-            <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-brand-light/20 to-brand-dark/15 border border-brand-light/30 flex items-center justify-center text-brand-dark shadow-2xs">
+            <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-brand-light/20 to-brand-dark/15 dark:from-orange-500/20 dark:to-orange-600/15 border border-brand-light/30 dark:border-orange-500/30 flex items-center justify-center text-brand-dark dark:text-brand-light shadow-2xs">
               <IconComponent className="w-7 h-7" />
             </div>
           </div>
@@ -310,18 +310,18 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
       </div>
 
       {/* ── Main Policy Content Body ── */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-xs">
         {loading ? (
           <div className="space-y-4 py-8 animate-pulse">
-            <div className="h-5 bg-slate-100 rounded w-1/3" />
-            <div className="h-4 bg-slate-100 rounded w-full" />
-            <div className="h-4 bg-slate-100 rounded w-5/6" />
-            <div className="h-5 bg-slate-100 rounded w-1/4 pt-4" />
-            <div className="h-4 bg-slate-100 rounded w-full" />
-            <div className="h-4 bg-slate-100 rounded w-4/5" />
+            <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded w-1/3" />
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full" />
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6" />
+            <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded w-1/4 pt-4" />
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full" />
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-4/5" />
           </div>
         ) : (
-          <article className="prose prose-slate max-w-none text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4">
+          <article className="prose prose-slate dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 space-y-4">
             {content.split("\n\n").map((block, idx) => {
               const trimmed = block.trim();
               if (!trimmed) return null;
@@ -331,9 +331,9 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
                 return (
                   <h3
                     key={idx}
-                    className="text-base sm:text-lg font-black text-slate-900 tracking-tight pt-4 pb-1 border-b border-slate-100 flex items-center space-x-2"
+                    className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight pt-4 pb-1 border-b border-slate-100 dark:border-white/10 flex items-center space-x-2"
                   >
-                    <span className="w-1.5 h-4 rounded-full bg-brand-dark inline-block" />
+                    <span className="w-1.5 h-4 rounded-full bg-brand-dark dark:bg-brand-light inline-block" />
                     <span>{trimmed.replace(/^###\s+/, "")}</span>
                   </h3>
                 );
@@ -344,7 +344,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
                 return (
                   <h2
                     key={idx}
-                    className="text-lg sm:text-xl font-black text-slate-900 tracking-tight pt-5 pb-1 border-b border-slate-100"
+                    className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight pt-5 pb-1 border-b border-slate-100 dark:border-white/10"
                   >
                     {trimmed.replace(/^##\s+/, "")}
                   </h2>
@@ -362,11 +362,11 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
                       const boldMatch = text.match(/^\*\*([^*]+)\*\*:\s*(.*)/);
                       return (
                         <li key={itemIdx} className="flex items-start space-x-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-brand-dark shrink-0 mt-1.5" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-dark dark:bg-brand-light shrink-0 mt-1.5" />
                           <span>
                             {boldMatch ? (
                               <>
-                                <strong className="font-bold text-slate-900">
+                                <strong className="font-bold text-slate-900 dark:text-white">
                                   {boldMatch[1]}:
                                 </strong>{" "}
                                 {boldMatch[2]}
@@ -384,7 +384,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
 
               // Regular paragraph
               return (
-                <p key={idx} className="text-slate-600 leading-relaxed">
+                <p key={idx} className="text-slate-600 dark:text-slate-300 leading-relaxed">
                   {trimmed}
                 </p>
               );
@@ -393,16 +393,16 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
         )}
 
         {/* WhatsApp Help CTA inside the document */}
-        <div className="mt-8 pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/70 p-4 rounded-2xl">
+        <div className="mt-8 pt-6 border-t border-slate-200/60 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/70 dark:bg-slate-800/80 p-4 rounded-2xl">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <MessageCircle className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-900">
+              <p className="text-xs font-bold text-slate-900 dark:text-white">
                 Have questions about this policy?
               </p>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Direct WhatsApp line to our factory logistics &amp; commercial manager.
               </p>
             </div>
@@ -424,7 +424,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
 
       {/* ── Related Policies Navigation Grid ── */}
       <div className="space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 px-1">
+        <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
           Explore Other Wholesale Policies &amp; Info
         </h2>
 
@@ -436,17 +436,17 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
                 key={item.slug}
                 to={`/page/${item.slug}`}
                 onClick={() => triggerHaptic("selection")}
-                className="p-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/80 flex items-center justify-between transition group shadow-2xs"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-between transition group shadow-2xs"
               >
                 <div className="flex items-center space-x-3 min-w-0 pr-2">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-brand-light/20 group-hover:text-brand-dark flex items-center justify-center text-slate-600 transition shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-brand-light/20 dark:group-hover:bg-orange-500/20 group-hover:text-brand-dark dark:group-hover:text-brand-light flex items-center justify-center text-slate-600 dark:text-slate-400 transition shrink-0">
                     <ItemIcon className="w-4 h-4" />
                   </div>
-                  <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 truncate">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white truncate">
                     {item.label}
                   </span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-dark group-hover:translate-x-0.5 transition" />
+                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-brand-dark dark:group-hover:text-brand-light group-hover:translate-x-0.5 transition" />
               </Link>
             );
           })}

@@ -138,7 +138,7 @@ export function QuantityInput({
 
   return (
     <div
-      className={`inline-flex items-center border border-slate-200/90 rounded-xl bg-slate-50 shadow-2xs transition-all focus-within:border-brand-dark/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-dark/15 ${
+      className={`inline-flex items-center border border-slate-200/90 dark:border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/80 shadow-2xs transition-all focus-within:border-brand-dark/50 dark:focus-within:border-brand-light/50 focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:ring-2 focus-within:ring-brand-dark/15 dark:focus-within:ring-brand-light/15 ${
         disabled ? "opacity-50 pointer-events-none" : ""
       } ${className}`}
     >
@@ -150,7 +150,7 @@ export function QuantityInput({
         aria-label="Decrease quantity"
         className={`${
           isSm ? "w-7 h-7" : "w-8 h-8 sm:w-9 sm:h-9"
-        } flex items-center justify-center text-slate-500 hover:text-slate-900 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer select-none`}
+        } flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer select-none`}
       >
         <Minus className={isSm ? "w-3 h-3" : "w-3.5 h-3.5"} />
       </button>
@@ -172,7 +172,7 @@ export function QuantityInput({
           isSm
             ? "w-11 sm:w-12 text-xs py-0.5"
             : "w-13 sm:w-16 text-xs sm:text-sm py-1"
-        } text-center font-black text-slate-800 bg-transparent focus:bg-white focus:outline-none rounded-md transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none selection:bg-brand-dark/20 selection:text-slate-900`}
+        } text-center font-black text-slate-800 dark:text-white bg-transparent focus:bg-white dark:focus:bg-slate-800 focus:outline-none rounded-md transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none selection:bg-brand-dark/20 selection:text-slate-900 dark:selection:text-white`}
       />
 
       {/* Increment Button */}
@@ -183,7 +183,7 @@ export function QuantityInput({
         aria-label="Increase quantity"
         className={`${
           isSm ? "w-7 h-7" : "w-8 h-8 sm:w-9 sm:h-9"
-        } flex items-center justify-center text-slate-500 hover:text-slate-900 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer select-none`}
+        } flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer select-none`}
       >
         <Plus className={isSm ? "w-3 h-3" : "w-3.5 h-3.5"} />
       </button>

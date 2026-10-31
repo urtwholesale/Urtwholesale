@@ -56,18 +56,18 @@ export function CustomerAuth({
   // If already logged in, show account card with sign out
   if (user) {
     return (
-      <div className="w-full max-w-md mx-auto p-6 bg-white rounded-3xl shadow-sm border border-slate-100 text-center">
+      <div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-white/10 text-center">
         <div className="w-16 h-16 rounded-full bg-linear-to-b from-brand-light to-brand-dark flex items-center justify-center text-white font-black text-2xl mx-auto mb-3 shadow-sm">
           {(profile?.full_name || user.email || "U")[0]?.toUpperCase()}
         </div>
-        <h3 className="font-bold text-lg text-slate-900">
+        <h3 className="font-bold text-lg text-slate-900 dark:text-white">
           {profile?.full_name || "Wholesale Customer"}
         </h3>
-        <p className="text-xs text-slate-500 mb-4">{user.email}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{user.email}</p>
 
         {profile?.business_name && (
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium mb-4">
-            <Building2 className="w-3.5 h-3.5 text-slate-500" />
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium mb-4">
+            <Building2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>{profile.business_name}</span>
           </div>
         )}
@@ -85,7 +85,7 @@ export function CustomerAuth({
               }
             }}
             disabled={loading}
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition active:scale-[0.99] text-xs cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-[0.99] text-xs cursor-pointer"
           >
             {loading ? "Signing out..." : "Sign Out"}
           </button>
@@ -185,7 +185,7 @@ export function CustomerAuth({
   }
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white rounded-3xl p-6 sm:p-7 shadow-xs border border-slate-100">
+    <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-xs border border-slate-100 dark:border-white/10">
       {/* Brand Header */}
       <div className="text-center mb-6">
         <img
@@ -193,12 +193,12 @@ export function CustomerAuth({
           alt="URT Wholesale"
           className="w-14 h-14 rounded-full mx-auto object-cover shadow-xs mb-2.5"
         />
-        <h2 className="text-xl font-black text-slate-900 tracking-tight">
+        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
           {mode === "login" && "Sign In to URT Wholesale"}
           {mode === "signup" && "Create Wholesale Account"}
           {mode === "forgot" && "Reset Password"}
         </h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           {mode === "login" && "Access wholesale tier prices & saved addresses"}
           {mode === "signup" && "Fast bulk purchasing, GST invoices & express shipping"}
           {mode === "forgot" && "Enter your email to receive a secure recovery link"}
@@ -210,14 +210,14 @@ export function CustomerAuth({
         <div
           className={`p-3.5 rounded-2xl mb-4 text-xs font-medium flex items-start space-x-2.5 ${
             statusMessage.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-rose-50 text-rose-800 border border-rose-200"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
+              : "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50"
           }`}
         >
           {statusMessage.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
           )}
           <span>{statusMessage.text}</span>
         </div>
@@ -233,7 +233,7 @@ export function CustomerAuth({
               setMode("login");
               setStatusMessage(null);
             }}
-            className="flex items-center space-x-1 text-xs font-bold text-brand-dark hover:underline mb-2 cursor-pointer"
+            className="flex items-center space-x-1 text-xs font-bold text-brand-dark dark:text-brand-light hover:underline mb-2 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Sign In</span>
@@ -243,11 +243,11 @@ export function CustomerAuth({
         {/* Full Name (Sign Up only) */}
         {mode === "signup" && (
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
               Contact / Full Name <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={fullName}
@@ -256,13 +256,13 @@ export function CustomerAuth({
                   if (formErrors.fullName) setFormErrors((p) => ({ ...p, fullName: "" }));
                 }}
                 placeholder="Rahul Sharma"
-                className={`w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border rounded-xl outline-none transition focus:bg-white focus:border-brand-dark ${
-                  formErrors.fullName ? "border-rose-400 bg-rose-50/30" : "border-slate-200"
+                className={`w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/80 border text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl outline-none transition focus:bg-white dark:focus:bg-slate-800 focus:border-brand-dark dark:focus:border-brand-light ${
+                  formErrors.fullName ? "border-rose-400 dark:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20" : "border-slate-200 dark:border-slate-700"
                 }`}
               />
             </div>
             {formErrors.fullName && (
-              <p className="text-[11px] text-rose-500 mt-1">{formErrors.fullName}</p>
+              <p className="text-[11px] text-rose-500 dark:text-rose-400 mt-1">{formErrors.fullName}</p>
             )}
           </div>
         )}
@@ -270,11 +270,11 @@ export function CustomerAuth({
         {/* Mobile Number (Sign Up only) */}
         {mode === "signup" && (
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
               Mobile Number (10 digits) <span className="text-rose-500">*</span>
             </label>
             <div className="relative flex">
-              <span className="inline-flex items-center px-3 text-xs font-bold bg-slate-100 text-slate-500 border border-r-0 border-slate-200 rounded-l-xl">
+              <span className="inline-flex items-center px-3 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-r-0 border-slate-200 dark:border-slate-700 rounded-l-xl">
                 +91
               </span>
               <input
@@ -287,24 +287,24 @@ export function CustomerAuth({
                   if (formErrors.phone) setFormErrors((p) => ({ ...p, phone: "" }));
                 }}
                 placeholder="9876543210"
-                className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border rounded-r-xl outline-none transition focus:bg-white focus:border-brand-dark ${
-                  formErrors.phone ? "border-rose-400 bg-rose-50/30" : "border-slate-200"
+                className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/80 border text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-r-xl outline-none transition focus:bg-white dark:focus:bg-slate-800 focus:border-brand-dark dark:focus:border-brand-light ${
+                  formErrors.phone ? "border-rose-400 dark:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20" : "border-slate-200 dark:border-slate-700"
                 }`}
               />
             </div>
             {formErrors.phone && (
-              <p className="text-[11px] text-rose-500 mt-1">{formErrors.phone}</p>
+              <p className="text-[11px] text-rose-500 dark:text-rose-400 mt-1">{formErrors.phone}</p>
             )}
           </div>
         )}
 
         {/* Email */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
             Email Address <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
             <input
               type="email"
               value={email}
@@ -313,13 +313,13 @@ export function CustomerAuth({
                 if (formErrors.email) setFormErrors((p) => ({ ...p, email: "" }));
               }}
               placeholder="dealer@example.com"
-              className={`w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border rounded-xl outline-none transition focus:bg-white focus:border-brand-dark ${
-                formErrors.email ? "border-rose-400 bg-rose-50/30" : "border-slate-200"
+              className={`w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/80 border text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl outline-none transition focus:bg-white dark:focus:bg-slate-800 focus:border-brand-dark dark:focus:border-brand-light ${
+                formErrors.email ? "border-rose-400 dark:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20" : "border-slate-200 dark:border-slate-700"
               }`}
             />
           </div>
           {formErrors.email && (
-            <p className="text-[11px] text-rose-500 mt-1">{formErrors.email}</p>
+            <p className="text-[11px] text-rose-500 dark:text-rose-400 mt-1">{formErrors.email}</p>
           )}
         </div>
 
@@ -327,7 +327,7 @@ export function CustomerAuth({
         {mode !== "forgot" && (
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-bold text-slate-700">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                 Password <span className="text-rose-500">*</span>
               </label>
               {mode === "login" && (
@@ -338,14 +338,14 @@ export function CustomerAuth({
                     setMode("forgot");
                     setStatusMessage(null);
                   }}
-                  className="text-[11px] font-bold text-brand-dark hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
                 >
                   Forgot password?
                 </button>
               )}
             </div>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
@@ -354,20 +354,20 @@ export function CustomerAuth({
                   if (formErrors.password) setFormErrors((p) => ({ ...p, password: "" }));
                 }}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-slate-50 border rounded-xl outline-none transition focus:bg-white focus:border-brand-dark ${
-                  formErrors.password ? "border-rose-400 bg-rose-50/30" : "border-slate-200"
+                className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/80 border text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl outline-none transition focus:bg-white dark:focus:bg-slate-800 focus:border-brand-dark dark:focus:border-brand-light ${
+                  formErrors.password ? "border-rose-400 dark:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20" : "border-slate-200 dark:border-slate-700"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {formErrors.password && (
-              <p className="text-[11px] text-rose-500 mt-1">{formErrors.password}</p>
+              <p className="text-[11px] text-rose-500 dark:text-rose-400 mt-1">{formErrors.password}</p>
             )}
           </div>
         )}
@@ -381,35 +381,35 @@ export function CustomerAuth({
                 triggerHaptic("selection");
                 setShowBusinessFields(!showBusinessFields);
               }}
-              className="text-xs font-bold text-brand-dark hover:underline flex items-center space-x-1 cursor-pointer"
+              className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1 cursor-pointer"
             >
               <span>{showBusinessFields ? "− Hide Business / GSTIN details" : "+ Add Wholesale / GSTIN details (optional)"}</span>
             </button>
 
             {showBusinessFields && (
-              <div className="mt-3 p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3 animate-in fade-in">
+              <div className="mt-3 p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 space-y-3 animate-in fade-in">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                     Business / Store Name
                   </label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     <input
                       type="text"
                       value={businessName}
                       onChange={(e) => setBusinessName(e.target.value)}
                       placeholder="Sharma Mobile & Accessories"
-                      className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-dark transition"
+                      className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                     GSTIN (15 characters)
                   </label>
                   <div className="relative">
-                    <FileCheck2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <FileCheck2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     <input
                       type="text"
                       maxLength={15}
@@ -419,13 +419,13 @@ export function CustomerAuth({
                         if (formErrors.gstin) setFormErrors((p) => ({ ...p, gstin: "" }));
                       }}
                       placeholder="27AAPFU0939F1ZV"
-                      className={`w-full pl-9 pr-3 py-2 text-xs font-mono uppercase bg-white border rounded-xl outline-none focus:border-brand-dark transition ${
-                        formErrors.gstin ? "border-rose-400" : "border-slate-200"
+                      className={`w-full pl-9 pr-3 py-2 text-xs font-mono uppercase bg-white dark:bg-slate-900 border text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light transition ${
+                        formErrors.gstin ? "border-rose-400 dark:border-rose-500" : "border-slate-200 dark:border-slate-700"
                       }`}
                     />
                   </div>
                   {formErrors.gstin && (
-                    <p className="text-[10px] text-rose-500 mt-1">{formErrors.gstin}</p>
+                    <p className="text-[10px] text-rose-500 dark:text-rose-400 mt-1">{formErrors.gstin}</p>
                   )}
                 </div>
               </div>
@@ -455,7 +455,7 @@ export function CustomerAuth({
               triggerHaptic("selection");
               onContinueGuest();
             }}
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
           >
             Continue as Guest
           </button>
@@ -463,9 +463,9 @@ export function CustomerAuth({
       </form>
 
       {/* Mode Switcher */}
-      <div className="text-center pt-4 border-t border-slate-100 mt-5">
+      <div className="text-center pt-4 border-t border-slate-100 dark:border-white/10 mt-5">
         {mode === "login" ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Don't have an account?{" "}
             <button
               type="button"
@@ -474,13 +474,13 @@ export function CustomerAuth({
                 setMode("signup");
                 setStatusMessage(null);
               }}
-              className="font-bold text-brand-dark hover:underline cursor-pointer"
+              className="font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
             >
               Sign Up
             </button>
           </p>
         ) : mode === "signup" ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Already have an account?{" "}
             <button
               type="button"
@@ -489,7 +489,7 @@ export function CustomerAuth({
                 setMode("login");
                 setStatusMessage(null);
               }}
-              className="font-bold text-brand-dark hover:underline cursor-pointer"
+              className="font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
             >
               Sign In
             </button>

@@ -646,17 +646,17 @@ export function MarketplacePage({
         searchQuery ||
         priceBracketIndex > 0 ||
         sortOption !== "featured") && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 bg-white px-3.5 py-2.5 rounded-2xl border border-slate-100 shadow-2xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-3.5 py-2.5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-2xs">
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span className="font-bold text-slate-700 text-[11px]">Filters active:</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">Filters active:</span>
 
             {selectedCategory !== "all" && (
-              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800 font-semibold text-[11px]">
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-[11px]">
                 <span>Category: {activeParent?.name || selectedCategory}</span>
                 <button
                   type="button"
                   onClick={() => handleCategoryChange("all")}
-                  className="text-slate-400 hover:text-slate-700 cursor-pointer ml-0.5"
+                  className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer ml-0.5"
                   title="Clear category"
                 >
                   <X className="w-3 h-3" />
@@ -665,15 +665,15 @@ export function MarketplacePage({
             )}
 
             {selectedSubCategory && (
-              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-brand-light/15 text-brand-dark font-bold text-[11px] border border-brand-light/30">
-                <Layers className="w-3 h-3 text-brand-dark" />
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-brand-light/15 dark:bg-brand-light/20 text-brand-dark dark:text-teal-300 font-bold text-[11px] border border-brand-light/30 dark:border-brand-light/40">
+                <Layers className="w-3 h-3 text-brand-dark dark:text-teal-300" />
                 <span>
                   Subcategory: {activeSubCategory?.name || selectedSubCategory}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleSubCategoryChange(null)}
-                  className="text-brand-dark hover:text-[#065A75] cursor-pointer ml-0.5"
+                  className="text-brand-dark dark:text-teal-300 hover:text-[#065A75] cursor-pointer ml-0.5"
                   title="Clear subcategory"
                 >
                   <X className="w-3 h-3" />
@@ -682,13 +682,13 @@ export function MarketplacePage({
             )}
 
             {priceBracketIndex > 0 && (
-              <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-medium text-[11px]">
+              <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
                 {PRICE_BRACKETS[priceBracketIndex]?.label}
               </span>
             )}
 
             {searchQuery && (
-              <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-medium text-[11px] truncate max-w-35">
+              <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px] truncate max-w-35">
                 "{searchQuery}"
               </span>
             )}
@@ -841,14 +841,14 @@ export function MarketplacePage({
           />
 
           {/* Drawer Card */}
-          <div className="relative w-full max-w-lg bg-white rounded-t-3xl p-5 shadow-2xl border-t border-slate-200 space-y-4 max-h-[85vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl p-5 shadow-2xl border-t border-slate-200 dark:border-white/10 space-y-4 max-h-[85vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
                   Search &amp; Filters
                 </h3>
-                <p className="text-[11px] font-semibold text-slate-500">
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                   {totalCount} products matching
                 </p>
               </div>
@@ -866,7 +866,7 @@ export function MarketplacePage({
                 <button
                   type="button"
                   onClick={() => setFilterDrawerOpen(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -875,7 +875,7 @@ export function MarketplacePage({
 
             {/* 1. Search Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Search</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Search</label>
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
@@ -883,13 +883,13 @@ export function MarketplacePage({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Model, specs, or SKU..."
-                  className="w-full pl-10 pr-9 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark transition"
+                  className="w-full pl-10 pr-9 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-2xl focus:outline-none focus:border-brand-dark dark:focus:border-brand-light transition"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -901,8 +901,8 @@ export function MarketplacePage({
             {subCategories.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
-                    <Layers className="w-3.5 h-3.5 text-brand-dark" />
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                    <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-teal-300" />
                     <span>Subcategories ({activeParent ? activeParent.name : "All"})</span>
                   </label>
                   {selectedSubCategory && (
@@ -921,8 +921,8 @@ export function MarketplacePage({
                     onClick={() => handleSubCategoryChange(null)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                       selectedSubCategory === null
-                        ? "bg-slate-900 text-white shadow-xs"
-                        : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >
                     All {activeParent ? activeParent.name : "Subcategories"}
@@ -943,7 +943,7 @@ export function MarketplacePage({
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                           isSelected
                             ? "text-white shadow-xs font-black"
-                            : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+                            : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                         }`}
                         style={
                           isSelected
@@ -961,7 +961,7 @@ export function MarketplacePage({
 
             {/* 3. Sort Options */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">Sort By</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Sort By</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { id: "featured", label: "Featured" },
@@ -976,7 +976,7 @@ export function MarketplacePage({
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition cursor-pointer text-center ${
                       sortOption === s.id
                         ? "text-white shadow-xs"
-                        : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                     style={
                       sortOption === s.id
@@ -992,7 +992,7 @@ export function MarketplacePage({
 
             {/* 3. Price Bracket */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">Price Range</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Price Range</label>
               <div className="flex flex-wrap gap-2">
                 {PRICE_BRACKETS.map((b, idx) => (
                   <button
@@ -1002,7 +1002,7 @@ export function MarketplacePage({
                     className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer ${
                       priceBracketIndex === idx
                         ? "text-white shadow-xs"
-                        : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                     style={
                       priceBracketIndex === idx
