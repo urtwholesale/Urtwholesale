@@ -10,4 +10,6 @@ export interface Review {
   status: ReviewStatus;
   created_at: string;
   user_name?: string | null;
+  product_name?: string | null;
+  product_image?: string | null;
 }

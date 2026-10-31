@@ -8,7 +8,11 @@ import { ReturnsHome } from "./features/returns";
 import { ContentEditor } from "./features/content/ContentEditor";
 import { SettingsEditor } from "./features/settings/SettingsEditor";
 import { CatalogUploadHome, CategoryManager, ImageBulkUploadPage } from "./features/catalog";
-import { fetchPendingReturnsBadgeCount } from "./lib/adminService";
+import { ReviewModerationList } from "./features/reviews/ReviewModerationList";
+import {
+  fetchPendingReturnsBadgeCount,
+  fetchAdminReviewCounts,
+} from "./lib/adminService";
 import type { Profile } from "@urbanrat/shared";
 import {
   LayoutDashboard,
@@ -30,6 +34,7 @@ import {
   FolderTree,
   RotateCcw,
   ImageIcon,
+  Star,
 } from "lucide-react";
 import { AdminNavigationDock } from "./components/AdminNavigationDock";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
@@ -42,6 +47,7 @@ type NavTab =
   | "products"
   | "orders"
   | "returns"
+  | "reviews"
   | "content"
   | "settings";
 
@@ -55,10 +61,12 @@ export default function App() {
     products: number;
     pendingOrders: number;
     pendingReturns: number;
+    pendingReviews: number;
   }>({
     products: 0,
     pendingOrders: 0,
     pendingReturns: 0,
+    pendingReviews: 0,
   });
 
   useEffect(() => {
@@ -102,7 +110,7 @@ export default function App() {
   useEffect(() => {
     async function loadCounts() {
       try {
-        const [{ count: prodCount }, { count: orderCount }, returnsBadge] =
+        const [{ count: prodCount }, { count: orderCount }, returnsBadge, reviewCounts] =
           await Promise.all([
             supabase
               .from("products")
@@ -112,11 +120,13 @@ export default function App() {
               .select("id", { count: "exact", head: true })
               .eq("status", "pending"),
             fetchPendingReturnsBadgeCount(),
+            fetchAdminReviewCounts().catch(() => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
           ]);
         setCounts({
           products: prodCount ?? 0,
           pendingOrders: orderCount ?? 0,
           pendingReturns: returnsBadge?.total_pending ?? 0,
+          pendingReviews: reviewCounts?.pending ?? 0,
         });
       } catch {
         // silently fallback
@@ -193,6 +203,10 @@ export default function App() {
     returns: {
       title: "Return & RTO Orders",
       subtitle: "Reverse Logistics, Customer RMA Inspection & Carrier Claims",
+    },
+    reviews: {
+      title: "Review Approvals & Moderation",
+      subtitle: "Verified Wholesale Buyer Feedback, Star Filtering & Single-Click Moderation",
     },
     content: {
       title: "Promotional Content",
@@ -600,6 +614,49 @@ export default function App() {
                         </span>
                       )}
                       {activeTab === "returns" ? (
+                        <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
+                          Active
+                        </span>
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Reviews & Approvals */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick("reviews")}
+                    className={`w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer ${
+                      activeTab === "reviews" ? "bg-slate-50/80" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          activeTab === "reviews"
+                            ? "bg-amber-500 text-white shadow-2xs"
+                            : "bg-amber-50 text-amber-600"
+                        }`}
+                      >
+                        <Star className="w-4 h-4 fill-current" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Reviews &amp; Approvals
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Moderation &amp; star approval
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {counts.pendingReviews > 0 && (
+                        <span className="text-[10px] font-bold text-amber-900 bg-amber-200 px-2 py-0.5 rounded-full">
+                          {counts.pendingReviews} pending
+                        </span>
+                      )}
+                      {activeTab === "reviews" ? (
                         <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
                           Active
                         </span>
@@ -1070,6 +1127,49 @@ export default function App() {
                   </span>
                 )}
               </button>
+
+              {/* Reviews & Approvals */}
+              <button
+                type="button"
+                onClick={() => handleNavClick("reviews")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "reviews"
+                    ? "bg-[#0B1E28] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <Star
+                    className={`w-4 h-4 ${
+                      activeTab === "reviews"
+                        ? "text-amber-400 fill-amber-400"
+                        : "text-slate-500"
+                    }`}
+                  />
+                  <span>Reviews</span>
+                </div>
+                {counts.pendingReviews > 0 ? (
+                  <span
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      activeTab === "reviews"
+                        ? "bg-amber-400 text-slate-900"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {counts.pendingReviews} pending
+                  </span>
+                ) : (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      activeTab === "reviews"
+                        ? "bg-brand-light/20 text-brand-light"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    Desk
+                  </span>
+                )}
+              </button>
             </div>
 
             {/* Category 2: STOREFRONT & WORKSPACE */}
@@ -1262,6 +1362,7 @@ export default function App() {
           {activeTab === "products" && <ProductList />}
           {activeTab === "orders" && <OrderList />}
           {activeTab === "returns" && <ReturnsHome />}
+          {activeTab === "reviews" && <ReviewModerationList />}
           {activeTab === "content" && <ContentEditor />}
           {activeTab === "settings" && <SettingsEditor />}
         </div>

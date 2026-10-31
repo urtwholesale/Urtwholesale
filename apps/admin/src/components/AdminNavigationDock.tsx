@@ -17,13 +17,14 @@ export type NavTab =
   | "products"
   | "orders"
   | "returns"
+  | "reviews"
   | "content"
   | "settings";
 
 interface AdminNavigationDockProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
-  counts: { products: number; pendingOrders: number; pendingReturns?: number };
+  counts: { products: number; pendingOrders: number; pendingReturns?: number; pendingReviews?: number };
   onOpenMenu: () => void;
   isMenuOpen: boolean;
 }

@@ -1213,6 +1213,23 @@ export function getLocalReviews(productId: string): Review[] {
   }
 }
 
+const GLOBAL_REVIEWS_STORAGE_KEY = "urt_global_customer_reviews";
+
+export function saveGlobalReview(review: Review): void {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    const raw = window.localStorage.getItem(GLOBAL_REVIEWS_STORAGE_KEY);
+    const existing: Review[] = raw ? JSON.parse(raw) : [];
+    const filtered = existing.filter((r) => r.id !== review.id);
+    window.localStorage.setItem(
+      GLOBAL_REVIEWS_STORAGE_KEY,
+      JSON.stringify([review, ...filtered])
+    );
+  } catch (err) {
+    console.error("Failed to save review to global storage:", err);
+  }
+}
+
 export function saveLocalReview(review: Review): void {
   if (typeof window === "undefined" || !window.localStorage) return;
   try {
@@ -1230,12 +1247,20 @@ export function saveLocalReview(review: Review): void {
 
 export async function submitReview(input: {
   productId: string;
+  productName?: string;
+  productImage?: string;
   rating: number;
   title?: string;
   body?: string;
   authorName?: string;
 }): Promise<Review> {
   ensureConfigured();
+
+  // Rule:
+  // Rating >= 4: auto-approved ("approved") and immediately shows on the product without admin approval.
+  // Rating < 4: requires admin approval ("pending") and does NOT show on product until approved.
+  const isAutoApproved = input.rating >= 4;
+  const initialStatus: "approved" | "pending" = isAutoApproved ? "approved" : "pending";
 
   let authUser: any = null;
   try {
@@ -1244,6 +1269,26 @@ export async function submitReview(input: {
   } catch {
     authUser = null;
   }
+
+  const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const authorName =
+    input.authorName ||
+    authUser?.user_metadata?.full_name ||
+    "Verified Wholesale Buyer";
+
+  const fullReview: Review = {
+    id: reviewId,
+    product_id: input.productId,
+    product_name: input.productName || null,
+    product_image: input.productImage || null,
+    user_id: authUser?.id || "wholesale_buyer",
+    user_name: authorName,
+    rating: input.rating,
+    title: input.title || null,
+    body: input.body || null,
+    status: initialStatus,
+    created_at: new Date().toISOString(),
+  };
 
   // If user is authenticated, attempt remote Supabase insertion
   if (authUser?.id) {
@@ -1255,40 +1300,29 @@ export async function submitReview(input: {
           user_id: authUser.id,
           rating: input.rating,
           title: input.title || null,
-          body: input.body || null,
-          status: "pending",
+          body: input.authorName
+            ? `${input.body || ""}\n\n-- Reviewer: ${input.authorName}`
+            : input.body || null,
+          status: initialStatus,
         })
         .select()
         .single();
 
       if (!error && data) {
-        const fullReview: Review = {
-          ...(data as Review),
-          user_name: input.authorName || authUser.user_metadata?.full_name || "Verified Wholesale Buyer",
-        };
-        saveLocalReview(fullReview);
-        return fullReview;
+        fullReview.id = data.id;
       }
     } catch (err) {
-      console.warn("Supabase review insert failed, saving locally:", err);
+      console.warn("Supabase review insert failed, using local persistence:", err);
     }
   }
 
-  // Create a verified local review (for guest or offline buyers)
-  const localRev: Review = {
-    id: `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    product_id: input.productId,
-    user_id: authUser?.id || "guest_buyer",
-    user_name: input.authorName || "Verified Wholesale Buyer",
-    rating: input.rating,
-    title: input.title || null,
-    body: input.body || null,
-    status: "approved",
-    created_at: new Date().toISOString(),
-  };
+  // Save to product local storage
+  saveLocalReview(fullReview);
 
-  saveLocalReview(localRev);
-  return localRev;
+  // Save to global review queue so Admin Panel can moderate it
+  saveGlobalReview(fullReview);
+
+  return fullReview;
 }
 
 export async function getApprovedReviews(productId: string): Promise<Review[]> {
@@ -1296,23 +1330,38 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
 
   let remoteReviews: Review[] = [];
   try {
-    // Select all reviews that are not explicitly rejected
+    // Select all reviews that are STRICTLY approved
     const { data, error } = await supabase
       .from("reviews")
       .select("*")
       .eq("product_id", productId)
-      .neq("status", "rejected")
+      .eq("status", "approved")
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      remoteReviews = data as Review[];
+      remoteReviews = (data as any[]).map((r) => {
+        let cleanBody = r.body;
+        let author = "Verified Wholesale Buyer";
+        if (cleanBody) {
+          const match = cleanBody.match(/\n\n-- Reviewer:\s*(.+)$/);
+          if (match) {
+            author = match[1].trim();
+            cleanBody = cleanBody.replace(/\n\n-- Reviewer:\s*.+$/, "").trim();
+          }
+        }
+        return {
+          ...r,
+          body: cleanBody,
+          user_name: r.user_name || author,
+        };
+      });
     }
   } catch (err) {
     console.warn("Could not fetch remote reviews, using local fallback:", err);
   }
 
-  // Merge with locally stored reviews (deduplicating by id)
-  const localReviews = getLocalReviews(productId);
+  // Merge with locally stored reviews that are STRICTLY approved
+  const localReviews = getLocalReviews(productId).filter((r) => r.status === "approved");
   const map = new Map<string, Review>();
 
   for (const r of remoteReviews) {

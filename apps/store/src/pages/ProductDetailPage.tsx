@@ -26,6 +26,7 @@ import {
   getColorHex,
   type Product,
   type Review,
+  type ReviewStatus,
   type Category,
 } from "@urbanrat/shared";
 import {
@@ -43,6 +44,7 @@ import {
   Layers,
   Lightbulb,
   Palette,
+  Clock,
 } from "lucide-react";
 import { QuantityInput } from "../components/QuantityInput";
 import { triggerHaptic } from "../utils/haptics";
@@ -110,6 +112,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const [reviewBody, setReviewBody] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [lastSubmittedReviewStatus, setLastSubmittedReviewStatus] = useState<ReviewStatus | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedStarFilter, setSelectedStarFilter] = useState<number | null>(null);
@@ -413,14 +416,20 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
       const newReview = await submitReview({
         productId: product.id,
+        productName: product.name,
+        productImage: product.images?.[0],
         rating: reviewRating,
         title: reviewTitle.trim() || undefined,
         body: reviewBody.trim() || undefined,
         authorName: author,
       });
-      if (newReview) {
+
+      // If approved (rating >= 4), display live on the product immediately.
+      // If pending (rating < 4), do not show on product until approved by admin panel.
+      if (newReview && newReview.status === "approved") {
         setReviews((prev) => [newReview, ...prev.filter((r) => r.id !== newReview.id)]);
       }
+      setLastSubmittedReviewStatus(newReview.status);
       setReviewSuccess(true);
       setReviewTitle("");
       setReviewBody("");
@@ -1027,27 +1036,64 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                       </span>
                     </div>
                   )}
+
+                  {!reviewSuccess && (
+                    <div className="w-full sm:w-auto">
+                      {reviewRating < 4 ? (
+                        <span className="inline-flex items-center space-x-1 text-[10px] text-amber-700 dark:text-amber-300 font-semibold bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-800/50">
+                          <Clock className="w-2.5 h-2.5 text-amber-500" />
+                          <span>Below 4★: Requires admin sign-off before publishing</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center space-x-1 text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/50">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                          <span>4-5★: Auto-approved &amp; published immediately</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {reviewSuccess ? (
-                  <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span>
-                        Thank you! Your wholesale review is now live on this product.
-                      </span>
+                  lastSubmittedReviewStatus === "pending" ? (
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 font-medium flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span>
+                          Thank you for your feedback! Because your rating is below 4 stars, our quality desk will review and approve it before it appears publicly on this product.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReviewSuccess(false);
+                          setShowReviewForm(false);
+                        }}
+                        className="text-amber-800 dark:text-amber-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
+                      >
+                        Done
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReviewSuccess(false);
-                        setShowReviewForm(false);
-                      }}
-                      className="text-emerald-700 dark:text-emerald-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
-                    >
-                      Done
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>
+                          Thank you! Your 4+ star wholesale review is now live on this product.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReviewSuccess(false);
+                          setShowReviewForm(false);
+                        }}
+                        className="text-emerald-700 dark:text-emerald-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <form onSubmit={handleReviewSubmit} className="space-y-3">
                     {reviewError && (

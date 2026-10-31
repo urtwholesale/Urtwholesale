@@ -3522,3 +3522,292 @@ export async function refreshSearchVocabulary(): Promise<number> {
   }
   return typeof data === "number" ? data : 0;
 }
+
+// ----------------------------------------------------------------------------
+// REVIEW MODERATION & APPROVAL SYSTEM
+// ----------------------------------------------------------------------------
+
+export interface AdminReviewItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug?: string;
+  product_image?: string;
+  user_id?: string;
+  user_name: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+}
+
+const GLOBAL_REVIEWS_STORAGE_KEY = "urt_global_customer_reviews";
+
+/**
+ * Fetch reviews for admin moderation with optional status, rating, and keyword search
+ */
+export async function fetchAdminReviews(options?: {
+  status?: "all" | "pending" | "approved" | "rejected";
+  search?: string;
+  rating?: number;
+}): Promise<AdminReviewItem[]> {
+  const statusFilter = options?.status || "all";
+  const search = options?.search?.trim().toLowerCase() || "";
+  const ratingFilter = options?.rating;
+
+  let remoteReviews: AdminReviewItem[] = [];
+
+  try {
+    let query = supabase
+      .from("reviews")
+      .select("*, products(id, name, slug, images, sku)")
+      .order("created_at", { ascending: false });
+
+    if (statusFilter !== "all") {
+      query = query.eq("status", statusFilter);
+    }
+
+    if (ratingFilter) {
+      query = query.eq("rating", ratingFilter);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      remoteReviews = (data as any[]).map((r) => {
+        let cleanBody = r.body;
+        let author = r.user_name || "Verified Wholesale Buyer";
+        if (cleanBody) {
+          const match = cleanBody.match(/\n\n-- Reviewer:\s*(.+)$/);
+          if (match) {
+            author = match[1].trim();
+            cleanBody = cleanBody.replace(/\n\n-- Reviewer:\s*.+$/, "").trim();
+          }
+        }
+
+        const prod = Array.isArray(r.products) ? r.products[0] : r.products;
+        return {
+          id: r.id,
+          product_id: r.product_id,
+          product_name: prod?.name || "Wholesale Product",
+          product_slug: prod?.slug,
+          product_image: prod?.images?.[0] || "",
+          user_id: r.user_id,
+          user_name: author,
+          rating: r.rating,
+          title: r.title,
+          body: cleanBody,
+          status: r.status as "pending" | "approved" | "rejected",
+          created_at: r.created_at,
+        };
+      });
+    }
+  } catch (err) {
+    console.warn("Error querying remote admin reviews:", err);
+  }
+
+  // Merge with local reviews from localStorage
+  let localReviews: AdminReviewItem[] = [];
+  try {
+    const raw = localStorage.getItem(GLOBAL_REVIEWS_STORAGE_KEY);
+    if (raw) {
+      localReviews = JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn("Could not read local global reviews:", err);
+  }
+
+  // Seed sample demonstration reviews if queue is completely empty
+  if (remoteReviews.length === 0 && localReviews.length === 0) {
+    const seedReviews: AdminReviewItem[] = [
+      {
+        id: "rev_seed_pending_1",
+        product_id: "7ef945d8-3693-4640-9498-b252fe86ba05",
+        product_name: "Urbanrat Type-C to Lightning Fast Charging & Sync Cable for iPhone & iPad",
+        product_slug: "urbanrat-120w-type-c-to-lightning-fast-cable",
+        product_image: "https://mmuuqzgclrdhcvrcavgi.supabase.co/storage/v1/object/public/product-images/products/prod_1792913982845_g838bca.webp",
+        user_name: "Sharma Telecommunication (Jaipur)",
+        rating: 3,
+        title: "Good charging speed but outer carton had slight bend",
+        body: "Wire quality is heavy duty and works well with iPhone 14 Pro, but out of 100 pcs pack, 3 boxes had slight transport crushing. Please strengthen master carton tape.",
+        status: "pending",
+        created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+      },
+      {
+        id: "rev_seed_pending_2",
+        product_id: "1c7652c1-85d4-4c8e-8ebd-bd59339f5f75",
+        product_name: "Urbanrat 45W USB to Type-C Fast Charging & Data Sync Cable",
+        product_slug: "urbanrat-45w-usb-to-type-c-fast-charging-cable",
+        product_image: "https://mmuuqzgclrdhcvrcavgi.supabase.co/storage/v1/object/public/product-images/products/prod_1792914100123_red45w.webp",
+        user_name: "Balaji Mobile Hub (Ahmedabad)",
+        rating: 2,
+        title: "Average speed on older Vivo phone",
+        body: "Cable works fine on Samsung but on older Vivo Y15 it was normal speed not turbo flash. Red cord finish looks solid though.",
+        status: "pending",
+        created_at: new Date(Date.now() - 3600000 * 18).toISOString(),
+      },
+      {
+        id: "rev_seed_approved_1",
+        product_id: "7ef945d8-3693-4640-9498-b252fe86ba05",
+        product_name: "Urbanrat Type-C to Lightning Fast Charging & Sync Cable for iPhone & iPad",
+        product_slug: "urbanrat-120w-type-c-to-lightning-fast-cable",
+        product_image: "https://mmuuqzgclrdhcvrcavgi.supabase.co/storage/v1/object/public/product-images/products/prod_1792913982845_g838bca.webp",
+        user_name: "Metro Cell Care (Bengaluru)",
+        rating: 5,
+        title: "Best wholesale Lightning cable margin in our store",
+        body: "Sold 300 pcs in 2 weeks. Zero DOA returns from retail customers. The gold box packaging looks very premium on retail pegboards.",
+        status: "approved",
+        created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
+      },
+    ];
+    localReviews = seedReviews;
+    try {
+      localStorage.setItem(GLOBAL_REVIEWS_STORAGE_KEY, JSON.stringify(seedReviews));
+    } catch {}
+  }
+
+  // Merge and deduplicate by id
+  const map = new Map<string, AdminReviewItem>();
+  for (const r of remoteReviews) {
+    map.set(r.id, r);
+  }
+  for (const l of localReviews) {
+    if (!map.has(l.id)) {
+      map.set(l.id, l);
+    } else {
+      const existing = map.get(l.id)!;
+      if (!existing.product_name || existing.product_name === "Wholesale Product") {
+        existing.product_name = l.product_name || existing.product_name;
+        existing.product_image = l.product_image || existing.product_image;
+        existing.product_slug = l.product_slug || existing.product_slug;
+      }
+    }
+  }
+
+  let all = Array.from(map.values());
+
+  // Filter status
+  if (statusFilter !== "all") {
+    all = all.filter((r) => r.status === statusFilter);
+  }
+
+  // Filter rating
+  if (ratingFilter) {
+    all = all.filter((r) => r.rating === ratingFilter);
+  }
+
+  // Filter search
+  if (search) {
+    all = all.filter(
+      (r) =>
+        r.product_name?.toLowerCase().includes(search) ||
+        r.user_name?.toLowerCase().includes(search) ||
+        r.title?.toLowerCase().includes(search) ||
+        r.body?.toLowerCase().includes(search)
+    );
+  }
+
+  return all.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+/**
+ * Fetch counts for all review statuses
+ */
+export async function fetchAdminReviewCounts(): Promise<{
+  pending: number;
+  approved: number;
+  rejected: number;
+  total: number;
+}> {
+  try {
+    const all = await fetchAdminReviews({ status: "all" });
+    const pending = all.filter((r) => r.status === "pending").length;
+    const approved = all.filter((r) => r.status === "approved").length;
+    const rejected = all.filter((r) => r.status === "rejected").length;
+    return {
+      pending,
+      approved,
+      rejected,
+      total: all.length,
+    };
+  } catch {
+    return { pending: 0, approved: 0, rejected: 0, total: 0 };
+  }
+}
+
+/**
+ * Update review status (approve or reject) across Supabase and local storage
+ */
+export async function adminUpdateReviewStatus(
+  reviewId: string,
+  newStatus: "approved" | "rejected"
+): Promise<void> {
+  // Update Supabase
+  try {
+    await supabase.from("reviews").update({ status: newStatus }).eq("id", reviewId);
+  } catch (err) {
+    console.warn("Could not update remote review status:", err);
+  }
+
+  // Update local storage
+  try {
+    const raw = localStorage.getItem(GLOBAL_REVIEWS_STORAGE_KEY);
+    if (raw) {
+      const items: AdminReviewItem[] = JSON.parse(raw);
+      const updated = items.map((r) => (r.id === reviewId ? { ...r, status: newStatus } : r));
+      localStorage.setItem(GLOBAL_REVIEWS_STORAGE_KEY, JSON.stringify(updated));
+
+      const target = updated.find((r) => r.id === reviewId);
+      if (target?.product_id) {
+        const prodKey = `urt_customer_reviews_${target.product_id}`;
+        const prodRaw = localStorage.getItem(prodKey);
+        if (prodRaw) {
+          const prodItems = JSON.parse(prodRaw);
+          const updatedProd = prodItems.map((r: any) =>
+            r.id === reviewId ? { ...r, status: newStatus } : r
+          );
+          localStorage.setItem(prodKey, JSON.stringify(updatedProd));
+        }
+      }
+    }
+    window.dispatchEvent(new Event("urt_reviews_updated"));
+  } catch (err) {
+    console.error("Failed to update local review:", err);
+  }
+}
+
+/**
+ * Permanently delete a review
+ */
+export async function adminDeleteReview(reviewId: string): Promise<void> {
+  try {
+    await supabase.from("reviews").delete().eq("id", reviewId);
+  } catch (err) {
+    console.warn("Could not delete remote review:", err);
+  }
+
+  try {
+    const raw = localStorage.getItem(GLOBAL_REVIEWS_STORAGE_KEY);
+    if (raw) {
+      const items: AdminReviewItem[] = JSON.parse(raw);
+      const target = items.find((r) => r.id === reviewId);
+      const filtered = items.filter((r) => r.id !== reviewId);
+      localStorage.setItem(GLOBAL_REVIEWS_STORAGE_KEY, JSON.stringify(filtered));
+
+      if (target?.product_id) {
+        const prodKey = `urt_customer_reviews_${target.product_id}`;
+        const prodRaw = localStorage.getItem(prodKey);
+        if (prodRaw) {
+          const prodItems = JSON.parse(prodRaw);
+          const updatedProd = prodItems.filter((r: any) => r.id !== reviewId);
+          localStorage.setItem(prodKey, JSON.stringify(updatedProd));
+        }
+      }
+    }
+    window.dispatchEvent(new Event("urt_reviews_updated"));
+  } catch (err) {
+    console.error("Failed to delete local review:", err);
+  }
+}

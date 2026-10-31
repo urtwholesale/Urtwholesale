@@ -1334,6 +1334,51 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
+### Touchpoint 37 — Automated $\ge 4$ Star Reviews & Dedicated Admin Moderation Dashboard ($< 4$ Stars)
+
+- **Dual-Threshold Review Moderation System (`ProductDetailPage.tsx`, `storeService.ts`, `ReviewModerationList.tsx` & `adminService.ts`)**:
+  - **The Requirement**:
+    1. If a customer rating is below 4 stars (1★, 2★, 3★), it must be routed to the Admin Panel for review/approval before showing on the product. It must not be displayed publicly on the storefront until approved.
+    2. When the star rating is 4 stars or above (4★, 5★), it automatically shows on the product without requiring any admin approval.
+    3. Dedicated Admin Moderation Suite: Add a review approval section under the Admin Panel navigation sidebar (`COMMERCE & SALES` section) with live pending counters, multi-tab filtering, product detail inspection, and 1-click Approve / Reject / Delete controls.
+  - **The Architecture & Implementation**:
+    1. **Storefront Dual-Track Submission Engine (`storeService.ts` & `ProductDetailPage.tsx`)**:
+       - Star Rating Threshold: When a buyer submits a review:
+         - Ratings $\ge 4$ stars (4★ and 5★): Assigned `status: 'approved'`. Automatically persisted to Supabase and local cache, immediately appended to live component state, and published on the product detail page in real-time.
+         - Ratings $< 4$ stars (1★, 2★, 3★): Assigned `status: 'pending'`. Saved to Supabase review moderation queue and local reviewer cache, but strictly excluded from the active storefront list until an administrator inspects and approves it.
+       - Live Dynamic Guidance: While selecting stars in the Review Studio, a live status pill dynamically informs the buyer:
+         - $\ge 4$ stars: `★ 4.0+ ratings are published automatically to the storefront.`
+         - $< 4$ stars: `🕒 Ratings below 4 stars are routed to Admin QA Moderation for verification before public display.`
+       - Distinct Post-Submission Feedback Cards:
+         - Approved reviews display an emerald celebration banner (`Review Published! Thank you for sharing your wholesale feedback`).
+         - Pending reviews display an amber verification banner (`Review Received for Quality Moderation — Awaiting Admin Sign-off`).
+       - Strict Public Filtering Guarantee: `getApprovedReviews(productId)` queries and filters strictly for `status === "approved"`, ensuring that pending or rejected $< 4$ star reviews remain completely invisible to other buyers.
+    2. **Dedicated Admin Review Moderation Suite (`ReviewModerationList.tsx` & `adminService.ts`)**:
+       - Sidebar & Mobile Navigation: Added `"Reviews"` under `COMMERCE & SALES` in both the desktop admin sidebar (`App.tsx`) and mobile floating navigation dock (`AdminNavigationDock.tsx`), featuring a real-time amber badge reflecting pending review counts (`counts.pendingReviews`).
+       - Executive Summary Cards: Top metrics bar displaying live aggregates:
+         - **Total Reviews**
+         - **Pending Approval** (amber accent with warning indicator)
+         - **Live & Approved** (emerald accent)
+         - **Rejected & Archived** (rose accent)
+         - **5-Star Ratio & Average Rating**
+       - Multi-Tab & Filter Controls:
+         - Tabs: `Needs Approval`, `Approved & Live`, `Rejected`, `All Reviews`.
+         - Quick Star Rating Filter: Filter reviews by All, 5★, 4★, 3★, 2★, or 1★.
+         - Instant Search: Search across reviewer name, product title, SKU, review headline, or comment body.
+       - Review Action Cards:
+         - Displays product thumbnail, product title, SKU, buyer identity (`user_name` or guest trade identity), star score, formatted date, headline, and body text.
+         - **Approve Review (1-Click)**: Instantly transitions review to `approved`, updates Supabase & local caches, broadcasts cross-tab update event, decrements pending counter, and publishes review live on storefront.
+         - **Reject Review (1-Click)**: Transitions review to `rejected`, keeping it suppressed from public display.
+         - **Delete Review (1-Click)**: Permanently removes the review record across remote and local databases.
+    3. **Backend Migration & Schema Compatibility (`supabase/migrations/022_review_approval_system.sql`)**:
+       - Created Postgres migration adding `auto_moderate_review` trigger function enforcing the $\ge 4$ star auto-approval rule at the database level.
+       - Extended RLS policies allowing public submission, public read for approved reviews, and full administrative privileges for merchants with `role = 'admin'`.
+- **Verification**:
+  - Production TypeScript & Vite compilation passing (`npm run build`, built in 16.57s total across store & admin).
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
+
+
 
 
 
