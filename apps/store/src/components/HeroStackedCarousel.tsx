@@ -480,7 +480,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               type="button"
               onClick={prevSlide}
               aria-label="Previous slide"
-              className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 transition cursor-pointer"
+              className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4 stroke-[2.4]" />
             </button>
@@ -489,7 +489,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               type="button"
               onClick={nextSlide}
               aria-label="Next slide"
-              className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 transition cursor-pointer"
+              className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <ChevronRight className="w-4 h-4 stroke-[2.4]" />
             </button>
@@ -597,23 +597,23 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               );
             })}
 
-            {/* ── Mobile/Tablet Floating Navigation Chevrons ── */}
+            {/* ── Mobile/Tablet Floating Navigation Chevrons (Glassmorphic Theme) ── */}
             <button
               type="button"
               onClick={prevSlide}
               aria-label="Previous Offer"
-              className="lg:hidden flex absolute left-3 top-1/2 -translate-y-1/2 z-35 w-9 h-9 rounded-full bg-white/95 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-md items-center justify-center text-slate-800 dark:text-white active:scale-95 transition cursor-pointer"
+              className="lg:hidden flex absolute left-3 top-1/2 -translate-y-1/2 z-35 w-9.5 h-9.5 rounded-full bg-white/35 dark:bg-black/40 backdrop-blur-xl border border-white/70 dark:border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.7)] items-center justify-center text-slate-900 dark:text-white hover:bg-white/55 dark:hover:bg-white/15 active:scale-90 transition-all cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4 stroke-[2.4]" />
+              <ChevronLeft className="w-4.5 h-4.5 stroke-[2.5] drop-shadow-xs" />
             </button>
 
             <button
               type="button"
               onClick={nextSlide}
               aria-label="Next Offer"
-              className="lg:hidden flex absolute right-3 top-1/2 -translate-y-1/2 z-35 w-9 h-9 rounded-full bg-white/95 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-md items-center justify-center text-slate-800 dark:text-white active:scale-95 transition cursor-pointer"
+              className="lg:hidden flex absolute right-3 top-1/2 -translate-y-1/2 z-35 w-9.5 h-9.5 rounded-full bg-white/35 dark:bg-black/40 backdrop-blur-xl border border-white/70 dark:border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.7)] items-center justify-center text-slate-900 dark:text-white hover:bg-white/55 dark:hover:bg-white/15 active:scale-90 transition-all cursor-pointer"
             >
-              <ChevronRight className="w-4 h-4 stroke-[2.4]" />
+              <ChevronRight className="w-4.5 h-4.5 stroke-[2.5] drop-shadow-xs" />
             </button>
           </div>
         </div>

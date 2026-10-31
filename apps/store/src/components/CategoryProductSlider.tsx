@@ -323,22 +323,22 @@ export function CategoryProductSlider({
               type="button"
               onClick={handlePrev}
               aria-label="Previous products"
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:text-brand-dark dark:hover:text-orange-400 active:scale-90 transition cursor-pointer shadow-2xs ${
+              className={`w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/70 dark:border-white/15 shadow-[0_2px_12px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-brand-dark dark:hover:text-orange-400 hover:bg-white/70 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer ${
                 desktopTotalPages <= 1 ? "md:hidden" : ""
               }`}
             >
-              <ChevronLeft className="w-4 h-4 stroke-[2.2]" />
+              <ChevronLeft className="w-4 h-4 stroke-[2.4]" />
             </button>
 
             <button
               type="button"
               onClick={handleNext}
               aria-label="Next products"
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:text-brand-dark dark:hover:text-orange-400 active:scale-90 transition cursor-pointer shadow-2xs ${
+              className={`w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/70 dark:border-white/15 shadow-[0_2px_12px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-brand-dark dark:hover:text-orange-400 hover:bg-white/70 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer ${
                 desktopTotalPages <= 1 ? "md:hidden" : ""
               }`}
             >
-              <ChevronRight className="w-4 h-4 stroke-[2.2]" />
+              <ChevronRight className="w-4 h-4 stroke-[2.4]" />
             </button>
           </div>
         )}
@@ -352,27 +352,27 @@ export function CategoryProductSlider({
 
       {/* ── 1. Mobile View (< md): Single Card Carousel with Side Indicators & Peeks ── */}
       <div className="md:hidden relative w-full max-w-105 mx-auto select-none py-1">
-        {/* Left Side Floating Indicator Button */}
+        {/* Left Side Floating Indicator Button (Glassmorphic Theme) */}
         {count > 1 && (
           <button
             type="button"
             onClick={handlePrev}
             aria-label="Previous product"
-            className="absolute -left-2 top-[36%] -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border border-slate-200/90 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] flex items-center justify-center text-slate-800 dark:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+            className="absolute -left-2 top-[36%] -translate-y-1/2 z-30 w-8.5 h-8.5 rounded-full bg-white/35 dark:bg-black/45 backdrop-blur-xl border border-white/70 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.8)] flex items-center justify-center text-slate-800 dark:text-white hover:scale-110 active:scale-90 transition-all cursor-pointer group"
           >
-            <ChevronLeft className="w-4 h-4 stroke-[2.5] text-slate-700 dark:text-slate-200 group-hover:text-orange-500 dark:group-hover:text-orange-400" />
+            <ChevronLeft className="w-4 h-4 stroke-[2.5] text-slate-800 dark:text-slate-100 group-hover:text-orange-500 dark:group-hover:text-orange-400 drop-shadow-xs" />
           </button>
         )}
 
-        {/* Right Side Floating Indicator Button */}
+        {/* Right Side Floating Indicator Button (Glassmorphic Theme) */}
         {count > 1 && (
           <button
             type="button"
             onClick={handleNext}
             aria-label="Next product"
-            className="absolute -right-2 top-[36%] -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-white/95 dark:bg-[#0B0F17]/95 backdrop-blur-md border border-slate-200/90 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.2)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] flex items-center justify-center text-slate-800 dark:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer group"
+            className="absolute -right-2 top-[36%] -translate-y-1/2 z-30 w-8.5 h-8.5 rounded-full bg-white/35 dark:bg-black/45 backdrop-blur-xl border border-white/70 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.8)] flex items-center justify-center text-slate-800 dark:text-white hover:scale-110 active:scale-90 transition-all cursor-pointer group"
           >
-            <ChevronRight className="w-4 h-4 stroke-[2.5] text-slate-700 dark:text-slate-200 group-hover:text-orange-500 dark:group-hover:text-orange-400" />
+            <ChevronRight className="w-4 h-4 stroke-[2.5] text-slate-800 dark:text-slate-100 group-hover:text-orange-500 dark:group-hover:text-orange-400 drop-shadow-xs" />
           </button>
         )}
 

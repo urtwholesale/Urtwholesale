@@ -49,3 +49,4 @@ grant execute on function public.get_new_arrivals_by_category(int) to anon, auth
 
 -- Refresh schema cache
 notify pgrst, 'reload schema';
+
