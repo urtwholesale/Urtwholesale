@@ -1303,7 +1303,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                                 />
                               ))}
                             </div>
-                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-none">
+                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-35 sm:max-w-none">
                               {rev.user_name || "Verified Wholesale Buyer"}
                             </span>
                           </div>
@@ -1361,7 +1361,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         />
                       ))}
                     </div>
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-none">
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-35 sm:max-w-none">
                       {rev.user_name || "Verified Wholesale Buyer"}
                     </span>
                   </div>
