@@ -85,3 +85,4 @@ create policy "Admins can delete reviews"
 
 -- Refresh schema cache
 notify pgrst, 'reload schema';
+
