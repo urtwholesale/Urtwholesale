@@ -350,32 +350,144 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
 }
 
 /**
- * Fetch related products from same category with price tiers
+ * Fetch related accessories from same category or category family (sibling & parent categories)
+ * with in-stock first ordering and active catalog fallback.
  */
 export async function fetchRelatedProducts(
   productId: string,
-  categoryId?: string | null
+  categoryId?: string | null,
+  categoryIds?: string[],
+  limit: number = 8
 ): Promise<Product[]> {
   ensureConfigured();
-  if (!categoryId) return [];
+  if (!productId) return [];
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .eq("category_id", categoryId)
-    .eq("is_active", true)
-    .neq("id", productId)
-    .limit(4);
+  const collected: Product[] = [];
+  const seenIds = new Set<string>([productId]);
 
-  if (error) {
-    throw new StoreError(error.message, error.code, error);
+  // 1. Gather all related category IDs: exact category + parent + siblings + children
+  const targetCategoryIds = new Set<string>();
+  if (categoryId) {
+    targetCategoryIds.add(categoryId);
+  }
+  if (categoryIds && categoryIds.length > 0) {
+    categoryIds.forEach((id) => {
+      if (id) targetCategoryIds.add(id);
+    });
+  } else if (categoryId) {
+    // Auto-discover sibling and parent categories if not explicitly provided
+    try {
+      const { data: currentCat } = await supabase
+        .from("categories")
+        .select("id, parent_id")
+        .eq("id", categoryId)
+        .maybeSingle();
+
+      if (currentCat) {
+        if (currentCat.parent_id) {
+          targetCategoryIds.add(currentCat.parent_id);
+          const { data: siblings } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("parent_id", currentCat.parent_id)
+            .eq("is_active", true);
+          siblings?.forEach((s) => targetCategoryIds.add(s.id));
+        } else {
+          const { data: children } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("parent_id", currentCat.id)
+            .eq("is_active", true);
+          children?.forEach((c) => targetCategoryIds.add(c.id));
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to discover sibling categories:", e);
+    }
   }
 
-  return (data || []).map(formatProduct);
+  // 2. Query exact category first (highest priority)
+  if (categoryId) {
+    try {
+      const { data: exactData } = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .eq("category_id", categoryId)
+        .eq("is_active", true)
+        .neq("id", productId)
+        .order("stock", { ascending: false })
+        .limit(limit);
+
+      if (exactData) {
+        for (const item of exactData) {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            collected.push(formatProduct(item));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Error fetching exact category products:", e);
+    }
+  }
+
+  // 3. If below limit, query sibling and parent categories in the same category family
+  const otherCatIds = Array.from(targetCategoryIds).filter((id) => id !== categoryId);
+  if (collected.length < limit && otherCatIds.length > 0) {
+    const needed = limit - collected.length;
+    try {
+      const { data: familyData } = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .in("category_id", otherCatIds)
+        .eq("is_active", true)
+        .order("stock", { ascending: false })
+        .limit(needed + seenIds.size);
+
+      if (familyData) {
+        for (const item of familyData) {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            collected.push(formatProduct(item));
+            if (collected.length >= limit) break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Error fetching category family products:", e);
+    }
+  }
+
+  // 4. Fallback: If still under 4 items, fetch active accessories so section is never empty
+  if (collected.length < 4) {
+    try {
+      const { data: fallbackData } = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .eq("is_active", true)
+        .order("stock", { ascending: false })
+        .limit(limit + 4);
+
+      if (fallbackData) {
+        for (const item of fallbackData) {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            collected.push(formatProduct(item));
+            if (collected.length >= limit) break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Error fetching fallback products:", e);
+    }
+  }
+
+  return collected;
 }
 
 /**
  * Fetch similar products from same category and compatible model, in stock first, excluding current product.
+ * Returns products matching compatibility_group or brand_compatibility.
  */
 export async function fetchSimilarProducts(
   currentProduct: Product,
@@ -386,6 +498,11 @@ export async function fetchSimilarProducts(
 
   const compGroup = currentProduct.specs?.compatibility_group;
   const brandComp = currentProduct.specs?.brand_compatibility;
+
+  // Only query similar products if there is a distinct compatibility model/brand
+  if (!compGroup && !brandComp) {
+    return [];
+  }
 
   let query = supabase
     .from("products")
@@ -407,18 +524,7 @@ export async function fetchSimilarProducts(
   query = query.order("stock", { ascending: false }).limit(limit);
 
   const { data, error } = await query;
-  if (error || !data || data.length === 0) {
-    if (currentProduct.category_id) {
-      const fallback = await supabase
-        .from("products")
-        .select(PRODUCT_SELECT)
-        .eq("category_id", currentProduct.category_id)
-        .eq("is_active", true)
-        .neq("id", currentProduct.id)
-        .order("stock", { ascending: false })
-        .limit(limit);
-      return (fallback.data || []).map(formatProduct);
-    }
+  if (error || !data) {
     return [];
   }
 

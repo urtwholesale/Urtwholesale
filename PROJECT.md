@@ -1305,6 +1305,35 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
 
 
+### Touchpoint 36 — Dedicated Category-Specific Related Accessories Engine (Below Customer Reviews)
+
+- **Intelligent Related Accessories Discovery & Presentation (`ProductDetailPage.tsx` & `storeService.ts`)**:
+  - **The Requirement**: Suggest related accessories strictly from the same category below the Customer Reviews section on the product detail page, ensuring buyers can discover complementary products without facing blank space.
+  - **The Root Cause**:
+    1. Products in specialized subcategories with only 1 item (such as the Urbanrat Lightning Cable in `type-C to iphone`) returned `[]` from `fetchRelatedProducts` because the query looked strictly for `eq("category_id", categoryId)` without expanding to sibling or parent categories.
+    2. `fetchSimilarProducts` fell back to the exact same category query if no compatibility group was defined, producing duplicate queries and returning `[]` for single-item categories.
+    3. Both sections (`similarProducts` and `relatedProducts`) were guarded by `.length > 0`, causing the entire area below the Customer Reviews section to remain completely blank when `[]` was returned.
+  - **The Solution**:
+    1. **Multi-Tier Category Family Discovery (`storeService.ts`)**:
+       - Enhanced `fetchRelatedProducts()` with a 3-tier hierarchical resolution engine:
+         - **Tier 1 (Exact Subcategory)**: Fetches other active products in the exact same subcategory, sorted by stock descending.
+         - **Tier 2 (Category Family Expansion)**: If fewer than 8 items are found, expands to sibling subcategories under the same parent category (e.g. Cables & Cords family: Type-C to Type-C, USB to Type-C, USB to V8), as well as direct parent category items.
+         - **Tier 3 (Active Catalog Fallback)**: If fewer than 4 items are found (e.g. an isolated brand-new category), fills with top-selling active accessories so the section is never an empty void.
+       - Built-in automatic sibling and parent category discovery directly via Supabase if category IDs are not explicitly provided.
+       - Cleaned `fetchSimilarProducts()` to focus exclusively on true hardware compatibility groups (`specs.compatibility_group` or `specs.brand_compatibility`), avoiding duplicate category fallback rows.
+    2. **Dedicated Premium Related Accessories UI (`ProductDetailPage.tsx`)**:
+       - Rendered strictly below the Customer Reviews section with a dedicated visual header:
+         - Pulsing orange indicator pill and bold title: `"Related Accessories"`.
+         - Dynamic Category Pill: displaying the resolved collection name (e.g. `Cables & Cords`).
+         - Subtitle: `"High-margin wholesale accessories from the {categoryName} collection"`.
+         - Direct Category Jump Link: `"View All {categoryName} →"` linking directly to `/marketplace?category={categorySlug}`.
+       - Deduplicated Product Grid: `displayedRelatedProducts` strictly excludes the currently viewed product and any items already displayed in hardware-similar groups.
+       - Interactive Product Cards: fully integrated `ProductCard` components featuring wholesale tiered pricing, MOQ, stock indicators, and 1-tap quick navigation.
+- **Verification**:
+  - TypeScript & Vite production build passing (`npm run build:store`, built in 7.94s).
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
+
 
 
 

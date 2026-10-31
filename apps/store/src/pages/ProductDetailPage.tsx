@@ -183,6 +183,36 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
     return reviews.filter((r) => r.rating === selectedStarFilter);
   }, [reviews, selectedStarFilter]);
 
+  // Memoized category helpers for Related Accessories display & breadcrumbs
+  const currentCategory = useMemo(() => {
+    if (!product?.category_id || !allCategories.length) return null;
+    return allCategories.find((c) => c.id === product.category_id) || null;
+  }, [product?.category_id, allCategories]);
+
+  const parentCategory = useMemo(() => {
+    if (!currentCategory?.parent_id || !allCategories.length) return null;
+    return allCategories.find((c) => c.id === currentCategory.parent_id) || null;
+  }, [currentCategory?.parent_id, allCategories]);
+
+  const displayCategoryName = useMemo(() => {
+    return parentCategory?.name || currentCategory?.name || categoryName || "Accessories";
+  }, [parentCategory, currentCategory, categoryName]);
+
+  const categoryMarketplaceUrl = useMemo(() => {
+    if (parentCategory) {
+      return `/marketplace?category=${parentCategory.slug}`;
+    }
+    if (currentCategory) {
+      return `/marketplace?category=${currentCategory.slug}`;
+    }
+    return "/marketplace";
+  }, [parentCategory, currentCategory]);
+
+  const displayedRelatedProducts = useMemo(() => {
+    const simIds = new Set(similarProducts.map((s) => s.id));
+    return relatedProducts.filter((r) => !simIds.has(r.id) && r.id !== product?.id);
+  }, [relatedProducts, similarProducts, product?.id]);
+
   // Swipe support for mobile gallery
   const touchStartX = useRef<number | null>(null);
 
@@ -198,29 +228,50 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
       if (prod) {
         recordRecentlyViewed(prod);
         setQuantity(prod.min_order_qty || 1);
-        const [similar, related, catalogItems, cats, approvedRevs, authRes] = await Promise.all([
-          fetchSimilarProducts(prod).catch(() => []),
-          fetchRelatedProducts(prod.id, prod.category_id).catch(() => []),
-          prod.category_id ? fetchCatalogProducts(prod.category_id).catch(() => []) : Promise.resolve([]),
+
+        // Fetch categories first to construct category family for related accessories
+        const [cats, approvedRevs, authRes] = await Promise.all([
           fetchCategories().catch(() => []),
           getApprovedReviews(prod.id).catch(() => []),
           supabase.auth.getUser().catch(() => ({ data: { user: null } })),
         ]);
-        setSimilarProducts(similar);
-        setRelatedProducts(related);
         setAllCategories(cats);
 
-        // Populate catalog siblings: if catalogItems returned list, use it; otherwise fallback to prod + similar
+        const curCat = cats.find((c) => c.id === prod.category_id);
+        const parCat = curCat?.parent_id ? cats.find((c) => c.id === curCat.parent_id) : null;
+        setCategoryName(parCat?.name || curCat?.name || "Catalog");
+
+        // Build category family IDs (exact category, parent, siblings, and child categories)
+        const familyCatIds: string[] = [];
+        if (curCat) {
+          familyCatIds.push(curCat.id);
+          if (curCat.parent_id) {
+            familyCatIds.push(curCat.parent_id);
+            cats.filter((c) => c.parent_id === curCat.parent_id).forEach((c) => familyCatIds.push(c.id));
+          } else {
+            cats.filter((c) => c.parent_id === curCat.id).forEach((c) => familyCatIds.push(c.id));
+          }
+        }
+
+        const [similar, related, catalogItems] = await Promise.all([
+          fetchSimilarProducts(prod).catch(() => []),
+          fetchRelatedProducts(prod.id, prod.category_id, familyCatIds, 8).catch(() => []),
+          prod.category_id ? fetchCatalogProducts(prod.category_id).catch(() => []) : Promise.resolve([]),
+        ]);
+        setSimilarProducts(similar);
+        setRelatedProducts(related);
+
+        // Populate catalog siblings: if catalogItems returned list, use it; otherwise fallback to prod + related
         if (catalogItems.length > 0) {
           setCatalogProducts(catalogItems);
+        } else if (related.length > 0) {
+          setCatalogProducts([prod, ...related]);
         } else if (similar.length > 0) {
           setCatalogProducts([prod, ...similar]);
         } else {
           setCatalogProducts([prod]);
         }
 
-        const cat = cats.find((c) => c.id === prod.category_id);
-        setCategoryName(cat?.name || "Catalog");
         setReviews(approvedRevs);
         setCurrentUser(authRes.data.user);
       }
@@ -1307,7 +1358,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         )}
       </section>
 
-      {/* ── Similar Products Row (Same Category & Compatible Model, In-Stock First) ── */}
+      {/* ── Similar Products Row (Compatibility Group / Same Cut Glass) ── */}
       {similarProducts.length > 0 && (
         <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
           <div className="flex items-center justify-between">
@@ -1343,23 +1394,37 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         </section>
       )}
 
-      {/* ── Related Products Row ── */}
-      {relatedProducts.length > 0 && (
+      {/* ── Related Category Accessories Section (Same Category & Family, Below Reviews) ── */}
+      {displayedRelatedProducts.length > 0 && (
         <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-              Related Accessories
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                  Related Accessories
+                </h2>
+                {displayCategoryName && (
+                  <span className="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/50 dark:border-orange-900/40">
+                    {displayCategoryName}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                High-margin wholesale accessories from the {displayCategoryName} collection
+              </p>
+            </div>
             <Link
-              to="/marketplace"
-              className="text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline"
+              to={categoryMarketplaceUrl}
+              className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline inline-flex items-center space-x-1 group self-start sm:self-auto"
             >
-              View All →
+              <span>View All {displayCategoryName}</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
             </Link>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
-            {relatedProducts.map((rel) => (
+            {displayedRelatedProducts.map((rel) => (
               <ProductCard
                 key={rel.id}
                 product={rel}
