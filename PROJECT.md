@@ -1249,7 +1249,7 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - **The Requirement**: Position the "Our Customer Reviews" summary card on the right side of the review section to eliminate wide whitespace and match the uploaded reference design.
   - **The Implementation**:
     1. **Two-Column Responsive Grid (`grid-cols-1 lg:grid-cols-12 gap-6`)**:
-       - **Left Column (`lg:col-span-6`)**: Hosts the review interaction flow. When the user clicks "Write a Review", the review form expands on the left. When closed, it displays customer review cards or the zero-reviews invitation.
+       - **Left Column (`lg:col-span-6`)**: Hosts the review interaction flow. When the user clicks "Write a Review", the review form expands on the left.
        - **Right Column (`lg:col-span-6`)**: Hosts the authentic "Our Customer Reviews" breakdown card matching the user's reference mockup.
     2. **"Our Customer Reviews" Component (Image Reference)**:
        - **Header**: Centered bold title `"Our Customer Reviews"`.
@@ -1259,6 +1259,27 @@ Deploy each application as an independent Vercel project on separate subdomains 
 - **Verification**:
   - TypeScript & Vite production build passing (`npm run build:store`, built in 6.65s).
   - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
+
+### Touchpoint 32 — Strict On-Demand Display for "Our Customer Reviews" Breakdown Card
+
+- **Strict Visibility Guard for Review Studio (`ProductDetailPage.tsx`)**:
+  - **The Requirement**: The "Our Customer Reviews" rating breakdown card must only be displayed after clicking the "Write Review" option. Prior to clicking, the breakdown card should not be visible on the page.
+  - **The Problem**: In Touchpoint 31, the 2-column grid was rendered unconditionally, so both the empty state on the left and the breakdown card on the right were shown simultaneously before clicking "Write a Review".
+  - **The Solution**:
+    1. **Guarded Studio Display (`showReviewForm === true`)**:
+       - The entire 2-column grid—containing the **Write a Wholesale Review** form on the left (`lg:col-span-6`) and the **Our Customer Reviews** card on the right (`lg:col-span-6`)—is now rendered strictly inside `{showReviewForm ? (...) : (...)}`.
+       - When clicking "Write a Review" (either in the section header or inside the empty state card), the 2-column studio animates in smoothly (`animate-in fade-in slide-in-from-top-2 duration-200`).
+       - If there are pre-existing approved reviews, they are rendered cleanly beneath the studio under a `"Previous Verified Reviews"` subheading.
+    2. **Clean Default State (`showReviewForm === false`)**:
+       - When no reviews exist: renders a single, centered, compact empty card (`max-w-lg mx-auto`) with a prominent `"Write a Review"` action button. The breakdown card is completely hidden.
+       - When approved reviews exist: renders the reviews in a responsive 2-column grid (`grid-cols-1 md:grid-cols-2 gap-3`) with no distracting studio elements.
+    3. **Seamless Cancellation**:
+       - Clicking `"Cancel"`, `"Close"`, or the header toggle restores the clean default view instantly.
+- **Verification**:
+  - TypeScript & Vite production build passing (`npm run build:store`, built in 8.27s).
+  - 207 Vitest unit and integration tests passing across 13 suites (100% pass rate).
+
 
 
 
