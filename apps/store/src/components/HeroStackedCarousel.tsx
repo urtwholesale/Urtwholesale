@@ -172,41 +172,85 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
           b.badges?.find((x) => x.icon === "Star" || x.label === "rating")?.text ||
           "4.9";
 
-        // Enrich with matching default curated card if available
-        const matchedDef = DEFAULT_OFFER_CARDS.find(
-          (d) =>
-            d.id === b.id ||
-            d.title.toLowerCase().trim() === b.title.toLowerCase().trim() ||
-            (b.image_url && (b.image_url.includes(d.id) || d.image.includes(b.image_url)))
-        );
+        // Fuzzy match with curated default cards by id, title keywords, or image url
+        const bTitleClean = b.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const matchedDef = DEFAULT_OFFER_CARDS.find((d) => {
+          if (d.id === b.id) return true;
+          const dTitleClean = d.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (dTitleClean === bTitleClean) return true;
+          if (bTitleClean.includes("airbass") && d.id === "offer-tws-buds") return true;
+          if (bTitleClean.includes("gan") && d.id === "offer-gan-65w") return true;
+          if (bTitleClean.includes("diamond") && d.id === "offer-diamond-armor") return true;
+          if (bTitleClean.includes("120w") && d.id === "offer-cables") return true;
+          if (bTitleClean.includes("magsafe") && d.id === "offer-power-bank") return true;
+          if (b.image_url && (b.image_url.includes(d.id) || d.image.includes(b.image_url))) return true;
+          return false;
+        });
+
+        // The product description MUST be displayed on the left column.
+        // It comes from b.subtitle (if DB stored description in subtitle) or matchedDef.description.
+        const productDescription =
+          (b.subtitle && b.subtitle.trim().length > 30 ? b.subtitle.trim() : null) ||
+          matchedDef?.description ||
+          b.subtitle ||
+          "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and maximum wholesale margins.";
+
+        // The card subtitle displayed in the floating pill at the bottom/downside of the 3D card image.
+        // Do NOT put the long description sentence here! Keep it clean with release/wholesale pricing.
+        const cardPillSubtitle =
+          matchedDef?.subtitle ||
+          (b.subtitle && b.subtitle.trim().length <= 30
+            ? b.subtitle.trim()
+            : "Release: January 2026 · Wholesale Pricing");
+
+        const cardHighlights =
+          b.badges && Array.isArray(b.badges) && b.badges.length > 0
+            ? b.badges.map((badge: any) => ({
+                icon: (["Zap", "ShieldCheck", "Star", "Flame", "Sparkles"].includes(badge.icon)
+                  ? badge.icon
+                  : "Zap") as "Zap" | "ShieldCheck" | "Star" | "Flame" | "Sparkles",
+                text: badge.text || badge.label || "Wholesale Grade",
+              }))
+            : matchedDef?.highlights || [
+                { icon: "Zap", text: "Wholesale Spec" },
+                { icon: "ShieldCheck", text: "Quality Certified" },
+                { icon: "Star", text: `${customRating} Rated` },
+              ];
 
         list.push({
           id: b.id,
           badge: b.badge_text || matchedDef?.badge || "URBANRAT PRO",
           title: b.title,
-          subtitle: b.subtitle || matchedDef?.subtitle || "Release: January 2026",
+          subtitle: cardPillSubtitle, // Clean subtitle on the downside of the image!
           rating: customRating,
           image: b.image_url!,
           darkImage: matchedDef?.darkImage || b.image_url!,
           lightImage: matchedDef?.lightImage || b.image_url!,
           ctaText: b.cta_text || matchedDef?.ctaText || "Receive",
           ctaLink: b.cta_link || b.link_url || matchedDef?.ctaLink || "/urbanrat",
-          tagline: matchedDef?.tagline,
-          headlineFirst: matchedDef?.headlineFirst,
-          headlineHighlight: matchedDef?.headlineHighlight,
-          headlineSecond: matchedDef?.headlineSecond,
-          description: matchedDef?.description,
-          highlights: matchedDef?.highlights,
+          tagline: matchedDef?.tagline || `PREMIERES 2026 · ${b.badge_text || "URBANRAT CINEMATIC GEAR"}`,
+          headlineFirst: matchedDef?.headlineFirst || b.title.split(" ").slice(0, 2).join(" ").toUpperCase(),
+          headlineHighlight: matchedDef?.headlineHighlight || b.title.split(" ").slice(2, 4).join(" ").toUpperCase() || "PREMIERE GEAR",
+          headlineSecond: matchedDef?.headlineSecond || "2026",
+          description: productDescription, // Full description displayed on the LEFT!
+          highlights: cardHighlights,
         });
       });
 
     // Append defaults to ensure stacked carousel has at least 5 rich cards
     DEFAULT_OFFER_CARDS.forEach((def) => {
-      const alreadyPresent = list.some(
-        (existing) =>
-          existing.id === def.id ||
-          existing.title.toLowerCase().trim() === def.title.toLowerCase().trim()
-      );
+      const defClean = def.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const alreadyPresent = list.some((existing) => {
+        if (existing.id === def.id) return true;
+        const exClean = existing.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (exClean === defClean) return true;
+        if (exClean.includes("airbass") && def.id === "offer-tws-buds") return true;
+        if (exClean.includes("gan") && def.id === "offer-gan-65w") return true;
+        if (exClean.includes("diamond") && def.id === "offer-diamond-armor") return true;
+        if (exClean.includes("120w") && def.id === "offer-cables") return true;
+        if (exClean.includes("magsafe") && def.id === "offer-power-bank") return true;
+        return false;
+      });
       if (!alreadyPresent) {
         list.push(def);
       }
@@ -594,6 +638,18 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
           </div>
         </div>
       </div>
+
+      {/* ── Mobile Active Card Title & Full Description (Shown outside image on Mobile) ── */}
+      {activeCard && (
+        <div className="lg:hidden px-4 pt-3 text-center space-y-1.5 animate-in fade-in duration-200">
+          <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+            {activeCard.title}
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto font-medium">
+            {activeCard.description}
+          </p>
+        </div>
+      )}
 
       {/* ── Mobile Carousel Indicator Dots (Hidden on Desktop) ── */}
       <div className="flex lg:hidden items-center justify-center space-x-2 pt-3">

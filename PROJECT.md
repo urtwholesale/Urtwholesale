@@ -1138,5 +1138,19 @@ Deploy each application as an independent Vercel project on separate subdomains 
   - TypeScript & Vite build passing (`npm run build:store`, built in 8.27s).
   - 204 Vitest unit and integration tests passing across 13 suites.
 
+---
+
+### Touchpoint 25 — Synchronized Hero Card Descriptions on Left Column & Clean Card Pills
+
+- **Hero Descriptions Relocation & Synchronization (`HeroStackedCarousel.tsx`)**:
+  - **The Problem**: Long product descriptions (e.g. *"Acoustic chamber with 13mm titanium composite drivers..."*) were placed into the floating card pill on the downside of the 3D hero image, resulting in truncated text (`"Acoustic chamber with 13mm titaniu..."`), while the prominent left column description paragraph was failing to display the active card's description.
+  - **The Fix**:
+    1. **Relocated All Descriptions to Left Column**: The rich, complete product description for each active flagship hero card is now prominently displayed in the left column description block, updating seamlessly as cards rotate.
+    2. **Clean Downside Card Pills**: The floating frosted pill at the bottom of the 3D card image now shows clean title, star rating, and concise release/pricing information (e.g. `Release: January 2026 · ₹290 / unit`), with no truncated paragraph text.
+    3. **Mobile Full Description**: Added an active card title and full description section directly beneath the carousel on mobile screens (`lg:hidden`), ensuring mobile users read the full product specs without truncation.
+- **Verification**:
+  - TypeScript & Vite build passing (`npm run build:store`, built in 6.93s).
+  - 204 Vitest unit and integration tests passing across 13 suites.
+
 
 
