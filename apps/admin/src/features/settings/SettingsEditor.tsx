@@ -12,6 +12,8 @@ import {
   User,
   AlertCircle,
   QrCode,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export function SettingsEditor() {
@@ -27,11 +29,107 @@ export function SettingsEditor() {
 
   // Admin Credentials State
   const [adminUsername, setAdminUsername] = useState("Sjainthelegend");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [credSaving, setCredSaving] = useState(false);
   const [credToast, setCredToast] = useState(false);
   const [credError, setCredError] = useState<string | null>(null);
+
+  // Two-Factor Authentication (TOTP MFA) State
+  const [mfaFactors, setMfaFactors] = useState<any[]>([]);
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaVerificationCode, setMfaVerificationCode] = useState("");
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [mfaSuccess, setMfaSuccess] = useState<string | null>(null);
+
+  async function loadMfaFactors() {
+    try {
+      const { data, error: mfaErr } = await supabase.auth.mfa.listFactors();
+      if (!mfaErr && data) {
+        setMfaFactors(data.totp || []);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  async function handleStartMfaEnrollment() {
+    setMfaEnrolling(true);
+    setMfaError(null);
+    setMfaSuccess(null);
+    setMfaLoading(true);
+    try {
+      const { data, error: enrollErr } = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        issuer: "Urbanrat Admin",
+      });
+      if (enrollErr) throw enrollErr;
+      setMfaFactorId(data.id);
+      setMfaQrCode(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+    } catch (err: any) {
+      setMfaError(err.message || "Failed to start MFA enrollment");
+      setMfaEnrolling(false);
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  async function handleVerifyAndActivateMfa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaFactorId || !mfaVerificationCode.trim()) {
+      setMfaError("Please enter the 6-digit verification code from your authenticator app.");
+      return;
+    }
+    setMfaLoading(true);
+    setMfaError(null);
+    try {
+      const challenge = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challenge.error) throw challenge.error;
+
+      const verifyRes = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.data.id,
+        code: mfaVerificationCode.trim(),
+      });
+      if (verifyRes.error) throw verifyRes.error;
+
+      setMfaSuccess("Two-factor authentication successfully verified and enabled!");
+      setMfaEnrolling(false);
+      setMfaQrCode(null);
+      setMfaSecret(null);
+      setMfaVerificationCode("");
+      await loadMfaFactors();
+    } catch (err: any) {
+      setMfaError(err.message || "Invalid two-factor code. Please check your authenticator.");
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  async function handleUnenrollMfaFactor(factorId: string) {
+    if (!confirm("Are you sure you want to disable two-factor authentication for this account?")) return;
+    setMfaLoading(true);
+    setMfaError(null);
+    try {
+      const { error: unenrollErr } = await supabase.auth.mfa.unenroll({ factorId });
+      if (unenrollErr) throw unenrollErr;
+      setMfaSuccess("Two-factor authentication factor removed.");
+      await loadMfaFactors();
+    } catch (err: any) {
+      setMfaError(err.message || "Failed to remove MFA factor");
+    } finally {
+      setMfaLoading(false);
+    }
+  }
 
   useEffect(() => {
     async function loadSettings() {
@@ -70,6 +168,7 @@ export function SettingsEditor() {
       }
     }
     loadSettings();
+    loadMfaFactors();
   }, []);
 
   async function handleSave(e: React.FormEvent) {
@@ -158,11 +257,31 @@ export function SettingsEditor() {
 
       // If user provided a new password, validate and update in Supabase Auth
       if (newPassword) {
-        if (newPassword.length < 6) {
-          throw new Error("Password must be at least 6 characters long");
+        if (!currentPassword) {
+          throw new Error("Current password is required to change master password");
+        }
+        if (newPassword.length < 8) {
+          throw new Error("New password must be at least 8 characters long");
         }
         if (newPassword !== confirmPassword) {
           throw new Error("New password and confirmation do not match");
+        }
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user || !user.email) {
+          throw new Error("Active admin session not found");
+        }
+
+        const { error: reauthErr } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: currentPassword,
+        });
+
+        if (reauthErr) {
+          throw new Error("Current password verification failed. Please enter your correct current password.");
         }
 
         const { error: pwErr } = await supabase.auth.updateUser({
@@ -401,33 +520,92 @@ export function SettingsEditor() {
             </p>
           </div>
 
+          <div>
+            <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
+              <KeyRound className="w-3.5 h-3.5 text-brand-dark" />
+              <span>Current Password <span className="text-slate-400 font-normal">(Required to change password)</span></span>
+            </label>
+            <div className="relative max-w-sm">
+              <input
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                title={showCurrentPassword ? "Hide password" : "Show password"}
+                aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+              >
+                {showCurrentPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
               <label className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 mb-1">
                 <KeyRound className="w-3.5 h-3.5 text-brand-dark" />
                 <span>New Master Password</span>
               </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Leave blank to keep current"
-                minLength={6}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Leave blank to keep current"
+                  minLength={6}
+                  className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  title={showNewPassword ? "Hide password" : "Show password"}
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Confirm New Password
               </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repeat new password"
-                minLength={6}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  minLength={6}
+                  className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark focus:bg-white transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  title={showConfirmPassword ? "Hide password" : "Show password"}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -454,6 +632,152 @@ export function SettingsEditor() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* ── Two-Factor Authentication (TOTP MFA) Card ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="w-5 h-5 text-brand-dark" />
+              <h2 className="text-lg font-bold text-slate-900">
+                Two-Factor Authentication (TOTP MFA)
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Add hardware-level TOTP security (Google Authenticator, Microsoft Authenticator, 1Password) to protect administrator access.
+            </p>
+          </div>
+          {mfaFactors.length > 0 && (
+            <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <Check className="w-3.5 h-3.5" />
+              <span>MFA Active</span>
+            </span>
+          )}
+        </div>
+
+        {mfaSuccess && (
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center space-x-2">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{mfaSuccess}</span>
+          </div>
+        )}
+
+        {mfaError && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{mfaError}</span>
+          </div>
+        )}
+
+        {/* Existing Factors List */}
+        {mfaFactors.length > 0 && !mfaEnrolling && (
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Enrolled Authentication Factors
+            </p>
+            {mfaFactors.map((factor) => (
+              <div
+                key={factor.id}
+                className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-light/20 text-brand-dark flex items-center justify-center font-bold">
+                    <QrCode className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">
+                      {factor.friendly_name || "Authenticator App (TOTP)"}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Factor ID: {factor.id.slice(0, 8)}... • Status: {factor.status}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnenrollMfaFactor(factor.id)}
+                  disabled={mfaLoading}
+                  className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold text-xs transition cursor-pointer disabled:opacity-50"
+                >
+                  Unenroll
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Enrollment Wizard */}
+        {mfaEnrolling && mfaQrCode ? (
+          <form onSubmit={handleVerifyAndActivateMfa} className="space-y-4 max-w-md p-4 rounded-xl border border-brand-light/30 bg-brand-light/5">
+            <p className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+              Step 1: Scan QR Code in Authenticator App
+            </p>
+            <div className="bg-white p-3 rounded-xl border border-slate-200 inline-block shadow-2xs">
+              <img
+                src={mfaQrCode}
+                alt="TOTP MFA QR Code"
+                className="w-44 h-44 mx-auto object-contain"
+              />
+            </div>
+            {mfaSecret && (
+              <p className="text-[11px] text-slate-500 font-mono select-all">
+                Manual Key: <span className="font-bold text-slate-800">{mfaSecret}</span>
+              </p>
+            )}
+
+            <div className="pt-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Step 2: Enter 6-digit confirmation code from your app
+              </label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                value={mfaVerificationCode}
+                onChange={(e) => setMfaVerificationCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="123456"
+                className="w-full text-center font-mono font-bold tracking-widest text-lg px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-brand-dark transition"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={mfaLoading}
+                className="flex-1 py-2 px-4 rounded-xl bg-brand-dark text-white font-bold text-xs hover:bg-brand-dark/90 transition shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {mfaLoading ? "Activating..." : "Confirm & Enable MFA"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMfaEnrolling(false);
+                  setMfaQrCode(null);
+                  setMfaSecret(null);
+                  setMfaVerificationCode("");
+                }}
+                className="py-2 px-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          mfaFactors.length === 0 && (
+            <div>
+              <button
+                type="button"
+                onClick={handleStartMfaEnrollment}
+                disabled={mfaLoading}
+                className="py-2.5 px-5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition shadow-2xs flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <QrCode className="w-4 h-4 text-brand-dark" />
+                <span>Enroll Authenticator App (TOTP)</span>
+              </button>
+            </div>
+          )
+        )}
       </div>
     </div>
   );

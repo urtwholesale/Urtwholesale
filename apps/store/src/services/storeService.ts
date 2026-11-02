@@ -18,6 +18,7 @@ import type {
 import {
   normalizeSearchQuery,
   generateSearchVariants,
+  sanitizeText,
 } from "@urbanrat/shared";
 import * as addressService from "./addressService";
 
@@ -57,7 +58,10 @@ export interface ProductsResponse {
   total: number;
 }
 
-export const PRODUCT_SELECT = "*, price_tiers:product_price_tiers(*)";
+export const PRODUCT_SAFE_COLUMNS =
+  "id, name, slug, description, short_description, price, mrp, sku, images, category_id, is_urbanrat_brand, is_active, is_featured, is_trending, specs, attributes, warranty_months, tags, keywords, brand, min_order_qty, order_qty_step, rating_avg, rating_count, in_stock, created_at, updated_at";
+
+export const PRODUCT_SELECT = `${PRODUCT_SAFE_COLUMNS}, price_tiers:product_price_tiers(*)`;
 
 /**
  * Normalizes and sorts price tiers ascending by min_qty in one place
@@ -68,8 +72,16 @@ export function formatProduct(raw: any): Product {
     ? [...rawTiers].sort((a, b) => a.min_qty - b.min_qty)
     : [];
 
+  if (typeof raw.in_stock !== "boolean") {
+    throw new Error(
+      `[Schema Error] Product "${raw.id || raw.name || "unknown"}" is missing required boolean column "in_stock". Ensure migration 026a is applied.`
+    );
+  }
+
   return {
     ...raw,
+    in_stock: raw.in_stock,
+    stock: raw.stock ?? (raw.in_stock ? 999 : 0),
     price_tiers,
   };
 }
@@ -256,7 +268,7 @@ export async function fetchProducts(
   }
 
   if (inStockOnly) {
-    query = query.gt("stock", 0);
+    query = query.eq("in_stock", true);
   }
 
   if (priceMin !== undefined && priceMin !== null) {
@@ -268,8 +280,12 @@ export async function fetchProducts(
   }
 
   if (search && search.trim()) {
-    // Sanitize search string so commas/parentheses don't break PostgREST .or() filter syntax
-    const cleanSearch = search.trim().replace(/[,()]/g, " ").replace(/\s+/g, " ").trim();
+    // Sanitize search string: strip quotes, backslashes, %, *, commas, parens, colons, semicolons, and control characters; cap length at 60 chars
+    // Prevents PostgREST filter injection, wildcard abuse, or regex denial-of-service
+    const cleanSearch = sanitizeText(
+      search.trim().replace(/['"\\%*,().:;]/g, " "),
+      60
+    );
     if (cleanSearch) {
       query = query.or(
         `name.ilike.%${cleanSearch}%,sku.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,specs->>brand_compatibility.ilike.%${cleanSearch}%,specs->>compatibility_group.ilike.%${cleanSearch}%`
@@ -511,7 +527,8 @@ export async function fetchRelatedProducts(
         .eq("category_id", categoryId)
         .eq("is_active", true)
         .neq("id", productId)
-        .order("stock", { ascending: false })
+        .order("is_featured", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(limit);
 
       if (exactData) {
@@ -537,7 +554,8 @@ export async function fetchRelatedProducts(
         .select(PRODUCT_SELECT)
         .in("category_id", otherCatIds)
         .eq("is_active", true)
-        .order("stock", { ascending: false })
+        .order("is_featured", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(needed + seenIds.size);
 
       if (familyData) {
@@ -561,7 +579,8 @@ export async function fetchRelatedProducts(
         .from("products")
         .select(PRODUCT_SELECT)
         .eq("is_active", true)
-        .order("stock", { ascending: false })
+        .order("is_featured", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(limit + 4);
 
       if (fallbackData) {
@@ -617,7 +636,10 @@ export async function fetchSimilarProducts(
   }
 
   // In-stock first
-  query = query.order("stock", { ascending: false }).limit(limit);
+  query = query
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   const { data, error } = await query;
   if (error || !data) {
@@ -691,14 +713,19 @@ export async function fetchCustomerOrders(): Promise<Order[]> {
 }
 
 /**
- * Fetch a single order by ID via secure RPC with timeline events
+ * Fetch a single order by ID via secure RPC with timeline events.
+ * Non-owners and unauthenticated guest callers must provide a matching public_token.
  */
-export async function fetchOrderById(orderId: string): Promise<Order | null> {
+export async function fetchOrderById(
+  orderId: string,
+  token?: string | null
+): Promise<Order | null> {
   ensureConfigured();
   if (!orderId) return null;
 
   const { data, error } = await supabase.rpc("get_order_by_id", {
     p_order_id: orderId.trim(),
+    p_token: token?.trim() || null,
   });
 
   if (error) {
@@ -723,32 +750,62 @@ export async function fetchOrderById(orderId: string): Promise<Order | null> {
 
 export interface CreateOrderInput {
   customer: CustomerDetails;
-  items: { product_id: string; qty?: number; quantity?: number }[];
+  items: { product_id: string; qty?: number; quantity?: number; selected_color?: string }[];
   whatsapp_message?: string | null;
+  honeypot?: string | null;
+  turnstile_token?: string | null;
 }
 
 /**
- * Create order via RPC create_verified_order sending product_id and qty only
+ * Create order:
+ * - If user is authenticated: calls RPC create_verified_order directly with caller's JWT
+ * - If guest: calls checkout-gate edge function with Turnstile token and proxy-appended rate limiting
  */
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
   ensureConfigured();
 
   const itemsPayload = input.items.map((item) => ({
     product_id: item.product_id,
+    quantity: item.qty ?? item.quantity ?? 1,
     qty: item.qty ?? item.quantity ?? 1,
   }));
 
-  const { data, error } = await supabase.rpc("create_verified_order", {
-    p_customer: input.customer,
-    p_items: itemsPayload,
-    p_whatsapp_message: input.whatsapp_message || null,
-  });
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (error) {
-    throw new StoreError(error.message, error.code, error);
+  if (session?.user) {
+    // Authenticated checkout path: direct RPC call using caller's user JWT
+    const { data, error } = await supabase.rpc("create_verified_order", {
+      p_customer: input.customer,
+      p_items: itemsPayload,
+      p_whatsapp_message: input.whatsapp_message || null,
+      p_honeypot: input.honeypot || null,
+    });
+
+    if (error) {
+      throw new StoreError(error.message, error.code, error);
+    }
+    return data as Order;
+  } else {
+    // Guest checkout path: calls checkout-gate which validates Turnstile & rate limit,
+    // then invokes create_verified_order_guest exclusively via service_role.
+    const { data, error } = await supabase.functions.invoke("checkout-gate", {
+      body: {
+        customer: input.customer,
+        items: itemsPayload,
+        whatsapp_message: input.whatsapp_message || null,
+        honeypot: input.honeypot || null,
+        turnstile_token: input.turnstile_token || null,
+      },
+    });
+
+    if (error) {
+      throw new StoreError(error.message, error.code, error);
+    }
+    if ((data as any)?.error) {
+      throw new StoreError((data as any).error);
+    }
+    return data as Order;
   }
-
-  return data as Order;
 }
 
 // Backward-compatible alias for existing cart call
@@ -856,6 +913,11 @@ export async function getSettings(): Promise<StoreSettings> {
             ...defaultSettings.store_info,
             ...row.value,
           };
+        } else if (row.key === "max_order_qty") {
+          const parsed = typeof row.value === "number" ? row.value : parseInt(String(row.value), 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            defaultSettings.max_order_qty = parsed;
+          }
         }
       });
     }
@@ -1367,10 +1429,14 @@ export async function submitReview(input: {
   }
 
   const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-  const authorName =
+  const authorName = sanitizeText(
     input.authorName ||
     authUser?.user_metadata?.full_name ||
-    "Verified Wholesale Buyer";
+    "Verified Wholesale Buyer",
+    70
+  );
+  const safeTitle = input.title ? sanitizeText(input.title, 120) : null;
+  const safeBody = input.body ? sanitizeText(input.body, 2000) : null;
 
   const fullReview: Review = {
     id: reviewId,
@@ -1380,8 +1446,8 @@ export async function submitReview(input: {
     user_id: authUser?.id || "wholesale_buyer",
     user_name: authorName,
     rating: input.rating,
-    title: input.title || null,
-    body: input.body || null,
+    title: safeTitle,
+    body: safeBody,
     status: initialStatus,
     created_at: new Date().toISOString(),
   };
@@ -1395,10 +1461,10 @@ export async function submitReview(input: {
           product_id: input.productId,
           user_id: authUser.id,
           rating: input.rating,
-          title: input.title || null,
+          title: safeTitle,
           body: input.authorName
-            ? `${input.body || ""}\n\n-- Reviewer: ${input.authorName}`
-            : input.body || null,
+            ? `${safeBody || ""}\n\n-- Reviewer: ${authorName}`
+            : safeBody,
           status: initialStatus,
         })
         .select()
@@ -1480,17 +1546,28 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
 export async function submitDealerApplication(formData: Record<string, any>): Promise<{
   application_no: string;
   created_at: string;
+  public_token?: string | null;
 }> {
   ensureConfigured();
 
+  // Strip control characters and cap string field lengths to prevent injection / abuse
+  const sanitizedData: Record<string, any> = {};
+  for (const [key, val] of Object.entries(formData)) {
+    if (typeof val === "string") {
+      sanitizedData[key] = sanitizeText(val, key === "message" ? 1000 : 255);
+    } else {
+      sanitizedData[key] = val;
+    }
+  }
+
   const { data, error } = await supabase.rpc("submit_dealer_application", {
-    p_data: formData,
+    p_data: sanitizedData,
   });
 
   if (error) {
     throw new StoreError(error.message, error.code, error);
   }
 
-  return data as { application_no: string; created_at: string };
+  return data as { application_no: string; created_at: string; public_token?: string | null };
 }
 

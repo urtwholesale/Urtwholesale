@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { getSafeRedirectUrl } from "@urbanrat/shared";
 import { useAuth } from "../context/AuthContext";
 import { CustomerAuth } from "../features/auth/CustomerAuth";
 
@@ -8,12 +9,15 @@ export function LoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Determine return target (e.g. /cart, /account, /addresses)
+  // Determine return target (e.g. /cart, /account, /addresses) with strict same-origin relative validation
   const searchParams = new URLSearchParams(location.search);
-  const from =
+  const rawFrom =
     (location.state as { from?: string })?.from ||
     searchParams.get("from") ||
+    searchParams.get("redirect") ||
+    searchParams.get("next") ||
     "/account";
+  const from = getSafeRedirectUrl(rawFrom, "/account");
 
   useEffect(() => {
     if (!loading && user) {

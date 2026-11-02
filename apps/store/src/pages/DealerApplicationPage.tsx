@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
+import { sanitizeText } from "@urbanrat/shared";
 import { submitDealerApplication } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
 import { triggerHaptic } from "../utils/haptics";
@@ -47,6 +48,26 @@ export function DealerApplicationPage() {
   const navigate = useNavigate();
   const { whatsappNumber } = useSettings();
 
+  // Prevent tracking token leak via HTTP Referer header
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="referrer"]') as HTMLMetaElement | null;
+    let created = false;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "referrer";
+      meta.content = "no-referrer";
+      document.head.appendChild(meta);
+      created = true;
+    } else {
+      meta.content = "no-referrer";
+    }
+    return () => {
+      if (created && meta && meta.parentNode) {
+        meta.parentNode.removeChild(meta);
+      }
+    };
+  }, []);
+
   // Form State
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -66,6 +87,7 @@ export function DealerApplicationPage() {
   ]);
   const [message, setMessage] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
 
   // Status State
   const [submitting, setSubmitting] = useState(false);
@@ -73,6 +95,7 @@ export function DealerApplicationPage() {
   const [successData, setSuccessData] = useState<{
     application_no: string;
     created_at: string;
+    public_token?: string | null;
   } | null>(null);
 
   const [copiedAppNo, setCopiedAppNo] = useState(false);
@@ -130,21 +153,22 @@ export function DealerApplicationPage() {
 
     try {
       const payload = {
-        business_name: businessName.trim(),
-        owner_name: ownerName.trim(),
+        business_name: sanitizeText(businessName, 120),
+        owner_name: sanitizeText(ownerName, 100),
         mobile: cleanMobile,
         whatsapp: whatsapp.trim() ? whatsapp.replace(/[^0-9]/g, "") : null,
-        email: email.trim() || null,
+        email: email.trim() ? sanitizeText(email, 120) : null,
         gstin: gstin.trim() ? gstin.trim().toUpperCase() : null,
         business_type: businessType,
-        address: address.trim() || null,
-        city: city.trim() || null,
-        state: state.trim() || null,
+        address: address.trim() ? sanitizeText(address, 300) : null,
+        city: city.trim() ? sanitizeText(city, 80) : null,
+        state: state.trim() ? sanitizeText(state, 80) : null,
         pincode: pincode.trim() ? pincode.replace(/[^0-9]/g, "") : null,
         expected_monthly_volume: volume,
         categories_interest: selectedCategories,
-        message: message.trim() || null,
+        message: message.trim() ? sanitizeText(message, 1000) : null,
         accepted_terms: true,
+        honeypot: honeypot.trim() ? honeypot.trim() : null,
       };
 
       const res = await submitDealerApplication(payload);
@@ -214,6 +238,14 @@ export function DealerApplicationPage() {
                 year: "numeric",
               })}
             </p>
+            {successData.public_token && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Tracking Token:{" "}
+                <span className="font-mono text-brand-dark dark:text-brand-light font-bold">
+                  {successData.public_token}
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Next Steps */}
@@ -242,7 +274,7 @@ export function DealerApplicationPage() {
             <a
               href={whatsappFastTrackUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               onClick={() => triggerHaptic("selection")}
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-full text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition cursor-pointer"
             >
@@ -337,6 +369,17 @@ export function DealerApplicationPage() {
         onSubmit={handleSubmit}
         className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-10 shadow-xs space-y-6"
       >
+        {/* Bot Honeypot */}
+        <input
+          type="text"
+          name="tax_exemption_ref"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="hidden pointer-events-none select-none opacity-0 absolute left-[-9999px]"
+        />
         <div className="border-b border-slate-100 dark:border-white/10 pb-4">
           <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
             Commercial Business Profile
@@ -599,6 +642,7 @@ export function DealerApplicationPage() {
               <Link
                 to="/page/dealer-terms"
                 target="_blank"
+                rel="noopener noreferrer"
                 className="font-bold text-brand-dark dark:text-brand-light hover:underline"
               >
                 Urbanrat Authorized Dealer Agreement

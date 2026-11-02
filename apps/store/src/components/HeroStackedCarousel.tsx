@@ -20,7 +20,7 @@ export interface OfferCard {
   badge: string;
   title: string;
   subtitle: string;
-  rating: string;
+  rating?: string;
   image: string;
   darkImage?: string;
   lightImage?: string;
@@ -170,7 +170,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
         const customRating =
           b.rating ||
           b.badges?.find((x) => x.icon === "Star" || x.label === "rating")?.text ||
-          "4.9";
+          undefined;
 
         // Fuzzy match with curated default cards by id, title keywords, or image url
         const bTitleClean = b.title.toLowerCase().replace(/[^a-z0-9]/g, "");

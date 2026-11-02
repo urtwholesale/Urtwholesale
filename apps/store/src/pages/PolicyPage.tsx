@@ -411,7 +411,7 @@ export function PolicyPage({ initialSlug }: PolicyPageProps) {
           <a
             href={whatsappInquiryUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             onClick={() => triggerHaptic("selection")}
             className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition shrink-0 cursor-pointer"
           >

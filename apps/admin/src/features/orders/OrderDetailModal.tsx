@@ -9,7 +9,10 @@ import type {
 import {
   ORDER_STATUS_BADGES,
   generatePackingSlipHtml,
+  escapeHtml,
+  printHtmlSafely,
 } from "@urbanrat/shared";
+
 import {
   adminUpdateOrderStatus,
   adminUpdateOrderShipping,
@@ -258,46 +261,41 @@ export function OrderDetailModal({
       },
       storeSettings
     );
-
-    const win = window.open("", "_blank");
-    if (!win) {
-      alert("Please allow popups to generate and print packing slips.");
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
+    printHtmlSafely(html);
   }
 
   // 5. Print GST Invoice
   function handlePrintInvoice() {
-    const invoiceWindow = window.open("", "_blank");
-    if (!invoiceWindow) {
-      alert("Please allow popups to view and download invoices.");
-      return;
-    }
-
-    const subtotal = order.subtotal || order.total;
-    const savings = order.savings || 0;
-    const shipping = order.shipping || 0;
-    const total = order.total;
+    const safeOrderId = escapeHtml(order.id);
+    const subtotal = Number(order.subtotal || order.total || 0);
+    const savings = Number(order.savings || 0);
+    const shipping = Number(order.shipping || 0);
+    const total = Number(order.total || 0);
     const taxableBase = Math.round((subtotal / 1.18) * 100) / 100;
     const gstAmount = Math.round((subtotal - taxableBase) * 100) / 100;
     const cgst = Math.round((gstAmount / 2) * 100) / 100;
     const sgst = Math.round((gstAmount / 2) * 100) / 100;
+    const invoiceDate = escapeHtml(new Date(order.created_at).toLocaleDateString("en-IN"));
+
+    const customerName = escapeHtml(order.customer?.name || "Customer");
+    const customerBusiness = order.customer?.business_name ? `<div style="font-weight: 700; color: #334155;">${escapeHtml(order.customer.business_name)}</div>` : "";
+    const customerGstin = order.customer?.gstin ? `<div style="font-weight: 700; color: #0369a1;">GSTIN: ${escapeHtml(order.customer.gstin)}</div>` : "";
+    const customerAddress = escapeHtml(order.customer?.address || "—");
+    const customerPincode = order.customer?.pincode ? `(PIN: ${escapeHtml(order.customer.pincode)})` : "";
+    const customerPhone = escapeHtml(order.customer?.phone || "—");
 
     const itemsHtml = (order.items || [])
       .map((item, index) => {
-        const unitPrice = item.unit_price || item.price || 0;
-        const lineTotal = item.line_total || unitPrice * item.quantity;
+        const unitPrice = Number(item.unit_price || item.price || 0);
+        const lineTotal = Number(item.line_total || unitPrice * Number(item.quantity || 1));
         return `
           <tr style="border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 10px 8px; text-align: center; color: #64748b; font-size: 12px;">${index + 1}</td>
             <td style="padding: 10px 8px;">
-              <div style="font-weight: 600; font-size: 13px; color: #1e293b;">${item.name}</div>
-              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">SKU: <b>${item.sku || "—"}</b></div>
+              <div style="font-weight: 600; font-size: 13px; color: #1e293b;">${escapeHtml(item.name)}</div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">SKU: <b>${escapeHtml(item.sku || "—")}</b></div>
             </td>
-            <td style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 13px;">${item.quantity}</td>
+            <td style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 13px;">${Number(item.quantity || 0)}</td>
             <td style="padding: 10px 8px; text-align: right; font-size: 13px;">₹${unitPrice.toLocaleString("en-IN")}</td>
             <td style="padding: 10px 8px; text-align: right; font-weight: 700; font-size: 13px; color: #0f172a;">₹${lineTotal.toLocaleString("en-IN")}</td>
           </tr>
@@ -305,13 +303,12 @@ export function OrderDetailModal({
       })
       .join("");
 
-    invoiceWindow.document.open();
-    invoiceWindow.document.write(`
+    const html = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <title>GST Tax Invoice - ${order.id}</title>
+        <title>GST Tax Invoice - ${safeOrderId}</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 0; padding: 24px; background: #fff; }
           .invoice-card { max-width: 800px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; padding: 32px; }
@@ -333,17 +330,17 @@ export function OrderDetailModal({
             </div>
             <div style="text-align: right;">
               <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a;">TAX INVOICE</h2>
-              <p style="margin: 4px 0 0; font-family: monospace; font-size: 13px; font-weight: 700;">INV-${order.id}</p>
-              <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">Date: ${new Date(order.created_at).toLocaleDateString("en-IN")}</p>
+              <p style="margin: 4px 0 0; font-family: monospace; font-size: 13px; font-weight: 700;">INV-${safeOrderId}</p>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">Date: ${invoiceDate}</p>
             </div>
           </div>
           <div style="margin: 20px 0; padding: 14px; background: #f8fafc; border-radius: 8px; font-size: 12px;">
             <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">Billed / Shipped To:</div>
-            <div style="font-size: 14px; font-weight: 800; margin-top: 4px; color: #0f172a;">${order.customer?.name || "Customer"}</div>
-            ${order.customer?.business_name ? `<div style="font-weight: 700; color: #334155;">${order.customer.business_name}</div>` : ""}
-            ${order.customer?.gstin ? `<div style="font-weight: 700; color: #0369a1;">GSTIN: ${order.customer.gstin}</div>` : ""}
-            <div style="margin-top: 4px; color: #475569;">${order.customer?.address || "—"} ${order.customer?.pincode ? `(PIN: ${order.customer.pincode})` : ""}</div>
-            <div style="margin-top: 4px; font-weight: 700;">Phone: +91 ${order.customer?.phone || "—"}</div>
+            <div style="font-size: 14px; font-weight: 800; margin-top: 4px; color: #0f172a;">${customerName}</div>
+            ${customerBusiness}
+            ${customerGstin}
+            <div style="margin-top: 4px; color: #475569;">${customerAddress} ${customerPincode}</div>
+            <div style="margin-top: 4px; font-weight: 700;">Phone: +91 ${customerPhone}</div>
           </div>
           <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px;">
             <thead>
@@ -375,17 +372,30 @@ export function OrderDetailModal({
         </div>
       </body>
       </html>
-    `);
-    invoiceWindow.document.close();
+    `;
+
+    printHtmlSafely(html);
   }
+
 
   // 6. WhatsApp Customer Deep Link
   const customerPhoneRaw = (order.customer?.phone || "").replace(/\D/g, "").slice(-10);
+  const siteUrl = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
+  const trackingUrl = order.public_token
+    ? `${siteUrl}/order/${order.id}?t=${order.public_token}`
+    : `${siteUrl}/order/${order.id}`;
+
+  const whatsappTrackingUrl = customerPhoneRaw
+    ? `https://wa.me/91${customerPhoneRaw}?text=${encodeURIComponent(
+        `Hello ${order.customer?.name || "Customer"}, track your URT Wholesale order #${order.id} here: ${trackingUrl}`
+      )}`
+    : null;
+
   const whatsappUrl = customerPhoneRaw
     ? `https://wa.me/91${customerPhoneRaw}?text=${encodeURIComponent(
         `Hello ${order.customer?.name || "Customer"}, regarding your URT Wholesale Order #${order.id}: Current Status is *${order.status.toUpperCase()}*. ${
           order.awb_number ? `Dispatched via ${order.courier_name || "Express Courier"} AWB #${order.awb_number}.` : ""
-        } Please let us know if you need any assistance!`
+        } Track order: ${trackingUrl} Please let us know if you need any assistance!`
       )}`
     : null;
 
@@ -539,6 +549,26 @@ export function OrderDetailModal({
                 <span>Print Packing Slip</span>
               </button>
 
+              {/* Copy Tracking Link */}
+              <button
+                type="button"
+                onClick={() => handleCopy(trackingUrl, "tracking_link")}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs border border-slate-200 shadow-2xs transition active:scale-95 flex items-center space-x-1.5 cursor-pointer"
+                title="Copy secure tracking link with token"
+              >
+                {copiedField === "tracking_link" ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 stroke-3" />
+                    <span className="text-emerald-700">Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Copy Tracking Link</span>
+                  </>
+                )}
+              </button>
+
               {/* Direct Cancel Order Button */}
               {selectedStatus !== "cancelled" ? (
                 <button
@@ -568,18 +598,33 @@ export function OrderDetailModal({
             </div>
 
             {/* WhatsApp Communication */}
-            {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 flex items-center space-x-1.5 cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Message Customer on WhatsApp</span>
-                <ExternalLink className="w-3 h-3 opacity-70" />
-              </a>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {whatsappTrackingUrl && (
+                <a
+                  href={whatsappTrackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs shadow-2xs transition active:scale-95 flex items-center space-x-1.5 cursor-pointer"
+                  title="Resend order tracking link with security token"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Send Tracking Link</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              )}
+              {whatsappUrl && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Message Customer on WhatsApp</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              )}
+            </div>
           </div>
 
           {/* ── Two Column Grid: Shipping/AWB & Status Transition ── */}

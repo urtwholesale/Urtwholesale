@@ -1,38 +1,37 @@
 import type { Order, StoreSettings } from "@urbanrat/shared";
+import { escapeHtml, printHtmlSafely } from "@urbanrat/shared";
 
 /**
- * Generates and triggers browser print/PDF download for a professional GST Wholesale Tax Invoice
+ * Generates and triggers browser print/PDF download for a professional GST Wholesale Tax Invoice.
+ * All interpolated data is strictly HTML-escaped and rendered via isolated Blob URL.
  */
 export function printOrderInvoice(order: Order, settings?: StoreSettings | null): void {
-  const invoiceWindow = window.open("", "_blank");
-  if (!invoiceWindow) {
-    alert("Please allow popups to view and download the invoice.");
-    return;
-  }
+  const safeOrderId = escapeHtml(order.id);
+  const invoiceNumber = `INV-${safeOrderId}`;
+  const invoiceDate = escapeHtml(
+    new Date(order.created_at).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+  );
 
-  const invoiceNumber = `INV-${order.id}`;
-  const invoiceDate = new Date(order.created_at).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  const storeName = settings?.store_name || settings?.store_info?.name || "URT Wholesale (Urbanrat Technologies)";
-  const storePhone = settings?.whatsapp_number ? `+${settings.whatsapp_number}` : "+91 99999 99999";
+  const storeName = escapeHtml(settings?.store_name || settings?.store_info?.name || "URT Wholesale (Urbanrat Technologies)");
+  const storePhone = escapeHtml(settings?.whatsapp_number ? `+${settings.whatsapp_number}` : "+91 99999 99999");
   const storeEmail = "support@urtwholesale.com";
   const storeGstin = "27AAPFU0939F1ZV"; // Urbanrat primary wholesale GSTIN
 
-  const customerName = order.customer?.name || "Valued Wholesale Customer";
-  const customerPhone = order.customer?.phone || "N/A";
-  const customerAddress = order.customer?.address || "Address on file";
-  const customerPincode = order.customer?.pincode ? `PIN: ${order.customer.pincode}` : "";
-  const customerBusiness = order.customer?.business_name ? `<b>${order.customer.business_name}</b><br/>` : "";
-  const customerGstin = order.customer?.gstin ? `GSTIN: <b>${order.customer.gstin}</b><br/>` : "";
+  const customerName = escapeHtml(order.customer?.name || "Valued Wholesale Customer");
+  const customerPhone = escapeHtml(order.customer?.phone || "N/A");
+  const customerAddress = escapeHtml(order.customer?.address || "Address on file");
+  const customerPincode = order.customer?.pincode ? `PIN: ${escapeHtml(order.customer.pincode)}` : "";
+  const customerBusiness = order.customer?.business_name ? `<b>${escapeHtml(order.customer.business_name)}</b><br/>` : "";
+  const customerGstin = order.customer?.gstin ? `GSTIN: <b>${escapeHtml(order.customer.gstin)}</b><br/>` : "";
 
-  const subtotal = order.subtotal || order.total;
-  const savings = order.savings || 0;
-  const shipping = order.shipping || 0;
-  const total = order.total;
+  const subtotal = Number(order.subtotal || order.total || 0);
+  const savings = Number(order.savings || 0);
+  const shipping = Number(order.shipping || 0);
+  const total = Number(order.total || 0);
 
   // Approximate GST (Wholesale items: 18% GST included / broken down: 9% CGST + 9% SGST)
   const taxableBase = Math.round((subtotal / 1.18) * 100) / 100;
@@ -40,24 +39,24 @@ export function printOrderInvoice(order: Order, settings?: StoreSettings | null)
   const cgst = Math.round((gstAmount / 2) * 100) / 100;
   const sgst = Math.round((gstAmount / 2) * 100) / 100;
 
-  const itemsHtml = order.items
+  const itemsHtml = (order.items || [])
     .map((item, index) => {
-      const unitPrice = item.unit_price || item.price || 0;
-      const lineTotal = item.line_total || unitPrice * item.quantity;
+      const unitPrice = Number(item.unit_price || item.price || 0);
+      const lineTotal = Number(item.line_total || unitPrice * Number(item.quantity || 1));
       const tierBadge = item.tier_min_qty
-        ? `<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Tier (${item.tier_min_qty}+ pcs)</span>`
+        ? `<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Tier (${Number(item.tier_min_qty)}+ pcs)</span>`
         : "";
 
       return `
         <tr style="border-bottom: 1px solid #e2e8f0;">
           <td style="padding: 10px 8px; text-align: center; color: #64748b; font-size: 12px;">${index + 1}</td>
           <td style="padding: 10px 8px;">
-            <div style="font-weight: 600; font-size: 13px; color: #1e293b;">${item.name}</div>
+            <div style="font-weight: 600; font-size: 13px; color: #1e293b;">${escapeHtml(item.name)}</div>
             <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-              ${item.sku ? `SKU: <b>${item.sku}</b> &bull; ` : ""}${tierBadge}
+              ${item.sku ? `SKU: <b>${escapeHtml(item.sku)}</b> &bull; ` : ""}${tierBadge}
             </div>
           </td>
-          <td style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 13px;">${item.quantity}</td>
+          <td style="padding: 10px 8px; text-align: center; font-weight: 600; font-size: 13px;">${Number(item.quantity || 0)}</td>
           <td style="padding: 10px 8px; text-align: right; font-size: 13px;">₹${unitPrice.toLocaleString("en-IN")}</td>
           <td style="padding: 10px 8px; text-align: right; font-weight: 700; font-size: 13px; color: #0f172a;">₹${lineTotal.toLocaleString("en-IN")}</td>
         </tr>
@@ -70,7 +69,7 @@ export function printOrderInvoice(order: Order, settings?: StoreSettings | null)
     <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <title>Tax Invoice - ${order.id}</title>
+      <title>Tax Invoice - ${safeOrderId}</title>
       <style>
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -121,7 +120,7 @@ export function printOrderInvoice(order: Order, settings?: StoreSettings | null)
                 Invoice #: ${invoiceNumber}
               </div>
               <div style="font-size: 12px; color: #64748b;">
-                Order ID: #${order.id}
+                Order ID: #${safeOrderId}
               </div>
               <div style="font-size: 12px; color: #64748b;">
                 Date: ${invoiceDate}
@@ -151,7 +150,7 @@ export function printOrderInvoice(order: Order, settings?: StoreSettings | null)
                 Order Information:
               </div>
               <div style="font-size: 12px; color: #334155;">
-                Order Status: <b style="text-transform: capitalize; color: #0A82A8;">${order.status}</b><br/>
+                Order Status: <b style="text-transform: capitalize; color: #0A82A8;">${escapeHtml(order.status)}</b><br/>
                 Dispatch Mode: <b>Tier-1 Cargo / SafeXpress / Delhivery</b><br/>
                 Payment Status: <b>Wholesale Verified (COD / Net Terms)</b>
               </div>
@@ -244,7 +243,5 @@ export function printOrderInvoice(order: Order, settings?: StoreSettings | null)
     </html>
   `;
 
-  invoiceWindow.document.open();
-  invoiceWindow.document.write(html);
-  invoiceWindow.document.close();
+  printHtmlSafely(html);
 }

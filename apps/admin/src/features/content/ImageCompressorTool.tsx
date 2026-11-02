@@ -576,7 +576,7 @@ export function ImageCompressorTool() {
                 <a
                   href={uploadedUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="text-xs text-emerald-800 font-bold hover:underline flex items-center space-x-1"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />

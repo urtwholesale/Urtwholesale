@@ -117,7 +117,7 @@ export function CatalogUploadHome() {
           <a
             href="https://wa.me/919425000000?text=Hello%20Urbanrat%20Support,%20I%20need%20help%20with%20Catalog%20Upload."
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
           >
             <HelpCircle className="w-3.5 h-3.5 text-slate-400" />

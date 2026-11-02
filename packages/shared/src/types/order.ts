@@ -37,10 +37,11 @@ export interface CustomerDetails {
 }
 
 export interface OrderEvent {
-  id: string;
-  order_id: string;
+  id?: string;
+  order_id?: string;
   status: string;
   note?: string | null;
+  customer_visible?: boolean;
   created_by?: string | null;
   created_at: string;
 }
@@ -77,6 +78,8 @@ export interface Order {
   cancel_reason?: string | null;
   admin_note?: string | null;
   whatsapp_message?: string | null;
+  public_token?: string | null;
+  timeline?: OrderEvent[];
   events?: OrderEvent[];
   order_events?: OrderEvent[];
   created_at: string;

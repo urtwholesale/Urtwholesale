@@ -18,7 +18,7 @@ import type {
   BulkOpResult,
   PriceTier,
 } from "@urbanrat/shared";
-import { validateTiers } from "@urbanrat/shared";
+import { validateTiers, sanitizeText } from "@urbanrat/shared";
 import { BulkPreviewPanel } from "./BulkPreviewPanel";
 import { bulkSaveTiers } from "../../../lib/adminService";
 import { supabase } from "../../../lib/supabase";
@@ -89,7 +89,12 @@ export function BulkTiersTab({
     const timer = setTimeout(async () => {
       setSearchingProducts(true);
       try {
-        const query = searchProductQuery.trim();
+        const query = sanitizeText(searchProductQuery.trim().replace(/['"\\%*,().:;]/g, " "), 60);
+        if (!query) {
+          setProductSearchResults([]);
+          setSearchingProducts(false);
+          return;
+        }
         const { data, error } = await supabase
           .from("products")
           .select("id, name, sku, price, price_tiers:product_price_tiers(*)")

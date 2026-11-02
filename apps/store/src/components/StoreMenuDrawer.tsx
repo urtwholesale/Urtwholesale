@@ -449,7 +449,7 @@ export function StoreMenuDrawer({
                   <a
                     href={whatsappUrl}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">

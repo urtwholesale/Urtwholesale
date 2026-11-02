@@ -161,4 +161,17 @@ describe("buildWhatsAppMessage", () => {
 
     expect(msg).toContain("*boAt Buds X Prime [Color: Jet Black]*");
   });
+
+  it("appends public tracking token to track order link when provided", () => {
+    const msg = buildWhatsAppMessage({
+      orderId: "URT-261102-TOKEN",
+      publicToken: "a1b2c3d4e5f67890",
+      items: sampleItems,
+      total: 2590,
+      customer: sampleCustomer,
+      siteUrl: "https://store.urbanrat.in",
+    });
+
+    expect(msg).toContain("https://store.urbanrat.in/order/URT-261102-TOKEN?t=a1b2c3d4e5f67890");
+  });
 });

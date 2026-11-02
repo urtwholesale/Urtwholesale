@@ -4,6 +4,7 @@ import type { Category } from "@urbanrat/shared";
 import {
   highlightSearchMatch,
   normalizeSearchQuery,
+  sanitizeText,
 } from "@urbanrat/shared";
 import {
   searchProductsV2,
@@ -108,7 +109,7 @@ export function SearchDropdown({
 
   // Save recent search
   function saveRecentSearch(term: string) {
-    const trimmed = term.trim();
+    const trimmed = sanitizeText(term, 60);
     if (!trimmed) return;
     setRecentSearches((prev) => {
       const filtered = prev.filter((t) => t.toLowerCase() !== trimmed.toLowerCase());
@@ -695,6 +696,7 @@ export function SearchDropdown({
           <input
             ref={desktopInputRef}
             type="text"
+            maxLength={60}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -781,6 +783,7 @@ export function SearchDropdown({
                 <input
                   ref={mobileInputRef}
                   type="text"
+                  maxLength={60}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}

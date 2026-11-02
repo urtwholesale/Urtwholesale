@@ -9,7 +9,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { Profile } from "@urbanrat/shared";
-import { cleanIndianMobile } from "@urbanrat/shared";
+import { cleanIndianMobile, getSafeRedirectUrl } from "@urbanrat/shared";
 
 export interface SignUpData {
   email: string;
@@ -103,7 +103,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async (redirectTo?: string) => {
-    const target = redirectTo || `${window.location.origin}/login`;
+    let target = `${window.location.origin}/login`;
+    if (redirectTo) {
+      if (redirectTo.startsWith("http://") || redirectTo.startsWith("https://")) {
+        try {
+          const parsed = new URL(redirectTo);
+          if (parsed.origin === window.location.origin) {
+            target = parsed.href;
+          }
+        } catch {
+          // invalid url, keep default safe target
+        }
+      } else {
+        const safePath = getSafeRedirectUrl(redirectTo, "/login");
+        target = `${window.location.origin}${safePath}`;
+      }
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -144,6 +159,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    try {
+      localStorage.removeItem("urt_guest_orders");
+    } catch {
+      // Ignore localStorage errors
+    }
     setUser(null);
     setProfile(null);
     setSession(null);

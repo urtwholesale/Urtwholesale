@@ -63,7 +63,7 @@ interface ProductDetailPageProps {
 export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { whatsappNumber } = useSettings();
+  const { settings, whatsappNumber } = useSettings();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
@@ -325,7 +325,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const tiers = product.price_tiers || [];
   const minQty = product.min_order_qty || 1;
   const step = product.order_qty_step || 1;
-  const stock = product.stock;
+  const maxOrderQty = settings?.max_order_qty || 500;
+  const isInStock = product.in_stock;
 
   // Tier pricing calculations
   const unitPrice = getUnitPrice(tiers, quantity);
@@ -369,7 +370,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   }
 
   function handleSelectTier(tierMinQty: number) {
-    if (stock <= 0) return;
+    if (!isInStock) return;
     let target = Math.max(tierMinQty, minQty);
 
     if (step > 1) {
@@ -379,8 +380,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
       }
     }
 
-    if (stock > 0 && target > stock) {
-      target = stock;
+    if (target > maxOrderQty) {
+      target = maxOrderQty;
     }
 
     triggerHaptic("selection");
@@ -388,7 +389,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   }
 
   function handleAddToCart() {
-    if (!product) return;
+    if (!product || !isInStock) return;
     triggerHaptic("success");
     onAddToCart(product, quantity, selectedColor || undefined);
     setAddedToast(true);
@@ -396,7 +397,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   }
 
   function handleBuyNow() {
-    if (!product) return;
+    if (!product || !isInStock) return;
     triggerHaptic("medium");
     onAddToCart(product, quantity, selectedColor || undefined);
     navigate("/cart");
@@ -643,14 +644,14 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     quantity >= tier.min_qty &&
                     (idx === tiers.length - 1 || quantity < tiers[idx + 1]!.min_qty);
 
-                  const isUnavailable = stock > 0 && tier.min_qty > stock;
+                  const isUnavailable = !isInStock || tier.min_qty > maxOrderQty;
 
                   return (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => handleSelectTier(tier.min_qty)}
-                      disabled={isUnavailable || stock <= 0}
+                      disabled={isUnavailable || !isInStock}
                       aria-pressed={isActive}
                       aria-label={`Select ${rangeStr} pieces tier at ₹${tier.unit_price} each`}
                       className={`relative rounded-2xl p-3 border transition-all text-left w-full cursor-pointer select-none group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark/50 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -715,11 +716,11 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             <div className="flex items-center space-x-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  stock > 0 ? "bg-emerald-500" : "bg-rose-500"
+                  isInStock ? "bg-emerald-500" : "bg-rose-500"
                 }`}
               />
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {stock > 0 ? "In Stock" : "Out of Stock"}
+                {isInStock ? "In Stock" : "Out of Stock"}
               </span>
             </div>
 
@@ -781,10 +782,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   value={quantity}
                   onChange={setQuantity}
                   min={minQty}
-                  max={stock > 0 ? stock : undefined}
+                  max={maxOrderQty}
                   step={step}
                   size="md"
-                  disabled={stock === 0}
+                  disabled={!isInStock}
                   ariaLabel="Order quantity"
                 />
               </div>
@@ -837,7 +838,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={stock <= 0}
+                disabled={!isInStock}
                 className="flex-1 py-3.5 px-6 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5 disabled:opacity-50"
                 style={{
                   background: "var(--brand-gradient)",
@@ -856,7 +857,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={stock <= 0}
+                disabled={!isInStock}
                 className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-900 dark:bg-slate-800 hover:bg-black dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50 border border-transparent dark:border-slate-700"
               >
                 Buy Now

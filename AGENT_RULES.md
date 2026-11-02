@@ -10,19 +10,27 @@ Design at **390 px** first, then add breakpoints for tablet (**768 px**) and
 desktop (**1280 px**). All layouts, spacing, and typography start from the
 smallest viewport.
 
-## 2. Light Theme Only
+## 2. Theme Architecture
 
-The app uses a **light theme**. Do not add dark-mode styles or toggles.
+- **Customer Storefront (`apps/store`)**: Dual-Theme (Light & Dark).
+  - Uses `ThemeContext` with reactive Sun/Moon toggle in the top bar and menu drawer.
+  - Supports `dark:` Tailwind classes and dark glassmorphic surfaces.
+  - Light mode uses cyan/teal brand tokens (`#5ADBE5` to `#0A82A8`) on `#F8F9FB` canvas.
+  - Dark mode uses cyber orange brand tokens (`#FFA033` to `#E64A00`) on an obsidian canvas (`#0B0F17`).
+- **Admin Management Portal (`apps/admin`)**: Light Theme Only.
+  - Standardized enterprise light operations theme with `#ECEEED` soft slate canvas and cyan brand gradient.
+  - Dark-mode styles, toggles, and dark variants are excluded from the admin suite.
 
 ## 3. Brand Gradient
 
-| Token               | Value     |
-| -------------------- | --------- |
-| `--color-brand-light` | `#5ADBE5` |
-| `--color-brand`       | `#1EAFC7` |
-| `--color-brand-dark`  | `#0A82A8` |
+| Token | Light Theme (Store & Admin) | Dark Theme (Storefront Variant) |
+| :--- | :--- | :--- |
+| `--color-brand-light` | `#5ADBE5` | `#FFA033` |
+| `--color-brand` | `#1EAFC7` | `#FF7700` |
+| `--color-brand-dark` | `#0A82A8` | `#E64A00` |
 
-The gradient runs **top → bottom** (`from #5ADBE5 to #0A82A8`).
+The light gradient runs **top → bottom** (`from #5ADBE5 to #0A82A8`).
+The dark storefront gradient runs **top → bottom** (`from #FFA033 to #E64A00`).
 
 Use it for:
 - Primary buttons
@@ -30,7 +38,7 @@ Use it for:
 - Highlights and accents
 
 These are defined as Tailwind v4 `@theme` tokens and the `brand-gradient`
-utility class in each app's `index.css`.
+utility class in `index.css`.
 
 ## 4. Glassmorphism Bars
 

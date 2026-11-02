@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router";
 import QRCode from "qrcode";
 import { fetchOrderById } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
@@ -46,13 +46,41 @@ interface TimelineMilestone {
 
 export function OrderPage({ onAddToCart }: OrderPageProps) {
   const { orderId } = useParams<{ orderId?: string }>();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("t");
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Prevent tracking token leak via HTTP Referer header
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="referrer"]') as HTMLMetaElement | null;
+    let created = false;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "referrer";
+      meta.content = "no-referrer";
+      document.head.appendChild(meta);
+      created = true;
+    } else {
+      meta.content = "no-referrer";
+    }
+    return () => {
+      if (created && meta && meta.parentNode) {
+        meta.parentNode.removeChild(meta);
+      }
+    };
+  }, []);
+
+  const isOwner = Boolean(
+    user?.id && (order?.user_id === user.id || (order as any)?.customer_id === user.id)
+  );
+  const isAdmin = profile?.role === "admin";
+  const canDownloadInvoice = isOwner || isAdmin;
 
   // Collapsible cards state (both expanded by default as in Flipkart design)
   const [deliveryOpen, setDeliveryOpen] = useState(true);
@@ -73,6 +101,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
   // Guest order lookup input (if no orderId in route or not found)
   const [lookupQuery, setLookupQuery] = useState("");
+  const [lookupToken, setLookupToken] = useState("");
   const [lookupError, setLookupError] = useState<string | null>(null);
 
   const loadOrder = useCallback(async () => {
@@ -84,7 +113,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     setError(null);
     try {
       const [data, returnsMap] = await Promise.all([
-        fetchOrderById(orderId.trim()),
+        fetchOrderById(orderId.trim(), token),
         fetchOrderReturnsMap().catch(() => ({} as Record<string, ReturnRequest>)),
       ]);
       setOrder(data);
@@ -98,7 +127,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, token]);
 
   useEffect(() => {
     loadOrder();
@@ -164,14 +193,21 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
   function handleQuickLookup(e: React.FormEvent) {
     e.preventDefault();
-    if (!lookupQuery.trim()) {
+    const cleanId = lookupQuery.trim();
+    if (!cleanId) {
       setLookupError("Please enter a valid order code");
+      triggerHaptic("heavy");
+      return;
+    }
+    if (!user && !lookupToken.trim()) {
+      setLookupError("Guest tracking requires the secure tracking token from your order confirmation link.");
       triggerHaptic("heavy");
       return;
     }
     setLookupError(null);
     triggerHaptic("light");
-    navigate(`/order/${lookupQuery.trim()}`);
+    const tokenParam = lookupToken.trim() ? `?t=${encodeURIComponent(lookupToken.trim())}` : "";
+    navigate(`/order/${cleanId}${tokenParam}`);
   }
 
   function handleReorderAll() {
@@ -199,6 +235,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
         is_active: true,
         is_featured: false,
         stock: 999,
+        in_stock: true,
         price_tiers: [],
         rating_avg: 4.8,
         rating_count: 15,
@@ -235,6 +272,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
       is_active: true,
       is_featured: false,
       stock: 999,
+      in_stock: true,
       price_tiers: [],
       rating_avg: 4.8,
       rating_count: 15,
@@ -246,6 +284,10 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
   function handleDownloadInvoice() {
     if (!order) return;
+    if (!canDownloadInvoice) {
+      showToast("Sign in to your account to download the complete tax invoice.");
+      return;
+    }
     triggerHaptic("light");
     printOrderInvoice(order, settings);
   }
@@ -254,7 +296,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   const timelineMilestones = useMemo<TimelineMilestone[]>(() => {
     if (!order) return [];
 
-    const events: OrderEvent[] = order.events || order.order_events || [];
+    const events: OrderEvent[] = order.timeline || order.events || order.order_events || [];
     const status = (order.status || "pending").toLowerCase();
 
     // Map of events by status
@@ -420,7 +462,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     if (!order || order.status.toLowerCase() !== "delivered") {
       return { isDelivered: false, isWithinWindow: false, daysRemaining: 0 };
     }
-    const deliveredEv = (order.events || order.order_events || []).find(
+    const deliveredEv = (order.timeline || order.events || order.order_events || []).find(
       (e) => e.status.toLowerCase() === "delivered"
     );
     const deliveryDate = deliveredEv
@@ -477,10 +519,24 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                   setLookupQuery(e.target.value);
                   setLookupError(null);
                 }}
-                placeholder="Enter Order Code (e.g. 748291 or OD432970)"
+                placeholder="Enter Order Code (e.g. URT-261102-XXXX)"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-dark dark:focus:border-brand-light focus:bg-white dark:focus:bg-slate-800 transition"
               />
             </div>
+            {!user && (
+              <div className="relative">
+                <input
+                  type="text"
+                  value={lookupToken}
+                  onChange={(e) => {
+                    setLookupToken(e.target.value);
+                    setLookupError(null);
+                  }}
+                  placeholder="Security Token (from WhatsApp/SMS link)"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-dark dark:focus:border-brand-light focus:bg-white dark:focus:bg-slate-800 transition"
+                />
+              </div>
+            )}
             {lookupError && (
               <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold text-left pl-1">
                 {lookupError}
@@ -784,14 +840,16 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             <span>Reorder All</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleDownloadInvoice}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 py-2 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-[0.99] cursor-pointer"
-          >
-            <FileText className="w-3.5 h-3.5 text-slate-500" />
-            <span>Tax Invoice</span>
-          </button>
+          {canDownloadInvoice && (
+            <button
+              type="button"
+              onClick={handleDownloadInvoice}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 py-2 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-[0.99] cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              <span>Tax Invoice</span>
+            </button>
+          )}
 
           {/* Return / Replace Action Button (Requirement 1 & 5) */}
           {existingReturn ? (
@@ -966,7 +1024,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                 </div>
 
                 {/* "See All Updates >" Toggle */}
-                {order.events && order.events.length > 2 && (
+                {(order.timeline || order.events) && (order.timeline || order.events)!.length > 2 && (
                   <div className="pt-2">
                     <button
                       type="button"
@@ -988,7 +1046,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                           Full Activity Log
                         </p>
-                        {order.events.map((ev, i) => (
+                        {(order.timeline || order.events)!.map((ev, i) => (
                           <div
                             key={i}
                             className="flex items-start justify-between text-xs py-1.5 border-b border-slate-100 last:border-none"
@@ -1356,14 +1414,21 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                 </div>
 
                 <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleDownloadInvoice}
-                    className="w-full py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center space-x-2 transition cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Download Tax Invoice (PDF)</span>
-                  </button>
+                  {canDownloadInvoice ? (
+                    <button
+                      type="button"
+                      onClick={handleDownloadInvoice}
+                      className="w-full py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center space-x-2 transition cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Download Tax Invoice (PDF)</span>
+                    </button>
+                  ) : (
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span>Full GST tax invoice available to account owner. Sign in to download.</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

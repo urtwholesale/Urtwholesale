@@ -18,6 +18,8 @@ import { QuantityInput } from "../components/QuantityInput";
 import { buildWhatsAppMessage } from "../utils/buildWhatsAppMessage";
 import { createVerifiedOrder } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/AuthContext";
+import { TurnstileWidget } from "../components/TurnstileWidget";
 import { EmptyState } from "../components/EmptyState";
 import { AddressPicker } from "../components/AddressPicker";
 
@@ -38,6 +40,8 @@ export function CartPage({
 }: CartPageProps) {
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
+  const { user } = useAuth();
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Load saved customer details from localStorage
   const [customer, setCustomer] = useState<CustomerDetails>(() => {
@@ -63,6 +67,7 @@ export function CartPage({
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
 
   function handleSelectAddress(addr: Address) {
     setSelectedAddressId(addr.id);
@@ -181,6 +186,13 @@ export function CartPage({
       newErrors.pincode = "Enter a valid 6-digit PIN code (e.g. 400001)";
     }
 
+    if (!user && !turnstileToken) {
+      setErrorToast("Please complete the security verification challenge below");
+      setTimeout(() => setErrorToast(null), 4000);
+      setErrors(newErrors);
+      return false;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -189,8 +201,10 @@ export function CartPage({
     if (isSubmitting) return;
 
     if (!validateForm()) {
-      setErrorToast("Please fill in all required delivery details before proceeding");
-      setTimeout(() => setErrorToast(null), 3500);
+      if (user || turnstileToken) {
+        setErrorToast("Please fill in all required delivery details before proceeding");
+        setTimeout(() => setErrorToast(null), 3500);
+      }
       return;
     }
 
@@ -211,6 +225,8 @@ export function CartPage({
           quantity: item.quantity,
         })),
         whatsapp_message: null,
+        honeypot: honeypot.trim() ? honeypot.trim() : null,
+        turnstile_token: user ? null : turnstileToken,
       };
 
       // 1. Submit to server-verified order RPC
@@ -219,15 +235,18 @@ export function CartPage({
       // 2. Clear cart after successful creation
       onClearCart();
 
-      // 3. Build WhatsApp message using SERVER-RETURNED totals and items
+      // 3. Build WhatsApp message using SERVER-RETURNED totals, items and tracking token
       const targetPhone =
         whatsappNumber ||
         settings?.whatsapp_number?.trim() ||
         "";
 
+      const orderPublicToken = (savedOrder as any).public_token || undefined;
+
       if (targetPhone) {
         const whatsappMessage = buildWhatsAppMessage({
           orderId: savedOrder.id,
+          publicToken: orderPublicToken,
           items: (savedOrder.items || []).map((i: any, idx: number) => ({
             name: i.name || i.product?.name || cartItems[idx]?.product.name || "Item",
             price: i.unit_price ?? i.price ?? 0,
@@ -253,11 +272,27 @@ export function CartPage({
         const whatsappCheckoutUrl = `https://wa.me/${cleanTargetPhone}?text=${encodeURIComponent(
           whatsappMessage
         )}`;
-        window.open(whatsappCheckoutUrl, "_blank");
+        window.open(whatsappCheckoutUrl, "_blank", "noopener,noreferrer");
       }
 
-      // 4. Navigate to order confirmation page showing server total
-      navigate(`/order/${savedOrder.id}`);
+      // 4. Save to device guest orders history for seamless retrieval
+      try {
+        const existingRaw = localStorage.getItem("urt_guest_orders");
+        const existingList: Array<{ id: string; token?: string; createdAt: string }> = existingRaw
+          ? JSON.parse(existingRaw)
+          : [];
+        const updatedList = [
+          { id: savedOrder.id, token: orderPublicToken, createdAt: new Date().toISOString() },
+          ...existingList.filter((item) => item.id !== savedOrder.id),
+        ].slice(0, 10);
+        localStorage.setItem("urt_guest_orders", JSON.stringify(updatedList));
+      } catch (storageErr) {
+        console.warn("[Cart] Failed to cache guest order to localStorage:", storageErr);
+      }
+
+      // 5. Navigate to order confirmation page showing server total with tracking token
+      const tokenParam = orderPublicToken ? `?t=${encodeURIComponent(orderPublicToken)}` : "";
+      navigate(`/order/${savedOrder.id}${tokenParam}`);
     } catch (err: unknown) {
       const e = err as Error;
       console.error("[Cart] Checkout order creation failed:", e);
@@ -391,7 +426,7 @@ export function CartPage({
                           onChange={(newQty) => onUpdateQuantity(product.id, newQty, selectedColor)}
                           onBelowMin={() => onRemoveItem(product.id, selectedColor)}
                           min={minQty}
-                          max={product.stock > 0 ? product.stock : undefined}
+                          max={settings?.max_order_qty || 500}
                           step={step}
                           size="sm"
                           ariaLabel={`Quantity for ${product.name}`}
@@ -457,6 +492,18 @@ export function CartPage({
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Bot Honeypot */}
+              <input
+                type="text"
+                name="company_tax_id_ref"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="hidden pointer-events-none select-none opacity-0 absolute left-[-9999px]"
+              />
+
               {/* Full Name */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
@@ -624,7 +671,21 @@ export function CartPage({
             </span>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
+            {/* Cloudflare Turnstile Verification for Guest Checkout */}
+            {!user && (
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col items-center">
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5 self-start">
+                  Security Check <span className="text-rose-500">*</span>
+                </p>
+                <TurnstileWidget
+                  onVerify={(token) => setTurnstileToken(token)}
+                  onError={() => setTurnstileToken(null)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </div>
+            )}
+
             {/* WhatsApp Checkout */}
             <button
               type="button"

@@ -181,6 +181,14 @@ export {
   COMMON_TYPO_CORRECTIONS,
 } from "./search";
 
+export {
+  escapeHtml,
+  getSafeRedirectUrl,
+  sanitizeText,
+  printHtmlSafely,
+} from "./sanitize";
+
+
 
 
 

@@ -588,7 +588,7 @@ export function ReviewModerationList() {
                           <a
                             href={`/product/${rev.product_slug}`}
                             target="_blank"
-                            rel="noreferrer"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center space-x-1 text-brand-dark hover:underline"
                           >
                             <span>View Product</span>

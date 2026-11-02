@@ -166,7 +166,7 @@ export function ReturnDetailDrawer({
     const text = encodeURIComponent(
       `Hello ${returnReq.customer.name || "Customer"},\nRegarding your URT Wholesale return request *${returnReq.return_code}* for order *${returnReq.order_id}*:\nCurrent Status: *${RETURN_STATUS_LABELS[returnReq.status]}*.\n\nPlease let us know if you need any assistance.`
     );
-    window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank");
+    window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -316,7 +316,7 @@ export function ReturnDetailDrawer({
                   <a
                     href={`/order/${returnReq.order_id}`}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center space-x-1 text-xs font-bold text-brand-dark hover:underline pt-1"
                   >
                     <span>View Store Order</span>

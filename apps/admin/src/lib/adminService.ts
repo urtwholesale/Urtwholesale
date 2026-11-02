@@ -39,6 +39,7 @@ import {
   validateTiers,
   computeStockResult,
   computeImageUpdate,
+  sanitizeText,
 } from "@urbanrat/shared";
 import { compressImage, type CompressionResult } from "../utils/imageCompressor";
 
@@ -440,7 +441,10 @@ export async function fetchProductsPage(
   }
 
   if (filters.search?.trim()) {
-    query = query.or(`name.ilike.%${filters.search.trim()}%,sku.ilike.%${filters.search.trim()}%`);
+    const cleanSearch = sanitizeText(filters.search.trim().replace(/['"\\%*,().:;]/g, " "), 60);
+    if (cleanSearch) {
+      query = query.or(`name.ilike.%${cleanSearch}%,sku.ilike.%${cleanSearch}%`);
+    }
   }
 
   if (filters.isUrbanrat !== undefined) {
@@ -1762,10 +1766,12 @@ export async function fetchAdminOrders(options?: {
   }
 
   if (options?.search?.trim()) {
-    const s = options.search.trim();
-    query = query.or(
-      `id.ilike.%${s}%,customer->>name.ilike.%${s}%,customer->>phone.ilike.%${s}%,customer->>business_name.ilike.%${s}%`
-    );
+    const s = sanitizeText(options.search.trim().replace(/['"\\%*,().:;]/g, " "), 60);
+    if (s) {
+      query = query.or(
+        `id.ilike.%${s}%,customer->>name.ilike.%${s}%,customer->>phone.ilike.%${s}%,customer->>business_name.ilike.%${s}%`
+      );
+    }
   }
 
   // Date range filter
@@ -3204,8 +3210,10 @@ export async function listCatalogImages(options?: {
     }
 
     if (options?.search) {
-      const s = options.search.trim();
-      query = query.or(`original_name.ilike.%${s}%,sku_hint.ilike.%${s}%`);
+      const s = sanitizeText(options.search.trim().replace(/['"\\%*,().:;]/g, " "), 60);
+      if (s) {
+        query = query.or(`original_name.ilike.%${s}%,sku_hint.ilike.%${s}%`);
+      }
     }
 
     const { data, error, count } = await query;
@@ -3390,8 +3398,10 @@ export async function fetchCatalogImages(opts?: {
     }
 
     if (opts?.search) {
-      const s = opts.search.trim();
-      query = query.or(`original_name.ilike.%${s}%,sku_hint.ilike.%${s}%`);
+      const s = sanitizeText(opts.search.trim().replace(/['"\\%*,().:;]/g, " "), 60);
+      if (s) {
+        query = query.or(`original_name.ilike.%${s}%,sku_hint.ilike.%${s}%`);
+      }
     }
 
     const { data, error, count } = await query;
@@ -3878,7 +3888,7 @@ export async function searchProductsForBestseller(
     .eq("is_active", true)
     .limit(12);
 
-  const trimmed = searchQuery.trim();
+  const trimmed = sanitizeText(searchQuery.trim().replace(/['"\\%*,().:;]/g, " "), 60);
   if (trimmed) {
     query = query.or(`name.ilike.%${trimmed}%,sku.ilike.%${trimmed}%`);
   }

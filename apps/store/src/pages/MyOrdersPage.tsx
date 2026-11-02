@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router";
 import { fetchCustomerOrders } from "../services/storeService";
 import { fetchOrderReturnsMap } from "../services/returnService";
 import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/AuthContext";
 import { triggerHaptic } from "../utils/haptics";
 import { printOrderInvoice } from "../utils/invoiceGenerator";
 import { ReturnRequestModal } from "../components/ReturnRequestModal";
@@ -37,6 +38,7 @@ const PAGE_SIZE = 6;
 export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
   const navigate = useNavigate();
   const { settings } = useSettings();
+  const { user } = useAuth();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +72,24 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
 
   // Quick lookup Order ID
   const [quickLookupId, setQuickLookupId] = useState("");
+  const [quickLookupToken, setQuickLookupToken] = useState("");
   const [quickLookupError, setQuickLookupError] = useState<string | null>(null);
+
+  // Cached guest orders from local device
+  const [guestOrders, setGuestOrders] = useState<Array<{ id: string; token?: string; createdAt: string }>>([]);
+
+  useEffect(() => {
+    if (!user) {
+      try {
+        const raw = localStorage.getItem("urt_guest_orders");
+        if (raw) {
+          setGuestOrders(JSON.parse(raw));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [user]);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -118,8 +137,14 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
       triggerHaptic("heavy");
       return;
     }
+    if (!user && !quickLookupToken.trim()) {
+      setQuickLookupError("Guest tracking requires your security tracking token.");
+      triggerHaptic("heavy");
+      return;
+    }
     setQuickLookupError(null);
-    navigate(`/order/${clean}`);
+    const tokenParam = quickLookupToken.trim() ? `?t=${encodeURIComponent(quickLookupToken.trim())}` : "";
+    navigate(`/order/${clean}${tokenParam}`);
   }
 
   function handleReorder(order: Order, e: React.MouseEvent) {
@@ -138,6 +163,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
           price: item.price || item.unit_price || 0,
           mrp: item.mrp || item.price || item.unit_price || 0,
           stock: 9999,
+          in_stock: true,
           images: item.image ? [item.image] : [],
           category_id: null,
           is_urbanrat_brand: true,
@@ -436,10 +462,28 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
                 <input
                   type="text"
                   value={quickLookupId}
-                  onChange={(e) => setQuickLookupId(e.target.value)}
-                  placeholder="e.g. URT-261019-ABCD"
+                  onChange={(e) => {
+                    setQuickLookupId(e.target.value);
+                    setQuickLookupError(null);
+                  }}
+                  placeholder="Order ID (e.g. URT-261019-ABCD)"
                   className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light font-mono uppercase text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
+                {!user && (
+                  <input
+                    type="text"
+                    value={quickLookupToken}
+                    onChange={(e) => {
+                      setQuickLookupToken(e.target.value);
+                      setQuickLookupError(null);
+                    }}
+                    placeholder="Tracking Token"
+                    className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light font-mono text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  />
+                )}
+                {quickLookupError && (
+                  <p className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">{quickLookupError}</p>
+                )}
                 <button
                   type="submit"
                   className="w-full py-1.5 px-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-[11px] hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer"
@@ -631,28 +675,78 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
                 <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Track via Order Code:
                 </p>
-                <form onSubmit={handleQuickLookup} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={quickLookupId}
-                    onChange={(e) => {
-                      setQuickLookupId(e.target.value);
-                      setQuickLookupError(null);
-                    }}
-                    placeholder="e.g. 748291"
-                    className="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer"
-                  >
-                    Track
-                  </button>
+                <form onSubmit={handleQuickLookup} className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={quickLookupId}
+                      onChange={(e) => {
+                        setQuickLookupId(e.target.value);
+                        setQuickLookupError(null);
+                      }}
+                      placeholder="e.g. URT-261019-ABCD"
+                      className="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      Track
+                    </button>
+                  </div>
+                  {!user && (
+                    <input
+                      type="text"
+                      value={quickLookupToken}
+                      onChange={(e) => {
+                        setQuickLookupToken(e.target.value);
+                        setQuickLookupError(null);
+                      }}
+                      placeholder="Security Tracking Token"
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-dark dark:focus:border-brand-light text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono"
+                    />
+                  )}
                 </form>
                 {quickLookupError && (
                   <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">{quickLookupError}</p>
                 )}
               </div>
+
+              {/* Recent Orders on this Device (For Guest Shoppers) */}
+              {!user && guestOrders.length > 0 && (
+                <div className="pt-4 border-t border-slate-100 dark:border-white/10 max-w-sm mx-auto text-left space-y-2">
+                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Recent Orders on this Device:
+                  </p>
+                  <div className="space-y-1.5">
+                    {guestOrders.map((g) => (
+                      <Link
+                        key={g.id}
+                        to={`/order/${g.id}${g.token ? `?t=${encodeURIComponent(g.token)}` : ""}`}
+                        onClick={() => triggerHaptic("selection")}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs transition group"
+                      >
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-mono font-bold text-slate-900 dark:text-white truncate">
+                            #{g.id}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(g.createdAt).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-bold text-brand-dark dark:text-brand-light flex items-center space-x-1">
+                          <span>View</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

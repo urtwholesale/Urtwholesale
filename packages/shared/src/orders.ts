@@ -5,6 +5,8 @@ import type {
   CustomerLifetimeStats,
 } from "./types/order";
 import type { StoreSettings } from "./types/storeSettings";
+import { escapeHtml } from "./sanitize";
+
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: "Pending Verification",
@@ -255,12 +257,15 @@ export function calculateCustomerLifetimeStats(
  * Generates print-ready HTML for a warehouse packing slip
  */
 export function generatePackingSlipHtml(order: Order, settings?: StoreSettings | null): string {
-  const storeName = settings?.store_name || settings?.store_info?.name || "URT Wholesale";
-  const dateStr = new Date(order.created_at).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const storeName = escapeHtml(settings?.store_name || settings?.store_info?.name || "URT Wholesale");
+  const dateStr = escapeHtml(
+    new Date(order.created_at).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+  );
+  const safeOrderId = escapeHtml(order.id);
 
   const itemsRows = (order.items || [])
     .map(
@@ -269,22 +274,32 @@ export function generatePackingSlipHtml(order: Order, settings?: StoreSettings |
         <td style="padding: 10px 8px; text-align: center; font-size: 13px;">[ ]</td>
         <td style="padding: 10px 8px; text-align: center; color: #64748b; font-size: 12px;">${idx + 1}</td>
         <td style="padding: 10px 8px;">
-          <div style="font-weight: 700; font-size: 13px; color: #0f172a;">${item.name}</div>
-          <div style="font-size: 11px; color: #64748b; font-family: monospace;">SKU: ${item.sku || "—"}</div>
+          <div style="font-weight: 700; font-size: 13px; color: #0f172a;">${escapeHtml(item.name)}</div>
+          <div style="font-size: 11px; color: #64748b; font-family: monospace;">SKU: ${escapeHtml(item.sku || "—")}</div>
         </td>
-        <td style="padding: 10px 8px; text-align: center; font-weight: 800; font-size: 14px;">${item.quantity} pcs</td>
+        <td style="padding: 10px 8px; text-align: center; font-weight: 800; font-size: 14px;">${Number(item.quantity || 0)} pcs</td>
         <td style="padding: 10px 8px; text-align: center; font-size: 12px; color: #64748b;">[ &nbsp; &nbsp; &nbsp; ]</td>
       </tr>
     `
     )
     .join("");
 
+  const customerName = escapeHtml(order.customer?.name || "Customer");
+  const customerBusiness = order.customer?.business_name ? `<div style="font-weight: 700; color: #334155;">${escapeHtml(order.customer.business_name)}</div>` : "";
+  const customerAddress = escapeHtml(order.customer?.address || "Address on file");
+  const customerPincode = order.customer?.pincode ? `<b>PINCODE: ${escapeHtml(order.customer.pincode)}</b>` : "";
+  const customerPhone = escapeHtml(order.customer?.phone || "—");
+  const courierName = escapeHtml(order.courier_name || "Express Surface Cargo");
+  const awbNumber = escapeHtml(order.awb_number || "PENDING");
+  const orderSource = escapeHtml(order.source || "Website");
+  const totalUnits = (order.items || []).reduce((acc, i) => acc + (Number(i.quantity) || 0), 0);
+
   return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <title>Packing Slip - ${order.id}</title>
+      <title>Packing Slip - ${safeOrderId}</title>
       <style>
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -322,7 +337,7 @@ export function generatePackingSlipHtml(order: Order, settings?: StoreSettings |
           </div>
           <div style="text-align: right;">
             <div style="font-family: monospace; font-size: 16px; font-weight: 900; background: #0f172a; color: white; padding: 4px 10px; border-radius: 4px;">
-              #${order.id}
+              #${safeOrderId}
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Date: ${dateStr}</div>
           </div>
@@ -331,21 +346,21 @@ export function generatePackingSlipHtml(order: Order, settings?: StoreSettings |
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 12px;">
           <div>
             <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b;">SHIP TO CUSTOMER:</div>
-            <div style="font-size: 14px; font-weight: 800; margin-top: 2px; color: #0f172a;">${order.customer?.name || "Customer"}</div>
-            ${order.customer?.business_name ? `<div style="font-weight: 700; color: #334155;">${order.customer.business_name}</div>` : ""}
+            <div style="font-size: 14px; font-weight: 800; margin-top: 2px; color: #0f172a;">${customerName}</div>
+            ${customerBusiness}
             <div style="margin-top: 4px; line-height: 1.4; color: #475569;">
-              ${order.customer?.address || "Address on file"}<br/>
-              ${order.customer?.pincode ? `<b>PINCODE: ${order.customer.pincode}</b>` : ""}
+              ${customerAddress}<br/>
+              ${customerPincode}
             </div>
-            <div style="margin-top: 4px; font-weight: 700;">Phone: +91 ${order.customer?.phone || "—"}</div>
+            <div style="margin-top: 4px; font-weight: 700;">Phone: +91 ${customerPhone}</div>
           </div>
 
           <div style="border-left: 1px solid #e2e8f0; padding-left: 16px;">
             <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b;">CARRIER &amp; LOGISTICS:</div>
-            <div style="font-size: 13px; font-weight: 700; margin-top: 4px;">Courier: <b>${order.courier_name || "Express Surface Cargo"}</b></div>
-            <div style="font-size: 13px; font-family: monospace; margin-top: 2px;">AWB #: <b>${order.awb_number || "PENDING"}</b></div>
-            <div style="font-size: 12px; margin-top: 4px;">Source: <b style="text-transform: capitalize;">${order.source || "Website"}</b></div>
-            <div style="font-size: 12px; margin-top: 2px;">Total Box Units: <b>${(order.items || []).reduce((acc, i) => acc + (i.quantity || 0), 0)} pcs</b></div>
+            <div style="font-size: 13px; font-weight: 700; margin-top: 4px;">Courier: <b>${courierName}</b></div>
+            <div style="font-size: 13px; font-family: monospace; margin-top: 2px;">AWB #: <b>${awbNumber}</b></div>
+            <div style="font-size: 12px; margin-top: 4px;">Source: <b style="text-transform: capitalize;">${orderSource}</b></div>
+            <div style="font-size: 12px; margin-top: 2px;">Total Box Units: <b>${totalUnits} pcs</b></div>
           </div>
         </div>
 

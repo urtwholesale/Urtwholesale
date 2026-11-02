@@ -705,7 +705,7 @@ export function ContentEditor() {
                                 <a
                                   href={b.image_url}
                                   target="_blank"
-                                  rel="noreferrer"
+                                  rel="noopener noreferrer"
                                   className="p-1.5 rounded-lg bg-white/90 text-slate-700 hover:text-slate-900 shadow-xs"
                                   title="View full image"
                                 >
@@ -1156,7 +1156,7 @@ export function ContentEditor() {
           {subTab === "bestsellers" && (
             <div className="space-y-6">
               {/* Header Box */}
-              <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 rounded-3xl border border-amber-200/60 shadow-xs space-y-4">
+              <div className="bg-linear-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 rounded-3xl border border-amber-200/60 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start space-x-3.5">
                     <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/20">

@@ -17,6 +17,7 @@ export interface CustomerInfo {
 
 export interface BuildWhatsAppMessageOptions {
   orderId?: string;
+  publicToken?: string;
   items: WhatsAppItem[];
   subtotal?: number;
   savings?: number;
@@ -60,6 +61,7 @@ function formatMoney(amount: number): string {
  */
 export function buildWhatsAppMessage({
   orderId = "TEMP",
+  publicToken,
   items,
   savings,
   shipping = "FREE",
@@ -125,7 +127,8 @@ export function buildWhatsAppMessage({
     cleanSiteUrl.includes("localhost") || cleanSiteUrl.includes("127.0.0.1");
 
   if (cleanSiteUrl && !isLocalhost && formattedOrderId) {
-    lines.push("", `${E.track} Track order & pay:`, `${cleanSiteUrl}/order/${formattedOrderId}`);
+    const tokenParam = publicToken ? `?t=${encodeURIComponent(publicToken)}` : "";
+    lines.push("", `${E.track} Track order & pay:`, `${cleanSiteUrl}/order/${formattedOrderId}${tokenParam}`);
   }
 
   lines.push("", `Please confirm availability. Thank you! ${E.thanks}`);

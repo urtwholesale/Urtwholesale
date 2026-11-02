@@ -155,8 +155,8 @@ export default function App() {
         const validated: CartStateItem[] = [];
         for (const item of itemsToValidate) {
           const live = liveMap.get(item.product.id);
-          // If product was deleted, inactive, or stock is 0, drop it
-          if (!live || live.stock <= 0) continue;
+          // If product was deleted, inactive, or not in stock, drop it
+          if (!live || !live.in_stock) continue;
 
           const firstTierMin = live.price_tiers?.[0]?.min_qty;
           const minQty = Math.max(1, live.min_order_qty || firstTierMin || 1);

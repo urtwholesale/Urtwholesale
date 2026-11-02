@@ -10,6 +10,7 @@ export interface Product {
   mrp: number | null;
   sku: string | null;
   stock: number;
+  in_stock: boolean;
   images: string[];
   category_id: string | null;
   is_urbanrat_brand: boolean;

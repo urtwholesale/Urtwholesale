@@ -27,7 +27,7 @@ import {
   ExternalLink,
   Menu,
   X,
-  Radio,
+  Cloud,
   ShieldCheck,
   ChevronRight,
   FileSpreadsheet,
@@ -246,7 +246,7 @@ export default function App() {
           <a
             href={import.meta.env.PROD ? "/" : "http://localhost:5173"}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             aria-label="View Customer Storefront"
             title="Open Customer Storefront"
             className="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex items-center justify-center text-slate-700 hover:text-brand-dark hover:shadow-md active:scale-95 transition-all cursor-pointer"
@@ -269,7 +269,14 @@ export default function App() {
             aria-label="Toggle Navigation Menu"
           >
             <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white bg-brand-dark">
-              SJ
+              {adminProfile.full_name
+                ? adminProfile.full_name
+                    .split(" ")
+                    .map((w: string) => w[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)
+                : "SA"}
             </div>
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
@@ -761,44 +768,52 @@ export default function App() {
               </div>
 
               {/* Live Cloud Sync Card */}
-              <div
-                className="p-3 rounded-2xl border transition-all flex items-center justify-between"
-                style={{
-                  background: liveSyncEnabled
-                    ? "linear-gradient(135deg, rgba(90,219,229,0.18), rgba(10,130,168,0.14))"
-                    : "#F8F9FA",
-                  borderColor: liveSyncEnabled ? "rgba(90,219,229,0.4)" : "#E2E8F0",
-                }}
-              >
-                <div className="flex items-center space-x-2.5">
+              <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 border border-slate-200/70 hover:border-slate-300 transition-all flex items-center justify-between shadow-2xs">
+                <div className="flex items-center space-x-2.5 min-w-0">
                   <div
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center text-white shadow-2xs ${
-                      liveSyncEnabled ? "bg-brand-dark" : "bg-slate-400"
+                    className={`relative w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                      liveSyncEnabled
+                        ? "bg-linear-to-b from-brand-light/20 to-brand-dark/20 text-brand-dark border border-brand-light/40"
+                        : "bg-slate-100 text-slate-400 border border-slate-200"
                     }`}
                   >
-                    <Radio className="w-3.5 h-3.5 animate-pulse" />
+                    <Cloud className="w-4 h-4 stroke-[2.2]" />
+                    {liveSyncEnabled && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-900 leading-tight">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 tracking-tight truncate leading-tight">
                       Urbanrat Cloud
                     </p>
-                    <p className="text-[9px] text-slate-500 font-medium">
-                      {liveSyncEnabled ? "Supabase Live • Real-time" : "Paused"}
+                    <p className="text-[10px] text-slate-500 font-medium truncate flex items-center space-x-1 mt-0.5">
+                      <span
+                        className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
+                          liveSyncEnabled ? "bg-emerald-500" : "bg-slate-300"
+                        }`}
+                      />
+                      <span>{liveSyncEnabled ? "Supabase Live • Real-time" : "Sync Paused"}</span>
                     </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setLiveSyncEnabled(!liveSyncEnabled)}
-                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                  onClick={() => {
+                    triggerHaptic("selection");
+                    setLiveSyncEnabled(!liveSyncEnabled);
+                  }}
+                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-light/40 ${
                     liveSyncEnabled ? "bg-brand-dark" : "bg-slate-300"
                   }`}
                   aria-label="Toggle live sync status"
                 >
                   <div
-                    className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm absolute top-0.5 transition-transform ${
-                      liveSyncEnabled ? "right-1" : "left-1"
+                    className={`w-3.5 h-3.5 rounded-full bg-white shadow-xs absolute top-0.75 left-0.75 transition-transform duration-200 ${
+                      liveSyncEnabled ? "translate-x-4" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -808,7 +823,7 @@ export default function App() {
               <a
                 href={import.meta.env.PROD ? "/" : "http://localhost:5173"}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="w-full py-3 px-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-800 transition cursor-pointer"
               >
                 <div className="flex items-center space-x-2.5">
@@ -825,11 +840,18 @@ export default function App() {
                     className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs"
                     style={{ background: "linear-gradient(135deg, #5ADBE5, #0A82A8)" }}
                   >
-                    SJ
+                    {adminProfile.full_name
+                      ? adminProfile.full_name
+                          .split(" ")
+                          .map((w: string) => w[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      : "SA"}
                   </div>
                   <div className="truncate">
                     <p className="text-xs font-bold text-slate-800 truncate">
-                      {adminProfile.full_name || "Sjainthelegend"}
+                      {adminProfile.full_name || "Administrator"}
                     </p>
                     <p className="text-[10px] text-slate-400 font-medium flex items-center space-x-1">
                       <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 inline" />
@@ -853,9 +875,10 @@ export default function App() {
       )}
 
       {/* ── Left Sidebar Navigation (Desktop >= md, LeaseFlow Inspired UI) ── */}
-      <aside className="hidden md:flex md:sticky top-6 z-20 w-64 lg:w-72 shrink-0 bg-white rounded-3xl border border-slate-200/80 shadow-sm p-4 sm:p-5 flex-col justify-between h-[calc(100vh-3rem)]">
-        <div className="space-y-5">
-          {/* ── Brand Header ── */}
+      <aside className="hidden md:flex md:sticky top-4 lg:top-6 z-20 w-64 lg:w-72 shrink-0 bg-white rounded-3xl border border-slate-200/80 shadow-sm p-4 sm:p-5 flex-col h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-3rem)] overflow-hidden">
+        {/* ── Top Header & Hub Switcher (Fixed) ── */}
+        <div className="space-y-3.5 shrink-0 pb-3">
+          {/* Brand Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
               <img
@@ -874,7 +897,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Warehouse / Hub Switcher Dropdown Card (Like Harborline in reference) ── */}
+          {/* Warehouse / Hub Switcher Dropdown Card */}
           <div className="bg-slate-50 hover:bg-slate-100/90 border border-slate-200/70 p-2.5 rounded-2xl flex items-center justify-between cursor-pointer transition group">
             <div className="flex items-center space-x-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-brand-dark shadow-2xs shrink-0">
@@ -891,9 +914,11 @@ export default function App() {
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1 group-hover:text-slate-600" />
           </div>
+        </div>
 
-          {/* ── Navigation Links (Matching Reference Active Pill Treatment) ── */}
-          <nav className="space-y-4">
+        {/* ── Middle Scrollable Navigation Area ── */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1 py-1 space-y-4 scrollbar-thin [scrollbar-color:rgba(203,213,225,0.6)_transparent]">
+          <nav className="space-y-3.5">
             {/* Main Item: Dashboard */}
             <div>
               <button
@@ -1230,47 +1255,56 @@ export default function App() {
           </nav>
         </div>
 
-        {/* ── Bottom Sidebar Elements (Status Card & Profile) ── */}
-        <div className="pt-4 space-y-3 border-t border-slate-100 mt-4">
-          {/* Live Sync Badge Pill (Matching the reference's LeaseFlow AI status card) */}
-          <div
-            className="p-3 rounded-2xl border transition-all flex items-center justify-between"
-            style={{
-              background: liveSyncEnabled
-                ? "linear-gradient(135deg, rgba(90,219,229,0.18), rgba(10,130,168,0.14))"
-                : "#F8F9FA",
-              borderColor: liveSyncEnabled ? "rgba(90,219,229,0.4)" : "#E2E8F0",
-            }}
-          >
-            <div className="flex items-center space-x-2.5">
+        {/* ── Docked Bottom Sidebar Elements (Status Card & Profile) ── */}
+        <div className="shrink-0 pt-3 space-y-2.5 border-t border-slate-100 mt-2">
+          {/* Redesigned Urbanrat Cloud Card */}
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 border border-slate-200/70 hover:border-slate-300 transition-all flex items-center justify-between shadow-2xs">
+            <div className="flex items-center space-x-2.5 min-w-0">
               <div
-                className={`w-7 h-7 rounded-xl flex items-center justify-center text-white shadow-2xs ${
-                  liveSyncEnabled ? "bg-brand-dark" : "bg-slate-400"
+                className={`relative w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                  liveSyncEnabled
+                    ? "bg-linear-to-b from-brand-light/20 to-brand-dark/20 text-brand-dark border border-brand-light/40"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
                 }`}
               >
-                <Radio className="w-3.5 h-3.5 animate-pulse" />
+                <Cloud className="w-4 h-4 stroke-[2.2]" />
+                {liveSyncEnabled && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-900 leading-tight">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-800 tracking-tight truncate leading-tight">
                   Urbanrat Cloud
                 </p>
-                <p className="text-[9px] text-slate-500 font-medium">
-                  {liveSyncEnabled ? "Supabase Live • Active" : "Paused"}
+                <p className="text-[10px] text-slate-500 font-medium truncate flex items-center space-x-1 mt-0.5">
+                  <span
+                    className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
+                      liveSyncEnabled ? "bg-emerald-500" : "bg-slate-300"
+                    }`}
+                  />
+                  <span>{liveSyncEnabled ? "Supabase Live • Active" : "Sync Paused"}</span>
                 </p>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => setLiveSyncEnabled(!liveSyncEnabled)}
-              className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+              onClick={() => {
+                triggerHaptic("selection");
+                setLiveSyncEnabled(!liveSyncEnabled);
+              }}
+              className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-light/40 ${
                 liveSyncEnabled ? "bg-brand-dark" : "bg-slate-300"
               }`}
-              aria-label="Toggle live sync status"
+              title={liveSyncEnabled ? "Live cloud sync is active" : "Live cloud sync is paused"}
+              aria-label="Toggle live cloud sync status"
             >
               <div
-                className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm absolute top-0.5 transition-transform ${
-                  liveSyncEnabled ? "right-1" : "left-1"
+                className={`w-3.5 h-3.5 rounded-full bg-white shadow-xs absolute top-0.75 left-0.75 transition-transform duration-200 ${
+                  liveSyncEnabled ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -1283,11 +1317,18 @@ export default function App() {
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs"
                 style={{ background: "linear-gradient(135deg, #5ADBE5, #0A82A8)" }}
               >
-                SJ
+                {adminProfile.full_name
+                  ? adminProfile.full_name
+                      .split(" ")
+                      .map((w: string) => w[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : "SA"}
               </div>
               <div className="truncate">
                 <p className="text-xs font-bold text-slate-800 truncate leading-tight">
-                  {adminProfile.full_name || "Sjainthelegend"}
+                  {adminProfile.full_name || "Administrator"}
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium truncate flex items-center space-x-1">
                   <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 inline" />
@@ -1344,7 +1385,7 @@ export default function App() {
             <a
               href="http://localhost:5173"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-2xs transition"
             >
               <ExternalLink className="w-3 h-3 text-brand-dark" />

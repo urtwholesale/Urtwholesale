@@ -12,6 +12,7 @@ export interface StoreSettings {
     currency: string;
   };
   return_window_days?: number;
+  max_order_qty?: number;
 }
 
 export interface Banner {

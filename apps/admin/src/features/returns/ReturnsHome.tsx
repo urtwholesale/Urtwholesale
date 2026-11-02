@@ -50,7 +50,7 @@ export function ReturnsHome() {
         <a
           href="https://seller.urbanrat.com/returns-faq"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="hidden sm:inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition"
         >
           <span className="text-rose-500 font-black">▶</span>
