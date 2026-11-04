@@ -5,39 +5,50 @@
 
 /* ── Light and Dark CSS Custom Properties ── */
 :root {
-  /* Brand cyan/blue in light mode */
-  --color-brand-light: #5ADBE5;
-  --color-brand: #1EAFC7;
-  --color-brand-dark: #0A82A8;
+  /* Apple-inspired punchy vibrant color system (Light Mode) */
+  --color-brand-light: #FF2D55;
+  --color-brand: #FF4500;
+  --color-brand-dark: #E30062;
+  --color-brand-blue: #0071E3;
+  --color-brand-blue-hover: #0077ED;
+  --color-brand-emerald: #34C759;
+  --color-brand-amber: #FF9500;
 
-  --color-surface: #F8F9FB;
+  /* Apple Store signature silky warm-grey luxury canvas */
+  --color-surface: #F5F5F7;
   --color-surface-card: #FFFFFF;
-  --color-surface-card-subtle: #F1F5F9;
-  --color-surface-border: #E2E8F0;
+  --color-surface-card-subtle: #ECECED;
+  --color-surface-border: #E5E5EA;
 
-  --brand-gradient: linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%);
-  --brand-gradient-horizontal: linear-gradient(90deg, #5ADBE5 0%, #1EAFC7 50%, #0A82A8 100%);
-  --brand-gradient-accent: linear-gradient(135deg, #5ADBE5 0%, #1EAFC7 60%, #0A82A8 100%);
-  --brand-shadow: 0 4px 16px rgba(10, 130, 168, 0.35);
-  --brand-glow: 0 0 20px rgba(90, 219, 229, 0.4);
+  /* Signature Punchy Headline & Button Gradients */
+  --brand-gradient: linear-gradient(135deg, #FF1B6B 0%, #FF4500 55%, #FF7A00 100%);
+  --brand-gradient-horizontal: linear-gradient(90deg, #FF1B6B 0%, #FF4500 50%, #FF7A00 100%);
+  --brand-gradient-accent: linear-gradient(135deg, #FF1B6B 0%, #FF4500 50%, #0071E3 100%);
+  --brand-shadow: 0 8px 24px rgba(255, 69, 0, 0.35);
+  --brand-glow: 0 0 28px rgba(255, 27, 107, 0.45);
 }
 
 .dark, [data-theme="dark"] {
-  /* Brand black + gradient orange in dark mode */
-  --color-brand-light: #FFA033;
-  --color-brand: #FF7700;
-  --color-brand-dark: #E64A00;
+  /* Apple-inspired punchy vibrant color system (Dark Mode) */
+  --color-brand-light: #FF375F;
+  --color-brand: #FF6B00;
+  --color-brand-dark: #FF8533;
+  --color-brand-blue: #2997FF;
+  --color-brand-blue-hover: #47A7FF;
+  --color-brand-emerald: #30D158;
+  --color-brand-amber: #FFD60A;
 
-  --color-surface: #0B0F17;
-  --color-surface-card: #131B26;
-  --color-surface-card-subtle: #192333;
-  --color-surface-border: #1E2D40;
+  /* Apple titanium obsidian space black & deep charcoal card elevations */
+  --color-surface: #000000;
+  --color-surface-card: #1D1D1F;
+  --color-surface-card-subtle: #161617;
+  --color-surface-border: #2D2D30;
 
-  --brand-gradient: linear-gradient(180deg, #FFA033 0%, #FF6B00 50%, #E64A00 100%);
-  --brand-gradient-horizontal: linear-gradient(90deg, #FFA033 0%, #FF7700 50%, #E64A00 100%);
-  --brand-gradient-accent: linear-gradient(135deg, #FFA033 0%, #FF7700 60%, #E64A00 100%);
-  --brand-shadow: 0 4px 18px rgba(255, 107, 0, 0.45);
-  --brand-glow: 0 0 24px rgba(255, 122, 0, 0.45);
+  --brand-gradient: linear-gradient(135deg, #FF375F 0%, #FF6B00 55%, #FFA033 100%);
+  --brand-gradient-horizontal: linear-gradient(90deg, #FF375F 0%, #FF7700 50%, #FFA033 100%);
+  --brand-gradient-accent: linear-gradient(135deg, #FF375F 0%, #FF6B00 50%, #2997FF 100%);
+  --brand-shadow: 0 8px 28px rgba(255, 107, 0, 0.5);
+  --brand-glow: 0 0 32px rgba(255, 55, 95, 0.5);
 }
 
 /* ── Design Tokens & Typography ── */
@@ -204,14 +215,14 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #F8F9FB;
-    color: #0F172A;
+    background-color: #F5F5F7;
+    color: #1D1D1F;
     transition: background-color 200ms ease, color 200ms ease;
   }
 
   html.dark {
-    background-color: #0B0F17;
-    color: #F8FAFC;
+    background-color: #000000;
+    color: #F5F5F7;
   }
 
   body {
@@ -220,7 +231,31 @@
     color: inherit;
     overflow-x: hidden;
     transition: background-color 200ms ease, color 200ms ease;
+    background-image: 
+      radial-gradient(ellipse 90% 540px at 50% -120px, rgba(255, 27, 107, 0.09) 0%, rgba(255, 69, 0, 0.05) 50%, transparent 100%);
+    background-repeat: no-repeat;
   }
+
+  html.dark body {
+    background-image: 
+      radial-gradient(ellipse 90% 540px at 50% -120px, rgba(227, 0, 98, 0.18) 0%, rgba(255, 107, 0, 0.10) 50%, transparent 100%);
+    background-repeat: no-repeat;
+  }
+}
+
+/* ── Punchy Apple Store Utilities ── */
+.text-punchy-gradient {
+  background: linear-gradient(135deg, #FF1B6B 0%, #FF4500 55%, #FF8A00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-apple-blue {
+  color: #0071E3;
+}
+.dark .text-apple-blue {
+  color: #2997FF;
 }
 
 /* ── iOS Safe Area Insets ── */

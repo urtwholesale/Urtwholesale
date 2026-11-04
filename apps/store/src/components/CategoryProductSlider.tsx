@@ -9,7 +9,6 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  ArrowRight,
   Plus,
   Check,
   Star,
@@ -29,6 +28,7 @@ export type SliderThemeColor = "amber" | "rose" | "cyan" | "violet" | "slate";
 interface CategoryProductSliderProps {
   title: string;
   subtitle?: string;
+  punchyPrefix?: string;
   badgeTag: string;
   icon: React.ReactNode;
   products: Product[];
@@ -58,36 +58,36 @@ const THEME_STYLES: Record<
     accentBg: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
   },
   rose: {
-    iconBadge: "bg-rose-500/10 dark:bg-rose-400/15 border border-rose-500/20",
-    iconText: "text-rose-600 dark:text-rose-400",
-    cardBorder: "border-rose-500/20 dark:border-rose-500/30",
-    cardGlow: "shadow-[0_8px_32px_rgba(244,63,94,0.08)] dark:shadow-[0_8px_32px_rgba(244,63,94,0.18)]",
-    activeDot: "bg-rose-500",
-    accentBg: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300",
+    iconBadge: "bg-[#FF1B6B]/10 dark:bg-[#FF1B6B]/20 border border-[#FF1B6B]/30",
+    iconText: "text-[#FF1B6B] dark:text-[#FF375F]",
+    cardBorder: "border-[#FF1B6B]/20 dark:border-[#FF1B6B]/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(255,27,107,0.12)] dark:shadow-[0_8px_32px_rgba(255,27,107,0.22)]",
+    activeDot: "bg-[#FF1B6B]",
+    accentBg: "bg-rose-50 dark:bg-rose-950/40 text-[#FF1B6B] dark:text-[#FF375F]",
   },
   cyan: {
-    iconBadge: "bg-cyan-500/10 dark:bg-cyan-400/15 border border-cyan-500/20",
-    iconText: "text-cyan-600 dark:text-cyan-400",
-    cardBorder: "border-cyan-500/20 dark:border-cyan-500/30",
-    cardGlow: "shadow-[0_8px_32px_rgba(6,182,212,0.08)] dark:shadow-[0_8px_32px_rgba(6,182,212,0.18)]",
-    activeDot: "bg-cyan-500",
-    accentBg: "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300",
+    iconBadge: "bg-[#0071E3]/10 dark:bg-[#2997FF]/20 border border-[#0071E3]/30",
+    iconText: "text-[#0071E3] dark:text-[#2997FF]",
+    cardBorder: "border-[#0071E3]/20 dark:border-[#2997FF]/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(0,113,227,0.12)] dark:shadow-[0_8px_32px_rgba(41,151,255,0.22)]",
+    activeDot: "bg-[#0071E3]",
+    accentBg: "bg-blue-50 dark:bg-blue-950/40 text-[#0071E3] dark:text-[#2997FF]",
   },
   violet: {
-    iconBadge: "bg-violet-500/10 dark:bg-violet-400/15 border border-violet-500/20",
-    iconText: "text-violet-600 dark:text-violet-400",
-    cardBorder: "border-violet-500/20 dark:border-violet-500/30",
-    cardGlow: "shadow-[0_8px_32px_rgba(139,92,246,0.08)] dark:shadow-[0_8px_32px_rgba(139,92,246,0.18)]",
-    activeDot: "bg-violet-500",
-    accentBg: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
+    iconBadge: "bg-purple-500/10 dark:bg-purple-400/15 border border-purple-500/20",
+    iconText: "text-purple-600 dark:text-purple-400",
+    cardBorder: "border-purple-500/20 dark:border-purple-500/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(168,85,247,0.12)] dark:shadow-[0_8px_32px_rgba(168,85,247,0.22)]",
+    activeDot: "bg-purple-500",
+    accentBg: "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300",
   },
   slate: {
-    iconBadge: "bg-slate-500/10 dark:bg-orange-500/15 border border-slate-300 dark:border-orange-500/30",
-    iconText: "text-slate-700 dark:text-orange-400",
-    cardBorder: "border-slate-200 dark:border-slate-800",
-    cardGlow: "shadow-[0_8px_32px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_32px_rgba(249,115,22,0.15)]",
+    iconBadge: "bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/30",
+    iconText: "text-orange-600 dark:text-orange-400",
+    cardBorder: "border-orange-500/20 dark:border-orange-500/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(255,107,0,0.12)] dark:shadow-[0_8px_32px_rgba(255,107,0,0.25)]",
     activeDot: "bg-orange-500",
-    accentBg: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
+    accentBg: "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300",
   },
 };
 
@@ -135,6 +135,7 @@ function useResponsiveItemsPerPage(): number {
 export function CategoryProductSlider({
   title,
   subtitle,
+  punchyPrefix,
   badgeTag,
   icon,
   products,
@@ -307,8 +308,13 @@ export function CategoryProductSlider({
           </div>
 
           <div className="flex items-center space-x-2 min-w-0 flex-wrap gap-y-1">
-            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
-              {title}
+            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate flex items-center">
+              {punchyPrefix && (
+                <span className="bg-gradient-to-r from-[#FF1B6B] via-[#FF4500] to-[#FF8A00] bg-clip-text text-transparent font-black mr-1.5 shrink-0">
+                  {punchyPrefix}
+                </span>
+              )}
+              <span>{title}</span>
             </h2>
 
             {badgeTag && (
@@ -321,14 +327,14 @@ export function CategoryProductSlider({
             {seeMoreUrl && (
               <Link
                 to={seeMoreUrl}
-                className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-black text-white hover:opacity-95 active:scale-95 transition cursor-pointer shadow-xs shrink-0"
+                className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-black text-white hover:opacity-95 active:scale-95 transition cursor-pointer shadow-xs shrink-0"
                 style={{
                   background: "var(--brand-gradient)",
                   boxShadow: "var(--brand-shadow)",
                 }}
               >
                 <span>{t("home.see_more", "See more")}</span>
-                <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+                <span className="font-bold">›</span>
               </Link>
             )}
           </div>
@@ -453,7 +459,7 @@ export function CategoryProductSlider({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: -direction * 50, scale: 0.98 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-lg transition-colors flex flex-col justify-between overflow-hidden"
+              className="relative bg-white dark:bg-[#1D1D1F] rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_4px_24px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_40px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all flex flex-col justify-between overflow-hidden"
             >
               {/* Top Image Spotlight */}
               <div className="relative aspect-square w-full overflow-hidden bg-slate-50 dark:bg-slate-800/40 shrink-0">
@@ -473,8 +479,8 @@ export function CategoryProductSlider({
                   />
                 </Link>
 
-                {/* boAt Signature Top Left Badge Tag */}
-                <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider bg-black/90 text-white shadow-xs flex items-center space-x-1">
+                {/* Apple/boAt Signature Top Left Badge Tag */}
+                <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-black/85 dark:bg-white/90 text-white dark:text-black backdrop-blur-md shadow-xs flex items-center space-x-1">
                   <span>{topBadge.icon}</span>
                   <span>{topBadge.text}</span>
                 </div>
@@ -483,7 +489,7 @@ export function CategoryProductSlider({
                 {currentProduct.is_urbanrat_brand && (
                   <div
                     title="Urbanrat Original Brand"
-                    className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-white/80 dark:border-slate-700/80 shadow-xs flex items-center justify-center p-1"
+                    className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-white/95 dark:bg-[#1D1D1F]/95 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-center p-1"
                   >
                     <img
                       src="/logo.png"
@@ -494,8 +500,8 @@ export function CategoryProductSlider({
                 )}
               </div>
 
-              {/* ── Signature boAt Yellow/Gold Feature Spec Ribbon (Flush with Image) ── */}
-              <div className="w-full bg-[#FFC700] dark:bg-[#FDB913] px-3 py-1.5 flex items-center justify-between text-slate-950 shrink-0 select-none">
+              {/* ── Signature Feature Spec Ribbon (Flush with Image) ── */}
+              <div className="w-full bg-[#FFB800] dark:bg-[#FDB913] px-3 py-1.5 flex items-center justify-between text-slate-950 shrink-0 select-none">
                 <span className="text-[11px] font-black uppercase tracking-tight text-slate-950 truncate max-w-[70%]">
                   {highlightSpec}
                 </span>
@@ -560,15 +566,15 @@ export function CategoryProductSlider({
                     </span>
                   )}
                   {discountPercent > 0 && (
-                    <span className="font-black text-emerald-600 dark:text-emerald-400">
+                    <span className="font-black text-[#34C759] dark:text-[#30D158]">
                       {discountPercent}% {t("product.off", "off")}
                     </span>
                   )}
                 </div>
 
                 {/* Wholesale MOQ & Quick Add Button Row */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 mt-auto">
-                  <span className="text-[10px] font-bold text-brand-dark dark:text-orange-400 bg-cyan-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded border border-cyan-100 dark:border-orange-500/20">
+                <div className="pt-2 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between gap-2 mt-auto">
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-black/[0.04] dark:bg-white/[0.08] px-2 py-0.5 rounded-full border border-black/[0.05] dark:border-white/[0.08]">
                     {t("product.moq", "MOQ")}: {currentProduct.min_order_qty || 10} {t("product.pcs", "pcs")}
                   </span>
 
@@ -582,7 +588,7 @@ export function CategoryProductSlider({
                     }
                     className={`relative h-7.5 px-3 rounded-full flex items-center space-x-1 text-[11px] font-black text-white cursor-pointer transition-all duration-300 shrink-0 ${
                       isAdded
-                        ? "bg-emerald-600 shadow-[0_4px_16px_rgba(16,185,129,0.5)] ring-2 ring-emerald-300"
+                        ? "bg-[#34C759] dark:bg-[#30D158] shadow-[0_4px_16px_rgba(52,199,89,0.5)] ring-2 ring-emerald-300"
                         : "hover:opacity-95 active:scale-95 shadow-2xs"
                     }`}
                     style={

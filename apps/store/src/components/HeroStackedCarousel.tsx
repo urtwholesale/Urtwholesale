@@ -448,7 +448,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                   maxTilt={8}
                 />
               </div>
-              <div className="text-red-500 dark:text-red-500 drop-shadow-[0_0_24px_rgba(239,68,68,0.55)]">
+              <div className="bg-gradient-to-r from-[#FF1B6B] via-[#FF4500] to-[#FF8A00] bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(255,27,107,0.35)]">
                 <CursorPhobicWords
                   text={activeCard?.headlineHighlight || "OF PREMIERES"}
                   repulsionRadius={170}
@@ -516,7 +516,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             >
               <Link
                 to={activeCard?.ctaLink || "/urbanrat"}
-                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-linear-to-r from-red-600 via-rose-600 to-orange-600 shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:shadow-[0_0_32px_rgba(239,68,68,0.7)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-gradient-to-r from-[#FF1B6B] via-[#FF4500] to-[#FF7A00] shadow-[0_8px_24px_rgba(255,69,0,0.35)] hover:shadow-[0_12px_32px_rgba(255,27,107,0.5)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
               >
                 <span>{activeCard?.ctaText || "Receive Premiere Gear"}</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
