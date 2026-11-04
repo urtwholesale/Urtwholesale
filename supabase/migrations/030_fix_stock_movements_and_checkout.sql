@@ -1,21 +1,26 @@
 -- ============================================================================
--- Migration 027: Fix stock_movements schema and storefront checkout RPCs
+-- Migration 030: Fix stock_movements schema, product columns & storefront checkout RPCs
 -- ============================================================================
 -- Purpose:
---   1. Add missing compatibility columns to public.stock_movements (created_by,
---      quantity_change, quantity, movement_type, reference_id, notes) so that
---      legacy or hardened order checkout RPCs and triggers never fail with:
---      "column 'created_by' of relation 'stock_movements' does not exist".
---   2. Install a column synchronization trigger so all column variants
---      (change / quantity_change / quantity and admin_id / created_by) stay
---      in sync automatically.
---   3. Drop all outdated overloads of create_verified_order.
---   4. Re-declare create_verified_order and create_verified_order_guest with
---      hardened atomic stock updates and seamless stock_movements auditing.
+--   1. Add max_order_qty column to public.products if missing so that max order
+--      checks never fail with "column max_order_qty does not exist".
+--   2. Add missing compatibility columns to public.stock_movements (created_by,
+--      quantity_change, quantity, movement_type, reference_id, notes).
+--   3. Install a bi-directional column synchronization trigger on stock_movements.
+--   4. Drop outdated function overloads.
+--   5. Re-declare create_verified_order and create_verified_order_guest using
+--      the real schema (SELECT * INTO v_product and product_price_tiers table).
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. Ensure public.stock_movements has all compatibility columns
+-- 1. Ensure public.products has max_order_qty
+-- ----------------------------------------------------------------------------
+
+ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS max_order_qty integer DEFAULT 10000;
+
+-- ----------------------------------------------------------------------------
+-- 2. Ensure public.stock_movements has all compatibility columns
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE public.stock_movements
@@ -26,11 +31,11 @@ ALTER TABLE public.stock_movements
   ADD COLUMN IF NOT EXISTS reference_id text,
   ADD COLUMN IF NOT EXISTS notes text;
 
--- Index on created_by and order_id for fast audit queries
 CREATE INDEX IF NOT EXISTS idx_stock_movements_created_by ON public.stock_movements(created_by);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_order_id ON public.stock_movements(order_id);
 
 -- ----------------------------------------------------------------------------
--- 2. Bi-directional Column Synchronization Trigger on stock_movements
+-- 3. Bi-directional Column Synchronization Trigger on stock_movements
 -- ----------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.sync_stock_movements_columns()
@@ -38,7 +43,6 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Synchronize change / quantity_change / quantity
   IF NEW.change IS NULL THEN
     IF NEW.quantity_change IS NOT NULL THEN
       NEW.change := NEW.quantity_change;
@@ -57,7 +61,6 @@ BEGIN
     NEW.quantity := NEW.change;
   END IF;
 
-  -- Synchronize admin_id and created_by
   IF NEW.created_by IS NULL AND NEW.admin_id IS NOT NULL THEN
     NEW.created_by := NEW.admin_id;
   ELSIF NEW.admin_id IS NULL AND NEW.created_by IS NOT NULL THEN
@@ -75,7 +78,7 @@ CREATE TRIGGER trg_sync_stock_movements
   EXECUTE FUNCTION public.sync_stock_movements_columns();
 
 -- ----------------------------------------------------------------------------
--- 3. Drop legacy overloads of create_verified_order
+-- 4. Drop legacy overloads of create_verified_order
 -- ----------------------------------------------------------------------------
 
 DROP FUNCTION IF EXISTS public.create_verified_order(jsonb, jsonb);
@@ -83,7 +86,7 @@ DROP FUNCTION IF EXISTS public.create_verified_order(jsonb, jsonb, text);
 DROP FUNCTION IF EXISTS public.create_verified_order(jsonb, jsonb, text, text);
 
 -- ----------------------------------------------------------------------------
--- 4. Re-declare create_verified_order (Authenticated checkout)
+-- 5. Hardened create_verified_order (Authenticated checkout)
 -- ----------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.create_verified_order(
@@ -226,14 +229,14 @@ BEGIN
     v_shipping_fee := 49;
   END;
 
-  -- 4. Process Each Item (Lock rows FOR UPDATE to prevent race conditions)
+  -- 4. Process Each Item (Lock rows FOR UPDATE)
   FOR v_item IN
     SELECT
       (elem->>'product_id')::uuid AS product_id,
       COALESCE(
-        NULLIF(elem->>'qty', '')::integer,
         NULLIF(elem->>'quantity', '')::integer,
-        1
+        NULLIF(elem->>'qty', '')::integer,
+        0
       ) AS quantity,
       NULLIF(trim(COALESCE(elem->>'selected_color', elem->>'color', '')), '') AS selected_color
     FROM jsonb_array_elements(p_items) AS elem
@@ -242,13 +245,21 @@ BEGIN
       RAISE EXCEPTION 'Every item must have a valid product_id';
     END IF;
 
+    v_qty := v_item.quantity;
+    IF v_qty <= 0 THEN
+      RAISE EXCEPTION 'Item quantity must be a positive integer';
+    END IF;
+
+    IF v_qty > v_max_order_qty THEN
+      RAISE EXCEPTION 'Item quantity exceeds maximum allowed order limit of % units', v_max_order_qty;
+    END IF;
+
     IF v_item.product_id = ANY(v_seen_product_ids) THEN
       RAISE EXCEPTION 'Duplicate product in order items. Consolidate quantities into a single line';
     END IF;
     v_seen_product_ids := array_append(v_seen_product_ids, v_item.product_id);
 
-    SELECT id, name, slug, price, stock, is_active, min_order_qty, max_order_qty, price_tiers
-    INTO v_product
+    SELECT * INTO v_product
     FROM public.products
     WHERE id = v_item.product_id
     FOR UPDATE;
@@ -261,49 +272,45 @@ BEGIN
       RAISE EXCEPTION 'Product "%" is currently discontinued or inactive', v_product.name;
     END IF;
 
-    -- Enforce MOQ
+    -- Enforce MOQ & Step
     v_applied_min_qty := GREATEST(1, COALESCE(v_product.min_order_qty, 1));
-    v_max_order_qty := LEAST(500, GREATEST(v_applied_min_qty, COALESCE(v_product.max_order_qty, 500)));
 
-    IF v_item.quantity < v_applied_min_qty THEN
+    IF v_qty < v_applied_min_qty THEN
       RAISE EXCEPTION 'Minimum order quantity for "%" is % pcs (requested %)',
-        v_product.name, v_applied_min_qty, v_item.quantity;
+        v_product.name, v_applied_min_qty, v_qty;
     END IF;
 
-    IF v_item.quantity > v_max_order_qty THEN
-      RAISE EXCEPTION 'Quantity for "%" cannot exceed maximum limit of % pcs',
-        v_product.name, v_max_order_qty;
+    IF COALESCE(v_product.order_qty_step, 1) > 1 AND (v_qty % v_product.order_qty_step <> 0) THEN
+      RAISE EXCEPTION 'Order quantity for "%" must be a multiple of % (requested %)',
+        v_product.name, v_product.order_qty_step, v_qty;
     END IF;
 
-    IF v_product.stock < v_item.quantity THEN
+    IF v_product.stock < v_qty THEN
       RAISE EXCEPTION 'Insufficient stock for "%". Available: %, Requested: %',
-        v_product.name, v_product.stock, v_item.quantity;
+        v_product.name, v_product.stock, v_qty;
     END IF;
 
-    v_qty := v_item.quantity;
-    v_first_tier_price := v_product.price;
+    -- Compute wholesale volume tier price from product_price_tiers
+    v_unit_price := public.get_unit_price(v_product.id, v_qty);
 
-    -- Compute wholesale volume tier price
-    IF v_product.price_tiers IS NOT NULL AND jsonb_typeof(v_product.price_tiers) = 'array' THEN
-      SELECT COALESCE(
-        (
-          SELECT (pt->>'unit_price')::numeric
-          FROM jsonb_array_elements(v_product.price_tiers) AS pt
-          WHERE (pt->>'min_qty')::integer <= v_qty
-          ORDER BY (pt->>'min_qty')::integer DESC
-          LIMIT 1
-        ),
-        v_product.price
-      ) INTO v_unit_price;
-    ELSE
-      v_unit_price := v_product.price;
-    END IF;
+    SELECT unit_price INTO v_first_tier_price
+    FROM public.product_price_tiers
+    WHERE product_id = v_product.id
+    ORDER BY min_qty ASC
+    LIMIT 1;
+
+    v_first_tier_price := COALESCE(v_first_tier_price, v_product.price);
+
+    SELECT min_qty INTO v_applied_min_qty
+    FROM public.product_price_tiers
+    WHERE product_id = v_product.id AND min_qty <= v_qty
+    ORDER BY min_qty DESC
+    LIMIT 1;
+
+    v_applied_min_qty := COALESCE(v_applied_min_qty, COALESCE(v_product.min_order_qty, 1));
 
     v_line_total := round(v_unit_price * v_qty, 2);
-    v_line_savings := round((v_first_tier_price - v_unit_price) * v_qty, 2);
-    IF v_line_savings < 0 THEN
-      v_line_savings := 0;
-    END IF;
+    v_line_savings := greatest(round((v_first_tier_price - v_unit_price) * v_qty, 2), 0);
 
     v_subtotal := v_subtotal + v_line_total;
     v_total_savings := v_total_savings + v_line_savings;
@@ -313,13 +320,18 @@ BEGIN
         'product_id', v_product.id,
         'name', v_product.name,
         'slug', v_product.slug,
+        'sku', v_product.sku,
+        'image', CASE WHEN array_length(v_product.images, 1) > 0 THEN v_product.images[1] ELSE NULL END,
         'quantity', v_qty,
         'qty', v_qty,
         'unit_price', v_unit_price,
+        'price', v_unit_price,
         'total', v_line_total,
+        'line_total', v_line_total,
         'first_tier_price', v_first_tier_price,
         'savings', v_line_savings,
         'min_qty', v_applied_min_qty,
+        'tier_min_qty', v_applied_min_qty,
         'selected_color', v_item.selected_color
       )
     );
@@ -330,7 +342,7 @@ BEGIN
         updated_at = NOW()
     WHERE id = v_product.id;
 
-    -- Record stock movement (populating change, created_by, and reason)
+    -- Record stock movement
     INSERT INTO public.stock_movements (
       product_id,
       change,
@@ -414,7 +426,7 @@ BEGIN
   )
   RETURNING * INTO v_created_order;
 
-  -- Link order_id on stock_movements created for this order
+  -- Link order_id on stock_movements
   UPDATE public.stock_movements
   SET order_id = v_order_id,
       reference_id = v_order_id
@@ -423,7 +435,7 @@ BEGIN
     AND order_id IS NULL
     AND created_at >= NOW() - INTERVAL '30 seconds';
 
-  -- Record order event audit
+  -- Order event audit
   INSERT INTO public.order_events (
     order_id,
     status,
@@ -442,7 +454,7 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- 5. Re-declare create_verified_order_guest (Guest checkout via service_role)
+-- 6. Hardened create_verified_order_guest (Guest checkout via service_role)
 -- ----------------------------------------------------------------------------
 
 DROP FUNCTION IF EXISTS public.create_verified_order_guest(jsonb, jsonb, text, text);
@@ -569,7 +581,6 @@ BEGIN
     RAISE EXCEPTION 'Orders cannot contain more than 50 distinct items at once';
   END IF;
 
-  -- Read store delivery thresholds from store_settings safely
   BEGIN
     SELECT
       COALESCE((value->>'free_delivery_min')::numeric, 999),
@@ -588,9 +599,9 @@ BEGIN
     SELECT
       (elem->>'product_id')::uuid AS product_id,
       COALESCE(
-        NULLIF(elem->>'qty', '')::integer,
         NULLIF(elem->>'quantity', '')::integer,
-        1
+        NULLIF(elem->>'qty', '')::integer,
+        0
       ) AS quantity,
       NULLIF(trim(COALESCE(elem->>'selected_color', elem->>'color', '')), '') AS selected_color
     FROM jsonb_array_elements(p_items) AS elem
@@ -599,13 +610,21 @@ BEGIN
       RAISE EXCEPTION 'Every item must have a valid product_id';
     END IF;
 
+    v_qty := v_item.quantity;
+    IF v_qty <= 0 THEN
+      RAISE EXCEPTION 'Item quantity must be a positive integer';
+    END IF;
+
+    IF v_qty > v_max_order_qty THEN
+      RAISE EXCEPTION 'Item quantity exceeds maximum allowed order limit of % units', v_max_order_qty;
+    END IF;
+
     IF v_item.product_id = ANY(v_seen_product_ids) THEN
       RAISE EXCEPTION 'Duplicate product in order items. Consolidate quantities into a single line';
     END IF;
     v_seen_product_ids := array_append(v_seen_product_ids, v_item.product_id);
 
-    SELECT id, name, slug, price, stock, is_active, min_order_qty, max_order_qty, price_tiers
-    INTO v_product
+    SELECT * INTO v_product
     FROM public.products
     WHERE id = v_item.product_id
     FOR UPDATE;
@@ -619,46 +638,42 @@ BEGIN
     END IF;
 
     v_applied_min_qty := GREATEST(1, COALESCE(v_product.min_order_qty, 1));
-    v_max_order_qty := LEAST(500, GREATEST(v_applied_min_qty, COALESCE(v_product.max_order_qty, 500)));
 
-    IF v_item.quantity < v_applied_min_qty THEN
+    IF v_qty < v_applied_min_qty THEN
       RAISE EXCEPTION 'Minimum order quantity for "%" is % pcs (requested %)',
-        v_product.name, v_applied_min_qty, v_item.quantity;
+        v_product.name, v_applied_min_qty, v_qty;
     END IF;
 
-    IF v_item.quantity > v_max_order_qty THEN
-      RAISE EXCEPTION 'Quantity for "%" cannot exceed maximum limit of % pcs',
-        v_product.name, v_max_order_qty;
+    IF COALESCE(v_product.order_qty_step, 1) > 1 AND (v_qty % v_product.order_qty_step <> 0) THEN
+      RAISE EXCEPTION 'Order quantity for "%" must be a multiple of % (requested %)',
+        v_product.name, v_product.order_qty_step, v_qty;
     END IF;
 
-    IF v_product.stock < v_item.quantity THEN
+    IF v_product.stock < v_qty THEN
       RAISE EXCEPTION 'Insufficient stock for "%". Available: %, Requested: %',
-        v_product.name, v_product.stock, v_item.quantity;
+        v_product.name, v_product.stock, v_qty;
     END IF;
 
-    v_qty := v_item.quantity;
-    v_first_tier_price := v_product.price;
+    v_unit_price := public.get_unit_price(v_product.id, v_qty);
 
-    IF v_product.price_tiers IS NOT NULL AND jsonb_typeof(v_product.price_tiers) = 'array' THEN
-      SELECT COALESCE(
-        (
-          SELECT (pt->>'unit_price')::numeric
-          FROM jsonb_array_elements(v_product.price_tiers) AS pt
-          WHERE (pt->>'min_qty')::integer <= v_qty
-          ORDER BY (pt->>'min_qty')::integer DESC
-          LIMIT 1
-        ),
-        v_product.price
-      ) INTO v_unit_price;
-    ELSE
-      v_unit_price := v_product.price;
-    END IF;
+    SELECT unit_price INTO v_first_tier_price
+    FROM public.product_price_tiers
+    WHERE product_id = v_product.id
+    ORDER BY min_qty ASC
+    LIMIT 1;
+
+    v_first_tier_price := COALESCE(v_first_tier_price, v_product.price);
+
+    SELECT min_qty INTO v_applied_min_qty
+    FROM public.product_price_tiers
+    WHERE product_id = v_product.id AND min_qty <= v_qty
+    ORDER BY min_qty DESC
+    LIMIT 1;
+
+    v_applied_min_qty := COALESCE(v_applied_min_qty, COALESCE(v_product.min_order_qty, 1));
 
     v_line_total := round(v_unit_price * v_qty, 2);
-    v_line_savings := round((v_first_tier_price - v_unit_price) * v_qty, 2);
-    IF v_line_savings < 0 THEN
-      v_line_savings := 0;
-    END IF;
+    v_line_savings := greatest(round((v_first_tier_price - v_unit_price) * v_qty, 2), 0);
 
     v_subtotal := v_subtotal + v_line_total;
     v_total_savings := v_total_savings + v_line_savings;
@@ -668,13 +683,18 @@ BEGIN
         'product_id', v_product.id,
         'name', v_product.name,
         'slug', v_product.slug,
+        'sku', v_product.sku,
+        'image', CASE WHEN array_length(v_product.images, 1) > 0 THEN v_product.images[1] ELSE NULL END,
         'quantity', v_qty,
         'qty', v_qty,
         'unit_price', v_unit_price,
+        'price', v_unit_price,
         'total', v_line_total,
+        'line_total', v_line_total,
         'first_tier_price', v_first_tier_price,
         'savings', v_line_savings,
         'min_qty', v_applied_min_qty,
+        'tier_min_qty', v_applied_min_qty,
         'selected_color', v_item.selected_color
       )
     );
@@ -762,7 +782,6 @@ BEGIN
   )
   RETURNING * INTO v_created_order;
 
-  -- Link order_id on stock_movements created for this order
   UPDATE public.stock_movements
   SET order_id = v_order_id,
       reference_id = v_order_id
@@ -789,16 +808,13 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- 6. Permissions Hardening
+-- 7. Permissions Hardening
 -- ----------------------------------------------------------------------------
 
--- create_verified_order is executable by authenticated users and service_role
 REVOKE ALL ON FUNCTION public.create_verified_order(jsonb, jsonb, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_verified_order(jsonb, jsonb, text, text) TO authenticated, service_role;
 
--- create_verified_order_guest is strictly restricted to service_role (via checkout-gate)
 REVOKE ALL ON FUNCTION public.create_verified_order_guest(jsonb, jsonb, text, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_verified_order_guest(jsonb, jsonb, text, text) TO service_role;
 
--- Ensure stock_movements has insert/select permissions for authenticated and service_role
 GRANT SELECT, INSERT ON public.stock_movements TO authenticated, service_role;
