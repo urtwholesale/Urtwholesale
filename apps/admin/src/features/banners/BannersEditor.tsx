@@ -76,7 +76,7 @@ export function BannersEditor() {
   if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center">
-        <Loader2 className="w-6 h-6 text-[#0A82A8] animate-spin mx-auto mb-2" />
+        <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
         <p className="text-xs text-slate-400">Loading promotional banners...</p>
       </div>
     );
@@ -106,7 +106,7 @@ export function BannersEditor() {
             className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0A82A8] bg-[#5ADBE5]/15 px-2.5 py-0.5 rounded-full border border-[#5ADBE5]/30">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary-soft text-primary border border-primary-border px-2.5 py-0.5 rounded-full">
                 Placement: {banner.placement}
               </span>
               <div className="flex items-center space-x-2">
@@ -117,7 +117,7 @@ export function BannersEditor() {
                     onChange={(e) =>
                       handleBannerChange(banner.id, "is_active", e.target.checked)
                     }
-                    className="rounded text-[#0A82A8]"
+                    className="rounded text-primary"
                   />
                   <span>Active</span>
                 </label>
@@ -141,7 +141,7 @@ export function BannersEditor() {
                   onChange={(e) =>
                     handleBannerChange(banner.id, "title", e.target.value)
                   }
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8]"
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
                 />
               </div>
 
@@ -155,7 +155,7 @@ export function BannersEditor() {
                   onChange={(e) =>
                     handleBannerChange(banner.id, "badge_text", e.target.value)
                   }
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8]"
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
                 />
               </div>
             </div>
@@ -170,7 +170,7 @@ export function BannersEditor() {
                 onChange={(e) =>
                   handleBannerChange(banner.id, "subtitle", e.target.value)
                 }
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8]"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
@@ -185,7 +185,7 @@ export function BannersEditor() {
                   onChange={(e) =>
                     handleBannerChange(banner.id, "cta_text", e.target.value)
                   }
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8]"
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
                 />
               </div>
               <div>
@@ -198,7 +198,7 @@ export function BannersEditor() {
                   onChange={(e) =>
                     handleBannerChange(banner.id, "cta_link", e.target.value)
                   }
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8]"
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
                 />
               </div>
             </div>
@@ -208,10 +208,7 @@ export function BannersEditor() {
                 type="button"
                 disabled={savingId === banner.id}
                 onClick={() => handleSaveBanner(banner)}
-                className="py-1.5 px-4 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-xs cursor-pointer flex items-center space-x-1.5"
-                style={{
-                  background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-                }}
+                className="h-9 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingId === banner.id ? (
                   <>

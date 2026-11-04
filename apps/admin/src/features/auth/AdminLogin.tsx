@@ -197,10 +197,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm transition active:scale-[0.99] shadow-sm cursor-pointer disabled:opacity-60"
-            style={{
-              background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-            }}
+            className="w-full h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? "Verifying TOTP Code..." : "Verify & Sign In"}
           </button>
@@ -268,10 +265,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl text-white font-semibold text-sm transition active:scale-[0.99] shadow-sm cursor-pointer disabled:opacity-60 mt-2"
-              style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-              }}
+              className="w-full h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
             >
               {loading ? "Verifying Live Credentials..." : "Authenticate as Admin"}
             </button>

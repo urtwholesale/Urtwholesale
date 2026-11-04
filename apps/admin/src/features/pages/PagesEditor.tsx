@@ -79,7 +79,7 @@ export function PagesEditor() {
   if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm text-center">
-        <Loader2 className="w-6 h-6 text-[#0A82A8] animate-spin mx-auto mb-2" />
+        <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
         <p className="text-xs text-slate-400">Loading informational pages...</p>
       </div>
     );
@@ -117,7 +117,7 @@ export function PagesEditor() {
             onClick={() => setSelectedSlug(p.slug)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
               selectedSlug === p.slug
-                ? "bg-[#5ADBE5]/20 text-[#0A82A8] border border-[#5ADBE5]/40"
+                ? "bg-primary text-on-primary shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -137,7 +137,7 @@ export function PagesEditor() {
               required
               value={currentPage.title}
               onChange={(e) => handleCurrentPageChange("title", e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 focus:bg-white transition"
             />
           </div>
 
@@ -149,7 +149,7 @@ export function PagesEditor() {
               type="text"
               value={currentPage.summary}
               onChange={(e) => handleCurrentPageChange("summary", e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition"
+              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 focus:bg-white transition"
             />
           </div>
 
@@ -162,7 +162,7 @@ export function PagesEditor() {
               required
               value={currentPage.content}
               onChange={(e) => handleCurrentPageChange("content", e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0A82A8] focus:bg-white transition leading-relaxed"
+              className="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 focus:bg-white transition leading-relaxed"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               Plain text or markdown paragraphs. Changes update instantly on the customer Account &amp; Menu page.
@@ -175,7 +175,7 @@ export function PagesEditor() {
               disabled={saving}
               className="py-2.5 px-6 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
               style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                background: "var(--color-primary)",
               }}
             >
               {saving ? (

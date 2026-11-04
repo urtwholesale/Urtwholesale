@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   isValidGSTIN,
   isValidIndianMobile,
@@ -40,6 +41,7 @@ export function CustomerAuth({
     signOut,
     resetPassword,
   } = useAuth();
+  const { isHindi } = useLanguage();
 
   const [mode, setMode] = useState<"login" | "signup" | "forgot">(initialMode);
   const [loading, setLoading] = useState(false);
@@ -77,11 +79,11 @@ export function CustomerAuth({
   if (user) {
     return (
       <div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-white/10 text-center">
-        <div className="w-16 h-16 rounded-full bg-linear-to-b from-brand-light to-brand-dark flex items-center justify-center text-white font-black text-2xl mx-auto mb-3 shadow-sm">
+        <div className="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center font-black text-2xl mx-auto mb-3 shadow-xs">
           {(profile?.full_name || user.email || "U")[0]?.toUpperCase()}
         </div>
         <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-          {profile?.full_name || "Wholesale Customer"}
+          {profile?.full_name || (isHindi ? "थोक ग्राहक" : "Wholesale Customer")}
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{user.email}</p>
 
@@ -105,9 +107,9 @@ export function CustomerAuth({
               }
             }}
             disabled={loading}
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-[0.99] text-xs cursor-pointer"
+            className="w-full h-9 px-3 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle shadow-xs font-semibold text-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
-            {loading ? "Signing out..." : "Sign Out"}
+            {loading ? (isHindi ? "लॉग आउट हो रहा है..." : "Signing out...") : (isHindi ? "लॉग आउट करें" : "Sign Out")}
           </button>
         </div>
       </div>
@@ -214,14 +216,14 @@ export function CustomerAuth({
           className="w-14 h-14 rounded-full mx-auto object-cover shadow-xs mb-2.5"
         />
         <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-          {mode === "login" && "Sign In to URT Wholesale"}
-          {mode === "signup" && "Create Wholesale Account"}
-          {mode === "forgot" && "Reset Password"}
+          {mode === "login" && (isHindi ? "URT होलसेल में लॉगिन करें" : "Sign In to URT Wholesale")}
+          {mode === "signup" && (isHindi ? "थोक खाता बनाएं" : "Create Wholesale Account")}
+          {mode === "forgot" && (isHindi ? "पासवर्ड रीसेट करें" : "Reset Password")}
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {mode === "login" && "Access wholesale tier prices & saved addresses"}
-          {mode === "signup" && "Fast bulk purchasing, GST invoices & express shipping"}
-          {mode === "forgot" && "Enter your email to receive a secure recovery link"}
+          {mode === "login" && (isHindi ? "थोक रेट और सहेजे गए पतों तक पहुंचें" : "Access wholesale tier prices & saved addresses")}
+          {mode === "signup" && (isHindi ? "थोक खरीदारी, पक्का जीएसटी बिल एवं एक्सप्रेस शिपिंग" : "Fast bulk purchasing, GST invoices & express shipping")}
+          {mode === "forgot" && (isHindi ? "रिकवरी लिंक प्राप्त करने के लिए अपना ईमेल दर्ज करें" : "Enter your email to receive a secure recovery link")}
         </p>
       </div>
 
@@ -256,7 +258,7 @@ export function CustomerAuth({
             className="flex items-center space-x-1 text-xs font-bold text-brand-dark dark:text-brand-light hover:underline mb-2 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Sign In</span>
+            <span>{isHindi ? "लॉगिन पर वापस जाएं" : "Back to Sign In"}</span>
           </button>
         )}
 
@@ -264,7 +266,7 @@ export function CustomerAuth({
         {mode === "signup" && (
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Contact / Full Name <span className="text-rose-500">*</span>
+              {isHindi ? "संपर्क / पूरा नाम" : "Contact / Full Name"} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
@@ -291,7 +293,7 @@ export function CustomerAuth({
         {mode === "signup" && (
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Mobile Number (10 digits) <span className="text-rose-500">*</span>
+              {isHindi ? "मोबाइल नंबर (10 अंक)" : "Mobile Number (10 digits)"} <span className="text-rose-500">*</span>
             </label>
             <div className="relative flex">
               <span className="inline-flex items-center px-3 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-r-0 border-slate-200 dark:border-slate-700 rounded-l-xl">
@@ -321,7 +323,7 @@ export function CustomerAuth({
         {/* Email */}
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-            Email Address <span className="text-rose-500">*</span>
+            {isHindi ? "ईमेल पता" : "Email Address"} <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
@@ -348,7 +350,7 @@ export function CustomerAuth({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                Password <span className="text-rose-500">*</span>
+                {isHindi ? "पासवर्ड" : "Password"} <span className="text-rose-500">*</span>
               </label>
               {mode === "login" && (
                 <button
@@ -360,7 +362,7 @@ export function CustomerAuth({
                   }}
                   className="text-[11px] font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
                 >
-                  Forgot password?
+                  {isHindi ? "पासवर्ड भूल गए?" : "Forgot password?"}
                 </button>
               )}
             </div>
@@ -403,14 +405,14 @@ export function CustomerAuth({
               }}
               className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1 cursor-pointer"
             >
-              <span>{showBusinessFields ? "− Hide Business / GSTIN details" : "+ Add Wholesale / GSTIN details (optional)"}</span>
+              <span>{showBusinessFields ? (isHindi ? "− व्यापार / जीएसटी विवरण छिपाएं" : "− Hide Business / GSTIN details") : (isHindi ? "+ थोक / जीएसटी विवरण जोड़ें (वैकल्पिक)" : "+ Add Wholesale / GSTIN details (optional)")}</span>
             </button>
 
             {showBusinessFields && (
               <div className="mt-3 p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 space-y-3 animate-in fade-in">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Business / Store Name
+                    {isHindi ? "दुकान / व्यापार का नाम" : "Business / Store Name"}
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -426,7 +428,7 @@ export function CustomerAuth({
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    GSTIN (15 characters)
+                    {isHindi ? "जीएसटीआईएन (15 अक्षर)" : "GSTIN (15 characters)"}
                   </label>
                   <div className="relative">
                     <FileCheck2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -457,17 +459,17 @@ export function CustomerAuth({
         <button
           type="submit"
           disabled={loading}
-          className="w-full mt-2 py-3 px-4 rounded-xl text-white font-black text-xs sm:text-sm transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer disabled:opacity-60 flex items-center justify-center space-x-2 bg-linear-to-b from-brand-light to-brand-dark"
+          className="w-full mt-2 h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active shadow-xs font-semibold text-sm focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           <span>
-            {mode === "login" && (loading ? "Signing in..." : "Sign In")}
-            {mode === "signup" && (loading ? "Creating account..." : "Create Account")}
-            {mode === "forgot" && (loading ? "Sending link..." : "Send Reset Link")}
+            {mode === "login" && (loading ? (isHindi ? "लॉगिन हो रहा है..." : "Signing in...") : (isHindi ? "लॉगिन करें" : "Sign In"))}
+            {mode === "signup" && (loading ? (isHindi ? "खाता बन रहा है..." : "Creating account...") : (isHindi ? "खाता बनाएं" : "Create Account"))}
+            {mode === "forgot" && (loading ? (isHindi ? "लिंक भेजा जा रहा है..." : "Sending link...") : (isHindi ? "रीसेट लिंक भेजें" : "Send Reset Link"))}
           </span>
         </button>
 
-        {/* Continue as Guest Button (Available in Login mode) */}
+        {/* {isHindi ? "अतिथि के रूप में जारी रखें" : "Continue as Guest"} Button (Available in Login mode) */}
         {mode === "login" && onContinueGuest && (
           <button
             type="button"
@@ -475,7 +477,7 @@ export function CustomerAuth({
               triggerHaptic("selection");
               onContinueGuest();
             }}
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+            className="w-full h-11 px-4 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle shadow-xs font-semibold text-sm focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             Continue as Guest
           </button>
@@ -486,7 +488,7 @@ export function CustomerAuth({
       <div className="text-center pt-4 border-t border-slate-100 dark:border-white/10 mt-5">
         {mode === "login" ? (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Don't have an account?{" "}
+            {isHindi ? "खाता नहीं है? " : "Don't have an account? "}
             <button
               type="button"
               onClick={() => {
@@ -496,12 +498,12 @@ export function CustomerAuth({
               }}
               className="font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
             >
-              Sign Up
+              {isHindi ? "साइन अप करें" : "Sign Up"}
             </button>
           </p>
         ) : mode === "signup" ? (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Already have an account?{" "}
+            {isHindi ? "पहले से खाता है? " : "Already have an account? "}
             <button
               type="button"
               onClick={() => {
@@ -511,7 +513,7 @@ export function CustomerAuth({
               }}
               className="font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
             >
-              Sign In
+              {isHindi ? "लॉगिन करें" : "Sign In"}
             </button>
           </p>
         ) : null}

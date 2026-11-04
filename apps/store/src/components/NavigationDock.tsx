@@ -30,17 +30,9 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white scale-105"
+                ? "bg-primary text-on-primary shadow-xs scale-105"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
-          }
-          style={({ isActive }) =>
-            isActive && !isMenuOpen
-              ? {
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }
-              : undefined
           }
         >
           {({ isActive }) => (
@@ -62,17 +54,9 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white scale-105"
+                ? "bg-primary text-on-primary shadow-xs scale-105"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
-          }
-          style={({ isActive }) =>
-            isActive && !isMenuOpen
-              ? {
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }
-              : undefined
           }
         >
           {({ isActive }) => (
@@ -94,17 +78,9 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white scale-105"
+                ? "bg-primary text-on-primary shadow-xs scale-105"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
-          }
-          style={({ isActive }) =>
-            isActive && !isMenuOpen
-              ? {
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }
-              : undefined
           }
         >
           {({ isActive }) => (
@@ -128,17 +104,9 @@ export function NavigationDock({
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isActive && !isMenuOpen
-                ? "text-white scale-105"
+                ? "bg-primary text-on-primary shadow-xs scale-105"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
             }`
-          }
-          style={({ isActive }) =>
-            isActive && !isMenuOpen
-              ? {
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }
-              : undefined
           }
         >
           {({ isActive }) => (
@@ -162,17 +130,10 @@ export function NavigationDock({
           aria-label={t("nav.menu")}
           className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
             isMenuOpen
-              ? "text-white scale-105"
+              ? "bg-primary text-on-primary shadow-xs scale-105"
               : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
           }`}
-          style={
-            isMenuOpen
-              ? {
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }
-              : undefined
-          }
+
         >
           <Menu
             className={`w-5 h-5 transition-transform duration-200 ${

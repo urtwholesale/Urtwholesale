@@ -422,8 +422,7 @@ export function MarketplacePage({
 
         {selectedCategory === "all" && (
           <div
-            className="w-8 h-1 rounded-full mt-1.5 shadow-xs"
-            style={{ background: "var(--brand-gradient)" }}
+            className="w-8 h-1 rounded-full mt-1.5 bg-primary shadow-xs"
           />
         )}
       </button>
@@ -468,8 +467,7 @@ export function MarketplacePage({
 
             {isSelected && (
               <div
-                className="w-8 h-1 rounded-full mt-1.5 shadow-xs"
-                style={{ background: "var(--brand-gradient)" }}
+                className="w-8 h-1 rounded-full mt-1.5 shadow-xs bg-primary"
               />
             )}
           </button>
@@ -498,19 +496,11 @@ export function MarketplacePage({
               <button
                 type="button"
                 onClick={() => handleSubCategoryChange(null)}
-                className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition active:scale-95 cursor-pointer ${
+                className={`shrink-0 px-3 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer shadow-xs ${
                   selectedSubCategory === null
-                    ? "text-white shadow-xs font-black"
-                    : "bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                    ? "bg-primary text-on-primary"
+                    : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-medium"
                 }`}
-                style={
-                  selectedSubCategory === null
-                    ? {
-                        background: "var(--brand-gradient)",
-                        boxShadow: "var(--brand-shadow)",
-                      }
-                    : {}
-                }
               >
                 {activeParent
                   ? `${t("marketplace.all_in_category", "All in Category")} (${translateCategoryName(activeParent.name, isHindi)})`
@@ -532,16 +522,11 @@ export function MarketplacePage({
                       }
                       handleSubCategoryChange(sub.slug);
                     }}
-                    className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-semibold transition active:scale-95 cursor-pointer ${
+                    className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer shadow-xs ${
                       isSelected
-                        ? "text-white shadow-xs font-black"
-                        : "bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-200/70 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                        ? "bg-primary text-on-primary"
+                        : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-medium"
                     }`}
-                    style={
-                      isSelected
-                        ? { background: "var(--brand-gradient)" }
-                        : {}
-                    }
                   >
                     {sub.image_url && (
                       <img
@@ -752,7 +737,7 @@ export function MarketplacePage({
             )}
 
             {selectedSubCategory && (
-              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-brand-light/15 dark:bg-brand-light/20 text-brand-dark dark:text-teal-300 font-bold text-[11px] border border-brand-light/30 dark:border-brand-light/40">
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-primary-soft text-primary font-bold text-[11px] border border-primary-border">
                 <Layers className="w-3 h-3 text-brand-dark dark:text-teal-300" />
                 <span>
                   Subcategory: {activeSubCategory?.name || selectedSubCategory}
@@ -760,7 +745,7 @@ export function MarketplacePage({
                 <button
                   type="button"
                   onClick={() => handleSubCategoryChange(null)}
-                  className="text-brand-dark dark:text-teal-300 hover:text-[#065A75] cursor-pointer ml-0.5"
+                  className="text-primary hover:text-primary-hover cursor-pointer ml-0.5"
                   title="Clear subcategory"
                 >
                   <X className="w-3 h-3" />
@@ -912,10 +897,7 @@ export function MarketplacePage({
           <span className="text-xs font-bold tracking-wide">{t("marketplace.filters", "Filter")}</span>
           {activeFilterCount > 0 && (
             <span
-              className="min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-black text-slate-950 flex items-center justify-center shadow-xs"
-              style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-              }}
+              className="min-w-4.5 h-4.5 px-1.5 rounded-full text-[10px] font-black text-on-primary bg-primary flex items-center justify-center shadow-xs"
             >
               {activeFilterCount}
             </span>
@@ -1039,16 +1021,11 @@ export function MarketplacePage({
                           }
                           handleSubCategoryChange(sub.slug);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs ${
                           isSelected
-                            ? "text-white shadow-xs font-black"
-                            : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            ? "bg-primary text-on-primary"
+                            : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-medium"
                         }`}
-                        style={
-                          isSelected
-                            ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
-                            : {}
-                        }
                       >
                         {translateCategoryName(sub.name, isHindi)}
                       </button>
@@ -1074,16 +1051,11 @@ export function MarketplacePage({
                     key={s.id}
                     type="button"
                     onClick={() => setSortOption(s.id as any)}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition cursor-pointer text-center ${
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold transition cursor-pointer text-center shadow-xs ${
                       sortOption === s.id
-                        ? "text-white shadow-xs"
-                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        ? "bg-primary text-on-primary"
+                        : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-medium"
                     }`}
-                    style={
-                      sortOption === s.id
-                        ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
-                        : {}
-                    }
                   >
                     {s.label}
                   </button>
@@ -1102,16 +1074,11 @@ export function MarketplacePage({
                     key={idx}
                     type="button"
                     onClick={() => setPriceBracketIndex(idx)}
-                    className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs ${
                       priceBracketIndex === idx
-                        ? "text-white shadow-xs"
-                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        ? "bg-primary text-on-primary"
+                        : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-medium"
                     }`}
-                    style={
-                      priceBracketIndex === idx
-                        ? { background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }
-                        : {}
-                    }
                   >
                     {idx === 0
                       ? t("marketplace.price_all", "All Prices")
@@ -1130,10 +1097,7 @@ export function MarketplacePage({
               <button
                 type="button"
                 onClick={() => setFilterDrawerOpen(false)}
-                className="w-full py-3 rounded-2xl text-white font-black text-xs tracking-wide shadow-md transition active:scale-98 cursor-pointer"
-                style={{
-                  background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-                }}
+                className="w-full h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center"
               >
                 {isHindi ? `उत्पाद देखें (${totalCount})` : `Show ${totalCount} Products`}
               </button>

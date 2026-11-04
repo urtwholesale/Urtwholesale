@@ -26,12 +26,28 @@ export type {
   ValidatePromoCodeResult,
 } from "./types/promoCode";
 export type {
+  Coupon,
+  CouponType,
+  CouponValidationResult,
+  CouponRedemption,
+  AdminCouponInput,
+} from "./types/coupon";
+export type {
+  CartItem,
+  Cart,
+  CartSummary,
+} from "./types/cart";
+export type {
   StoreSettings,
   Banner,
   StorePage,
   MarqueeAnnouncement,
   MarqueeAnnouncementInput,
+  HomepageSection,
+  HomepageSectionType,
+  HomepageSectionTheme,
 } from "./types/storeSettings";
+export { DEFAULT_HOMEPAGE_SECTIONS } from "./types/storeSettings";
 export type {
   DealershipTierMargin,
   DealershipTierMarginInput,
@@ -103,8 +119,21 @@ export {
   getUnitPrice,
   getNextTier,
   getTierRanges,
+  calculateCartSummary,
   type NextTierResult,
+  type CalculateCartSummaryOptions,
 } from "./pricing";
+
+export {
+  normalizeCouponCode,
+  isValidCouponCodeFormat,
+  calculateCouponDiscount,
+  computeGstOnDiscountedTotal,
+  validateAdminCouponInput,
+  mapCouponErrorMessage,
+  type CalculateCouponDiscountParams,
+  type GstCalculationResult,
+} from "./coupons";
 
 export { normalizeKeywords } from "./keywords";
 
@@ -242,10 +271,3 @@ export {
   type ReviewValidationInput,
   type ReviewValidationResult,
 } from "./reviewAntiFake";
-
-
-
-
-
-
-

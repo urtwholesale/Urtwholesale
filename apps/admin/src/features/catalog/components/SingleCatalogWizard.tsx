@@ -658,7 +658,7 @@ export function SingleCatalogWizard({
             <span
               className={`px-3 py-1.5 rounded-xl transition ${
                 step === 1
-                  ? "brand-gradient text-white shadow-2xs"
+                  ? "bg-primary text-on-primary font-semibold shadow-xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer"
               }`}
               onClick={() => setStep(1)}
@@ -668,7 +668,7 @@ export function SingleCatalogWizard({
             <span
               className={`px-3 py-1.5 rounded-xl transition ${
                 step === 2
-                  ? "brand-gradient text-white shadow-2xs"
+                  ? "bg-primary text-on-primary font-semibold shadow-xs"
                   : selectedCategory
                   ? "bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer"
                   : "bg-slate-50 text-slate-300 pointer-events-none"
@@ -876,7 +876,7 @@ export function SingleCatalogWizard({
                           <button
                             type="button"
                             onClick={handleAddPastedLink}
-                            className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs hover:shadow-md cursor-pointer shrink-0"
+                            className="px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-2xs hover:shadow-md cursor-pointer shrink-0"
                           >
                             Set Front
                           </button>
@@ -901,7 +901,7 @@ export function SingleCatalogWizard({
                 type="button"
                 disabled={!selectedCategory}
                 onClick={() => setStep(2)}
-                className="w-full py-3.5 rounded-2xl brand-gradient text-white font-extrabold text-sm shadow-md hover:shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                className="w-full py-3.5 rounded-2xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm rounded-xl shadow-xs shadow-md hover:shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
               >
                 <span>Continue to Product Details</span>
                 <ArrowRight className="w-4 h-4" />
@@ -940,7 +940,7 @@ export function SingleCatalogWizard({
                     key={prod.id}
                     className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
                       activeProductIndex === idx
-                        ? "brand-gradient text-white shadow-2xs"
+                        ? "bg-primary text-on-primary font-semibold shadow-xs"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                     onClick={() => setActiveProductIndex(idx)}
@@ -1582,7 +1582,7 @@ export function SingleCatalogWizard({
                       <button
                         type="button"
                         onClick={handleAddPastedLink}
-                        className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs hover:shadow-md cursor-pointer shrink-0"
+                        className="px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-2xs hover:shadow-md cursor-pointer shrink-0"
                       >
                         Add
                       </button>
@@ -1632,7 +1632,7 @@ export function SingleCatalogWizard({
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 rounded-2xl brand-gradient text-white font-extrabold text-sm shadow-md hover:shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                className="w-full py-3.5 rounded-2xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm rounded-xl shadow-xs shadow-md hover:shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
               >
                 {submitting ? (
                   <>

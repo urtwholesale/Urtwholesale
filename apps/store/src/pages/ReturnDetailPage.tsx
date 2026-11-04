@@ -102,11 +102,7 @@ export function ReturnDetailPage() {
         </p>
         <Link
           to="/returns"
-          style={{
-            background: "var(--brand-gradient)",
-            boxShadow: "var(--brand-shadow)",
-          }}
-          className="inline-block px-5 py-2.5 rounded-xl text-white font-bold text-xs transition hover:opacity-95"
+          className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all"
         >
           View All Returns
         </Link>

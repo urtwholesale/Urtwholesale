@@ -162,10 +162,7 @@ export function StoreMenuDrawer({
                   }`}
                 >
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 shadow-xs"
-                    style={{
-                      background: "var(--brand-gradient)",
-                    }}
+                    className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-black text-sm shrink-0 shadow-xs"
                   >
                     {(profile?.full_name || user?.email || "U")[0]?.toUpperCase()}
                   </div>
@@ -198,7 +195,7 @@ export function StoreMenuDrawer({
                   <button
                     type="button"
                     onClick={() => handleNavigate("/account")}
-                    className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-brand-dark dark:text-brand-light bg-sky-50 dark:bg-orange-500/15 hover:bg-sky-100 dark:hover:bg-orange-500/25 transition cursor-pointer shrink-0 border border-sky-100 dark:border-orange-500/30"
+                    className="h-9 px-3.5 rounded-xl text-xs font-semibold text-primary bg-primary-soft border border-primary-border hover:bg-primary-soft/70 shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer shrink-0"
                   >
                     {t("nav.account")}
                   </button>
@@ -206,10 +203,7 @@ export function StoreMenuDrawer({
                   <button
                     type="button"
                     onClick={() => setShowAuthForm(true)}
-                    className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-white shadow-2xs hover:opacity-90 transition cursor-pointer shrink-0"
-                    style={{
-                      background: "var(--brand-gradient)",
-                    }}
+                    className="h-9 px-3.5 rounded-xl text-xs font-semibold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer shrink-0"
                   >
                     {isHindi ? "लॉगिन" : "Login"}
                   </button>
@@ -238,10 +232,7 @@ export function StoreMenuDrawer({
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-white shadow-xs transition active:scale-95 cursor-pointer"
-                  style={{
-                    background: "var(--brand-gradient)",
-                  }}
+                  className="h-9 px-3 rounded-xl text-xs font-semibold bg-primary-soft text-primary border border-primary-border hover:bg-primary-soft/70 shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
                 >
                   {isDark
                     ? (isHindi ? "लाइट मोड" : "Light Mode")
@@ -267,10 +258,7 @@ export function StoreMenuDrawer({
                 <button
                   type="button"
                   onClick={toggleLanguage}
-                  className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-white shadow-xs transition active:scale-95 cursor-pointer"
-                  style={{
-                    background: "var(--brand-gradient)",
-                  }}
+                  className="h-9 px-3 rounded-xl text-xs font-semibold bg-primary-soft text-primary border border-primary-border hover:bg-primary-soft/70 shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
                 >
                   {isHindi ? "English" : "हिन्दी"}
                 </button>
@@ -659,10 +647,7 @@ export function StoreMenuDrawer({
                   <button
                     type="button"
                     onClick={() => setShowAuthForm(true)}
-                    className="w-full py-3.5 px-4 rounded-2xl text-white font-extrabold text-xs flex items-center justify-center space-x-2 shadow-md hover:opacity-95 transition active:scale-[0.99] cursor-pointer"
-                    style={{
-                      background: "var(--brand-gradient, linear-gradient(to bottom, #5ADBE5, #0A82A8))",
-                    }}
+                    className="w-full py-3.5 px-4 rounded-2xl text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs flex items-center justify-center space-x-2 shadow-xs transition active:scale-[0.99] cursor-pointer"
                   >
                     <LogIn className="w-4 h-4" />
                     <span>

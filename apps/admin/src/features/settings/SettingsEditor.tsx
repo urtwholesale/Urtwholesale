@@ -479,7 +479,7 @@ export function SettingsEditor() {
             disabled={saving}
             className="py-2.5 px-6 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
             style={{
-              background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+              /* solid brand */
             }}
           >
             {saving ? (
@@ -641,7 +641,7 @@ export function SettingsEditor() {
               disabled={credSaving}
               className="py-2.5 px-6 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
               style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                /* solid brand */
               }}
             >
               {credSaving ? (

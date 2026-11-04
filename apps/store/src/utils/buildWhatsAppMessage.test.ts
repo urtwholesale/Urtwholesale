@@ -174,4 +174,37 @@ describe("buildWhatsAppMessage", () => {
 
     expect(msg).toContain("https://store.urbanrat.in/order/URT-261102-TOKEN?t=a1b2c3d4e5f67890");
   });
+
+  it("adds Coupon and Discount lines when a coupon is used", () => {
+    const msg = buildWhatsAppMessage({
+      orderId: "URT-COUPON-TEST",
+      items: sampleItems,
+      subtotal: 2790,
+      couponCode: "SAVE500",
+      discountAmount: 500,
+      shipping: "FREE",
+      total: 2290,
+      customer: sampleCustomer,
+      siteUrl: "https://urtwholesale.com",
+    });
+
+    expect(msg).toContain("Coupon: SAVE500");
+    expect(msg).toContain("Discount: -\u20B9500");
+    expect(msg).toContain("*Total: \u20B92,290*");
+  });
+
+  it("does not include Coupon or Discount line when no coupon is applied", () => {
+    const msg = buildWhatsAppMessage({
+      orderId: "URT-NO-COUPON",
+      items: sampleItems,
+      subtotal: 2790,
+      shipping: "FREE",
+      total: 2790,
+      customer: sampleCustomer,
+    });
+
+    expect(msg).not.toContain("Coupon:");
+    expect(msg).not.toContain("Discount:");
+    expect(msg).toContain("*Total: \u20B92,790*");
+  });
 });

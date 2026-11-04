@@ -1,4 +1,5 @@
 import type { PriceTier } from "./types/pricing";
+import type { CartSummary } from "./types/cart";
 
 export interface NextTierResult {
   tier: PriceTier;
@@ -70,4 +71,42 @@ export function getTierRanges(tiers: PriceTier[]): string[] {
     }
     return `${tier.min_qty}-${maxQty}`;
   });
+}
+
+export interface CalculateCartSummaryOptions {
+  items: Array<{ price: number; quantity: number }>;
+  shipping?: number;
+  couponDiscount?: number;
+  couponCode?: string;
+}
+
+/**
+ * Calculates a consolidated CartSummary including subtotal, discount, shipping, and totals.
+ */
+export function calculateCartSummary(options: CalculateCartSummaryOptions): CartSummary {
+  const items = options.items || [];
+  const itemsCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const shipping = options.shipping || 0;
+  const rawDiscount = options.couponDiscount || 0;
+  const discountAmount = Math.min(Math.max(0, rawDiscount), subtotal);
+  const totalBeforeDiscount = Math.round((subtotal + shipping + Number.EPSILON) * 100) / 100;
+  const total = Math.round((Math.max(0, subtotal - discountAmount) + shipping + Number.EPSILON) * 100) / 100;
+
+  return {
+    itemsCount,
+    subtotal: Math.round((subtotal + Number.EPSILON) * 100) / 100,
+    shipping,
+    discountAmount: Math.round((discountAmount + Number.EPSILON) * 100) / 100,
+    totalBeforeDiscount,
+    total,
+    ...(options.couponCode && discountAmount > 0
+      ? {
+          coupon: {
+            code: options.couponCode,
+            discountAmount: Math.round((discountAmount + Number.EPSILON) * 100) / 100,
+          },
+        }
+      : {}),
+  };
 }

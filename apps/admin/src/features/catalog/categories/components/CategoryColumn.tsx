@@ -152,7 +152,7 @@ export function CategoryColumn({
                 }}
                 className={`group relative rounded-2xl p-3 transition-all cursor-pointer border flex flex-col justify-between ${
                   isSelected
-                    ? "bg-linear-to-r from-sky-50 via-teal-50/70 to-white text-slate-900 border-brand-dark/40 ring-1 ring-brand-dark/25 shadow-xs"
+                    ? "bg-primary-soft text-primary border-primary ring-2 ring-ring/30 shadow-xs"
                     : "bg-white hover:bg-slate-50/90 text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-2xs"
                 }`}
               >

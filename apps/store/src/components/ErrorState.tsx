@@ -31,10 +31,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 inline-flex items-center space-x-2 px-5 py-2.5 rounded-full text-xs font-bold text-white shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer"
-          style={{
-            background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-          }}
+          className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Retry</span>

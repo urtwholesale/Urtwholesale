@@ -544,8 +544,7 @@ export function ImageCompressorTool() {
               <button
                 type="button"
                 onClick={handleDownload}
-                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xs hover:opacity-95 active:scale-95 transition cursor-pointer"
-                style={{ background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }}
+                className="h-11 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 <span>Download Optimized File</span>

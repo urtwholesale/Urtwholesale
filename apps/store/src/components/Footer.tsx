@@ -39,7 +39,7 @@ export function Footer() {
   return (
     <footer
       aria-label="Site Footer"
-      className="w-full bg-slate-900 dark:bg-slate-950 text-slate-300 border-t border-slate-800 pt-12 pb-28 md:pb-12 mt-auto transition-colors select-none"
+      className="hidden md:block w-full bg-slate-900 dark:bg-slate-950 text-slate-300 border-t border-slate-800 py-12 mt-auto transition-colors select-none"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* ── 1. Top Wholesale Value Pillars (Trust Ribbon) ── */}
@@ -431,7 +431,7 @@ export function Footer() {
                 onClick={() => setLanguage("en")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer ${
                   !isHindi
-                    ? "bg-cyan-500 text-white shadow-xs"
+                    ? "bg-primary text-on-primary shadow-xs"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -442,7 +442,7 @@ export function Footer() {
                 onClick={() => setLanguage("hi")}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer ${
                   isHindi
-                    ? "bg-cyan-500 text-white shadow-xs"
+                    ? "bg-primary text-on-primary shadow-xs"
                     : "text-slate-400 hover:text-white"
                 }`}
               >

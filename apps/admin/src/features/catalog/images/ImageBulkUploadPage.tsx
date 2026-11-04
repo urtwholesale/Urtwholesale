@@ -707,7 +707,7 @@ export function ImageBulkUploadPage() {
                     </div>
                     <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                       <div
-                        className="h-full brand-gradient transition-all duration-300"
+                        className="h-full bg-primary transition-all duration-300"
                         style={{
                           width: `${(uploadStats.completed / Math.max(1, uploadStats.total)) * 100}%`,
                         }}
@@ -844,7 +844,7 @@ export function ImageBulkUploadPage() {
                     type="button"
                     disabled={isUploading || queue.filter((q) => q.status === "queued" || q.status === "failed").length === 0}
                     onClick={handleBatchUpload}
-                    className="px-6 py-2.5 rounded-xl brand-gradient text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs sm:text-sm rounded-xl shadow-xs shadow-md hover:shadow-lg transition-all flex items-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     {isUploading ? (
                       <>
@@ -904,7 +904,7 @@ export function ImageBulkUploadPage() {
                     <button
                       type="button"
                       onClick={handleDownloadExcelSheet}
-                      className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shadow-2xs active:scale-95"
+                      className="px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs flex items-center space-x-1 cursor-pointer shadow-2xs active:scale-95"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download .xlsx</span>
@@ -1261,7 +1261,7 @@ export function ImageBulkUploadPage() {
                   <button
                     type="button"
                     onClick={handleCopySelectedLibrary}
-                    className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shadow-2xs hover:opacity-95"
+                    className="px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs flex items-center space-x-1 cursor-pointer shadow-2xs hover:opacity-95"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Copy {selectedLibraryIds.size} Selected</span>
@@ -1485,7 +1485,7 @@ export function ImageBulkUploadPage() {
             <button
               type="button"
               onClick={() => setShowHowToModal(false)}
-              className="w-full py-2.5 rounded-xl brand-gradient text-white text-xs font-bold cursor-pointer shadow-md"
+              className="w-full py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs cursor-pointer shadow-md"
             >
               Got it, let's upload
             </button>

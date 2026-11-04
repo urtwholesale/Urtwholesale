@@ -4,6 +4,7 @@ import { AdminLogin } from "./features/auth/AdminLogin";
 import { DashboardOverview } from "./features/dashboard/DashboardOverview";
 import { ProductList } from "./features/products";
 import { OrderList } from "./features/orders/OrderList";
+import { CouponList } from "./features/coupons";
 import { ReturnsHome } from "./features/returns";
 import { ContentEditor } from "./features/content/ContentEditor";
 import { SettingsEditor } from "./features/settings/SettingsEditor";
@@ -35,6 +36,7 @@ import {
   RotateCcw,
   ImageIcon,
   Star,
+  Ticket,
 } from "lucide-react";
 import { AdminNavigationDock } from "./components/AdminNavigationDock";
 import { initGlobalHaptics, triggerHaptic } from "./utils/haptics";
@@ -46,6 +48,7 @@ type NavTab =
   | "image_bulk_upload"
   | "products"
   | "orders"
+  | "coupons"
   | "returns"
   | "reviews"
   | "content"
@@ -55,6 +58,7 @@ export default function App() {
   const [adminProfile, setAdminProfile] = useState<Profile | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
+  const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveSyncEnabled, setLiveSyncEnabled] = useState(true);
   const [counts, setCounts] = useState<{
@@ -72,6 +76,14 @@ export default function App() {
   useEffect(() => {
     const cleanup = initGlobalHaptics();
     return cleanup;
+  }, []);
+
+  useEffect(() => {
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    if (path.includes("/coupons") || hash === "#coupons") {
+      setActiveTab("coupons");
+    }
   }, []);
 
   useEffect(() => {
@@ -145,6 +157,11 @@ export default function App() {
 
   function handleNavClick(tab: NavTab) {
     setActiveTab(tab);
+    if (tab === "coupons") {
+      window.history.replaceState(null, "", "#coupons");
+    } else if (window.location.hash === "#coupons") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     setMobileMenuOpen(false);
   }
 
@@ -199,6 +216,10 @@ export default function App() {
     orders: {
       title: "Orders & Fulfillment",
       subtitle: "Strict RPC Status Workflow, GST Tax Invoices & Order Timeline",
+    },
+    coupons: {
+      title: "Coupons & Discounts",
+      subtitle: "Promotional campaigns, checkout discounts & redemption tracking",
     },
     returns: {
       title: "Return & RTO Orders",
@@ -587,6 +608,44 @@ export default function App() {
                     </div>
                   </button>
 
+                  {/* Coupons */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick("coupons")}
+                    className={`w-full flex items-center justify-between p-3 hover:bg-slate-50 transition text-left cursor-pointer ${
+                      activeTab === "coupons" ? "bg-slate-50/80" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          activeTab === "coupons"
+                            ? "bg-brand-dark text-white shadow-2xs"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <Ticket className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Coupons
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Discounts &amp; promotions
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {activeTab === "coupons" ? (
+                        <span className="text-[10px] font-bold text-brand-dark bg-brand-light/20 px-2 py-0.5 rounded-full">
+                          Active
+                        </span>
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
+
                   {/* Returns */}
                   <button
                     type="button"
@@ -773,7 +832,7 @@ export default function App() {
                   <div
                     className={`relative w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
                       liveSyncEnabled
-                        ? "bg-linear-to-b from-brand-light/20 to-brand-dark/20 text-brand-dark border border-brand-light/40"
+                        ? "bg-primary text-on-primary font-semibold shadow-xs"
                         : "bg-slate-100 text-slate-400 border border-slate-200"
                     }`}
                   >
@@ -837,8 +896,7 @@ export default function App() {
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <div className="flex items-center space-x-2.5 min-w-0">
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs"
-                    style={{ background: "linear-gradient(135deg, #5ADBE5, #0A82A8)" }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-primary text-on-primary font-black text-xs shrink-0 shadow-xs"
                   >
                     {adminProfile.full_name
                       ? adminProfile.full_name
@@ -1112,6 +1170,31 @@ export default function App() {
                 )}
               </button>
 
+              {/* Coupons */}
+              <button
+                type="button"
+                onClick={() => handleNavClick("coupons")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "coupons"
+                    ? "bg-[#0B1E28] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <Ticket
+                    className={`w-4 h-4 ${
+                      activeTab === "coupons" ? "text-brand-light" : "text-slate-500"
+                    }`}
+                  />
+                  <span>Coupons</span>
+                </div>
+                {activeTab === "coupons" && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-light/20 text-brand-light">
+                    Active
+                  </span>
+                )}
+              </button>
+
               {/* Returns */}
               <button
                 type="button"
@@ -1263,7 +1346,7 @@ export default function App() {
               <div
                 className={`relative w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
                   liveSyncEnabled
-                    ? "bg-linear-to-b from-brand-light/20 to-brand-dark/20 text-brand-dark border border-brand-light/40"
+                    ? "bg-primary text-on-primary font-semibold shadow-xs"
                     : "bg-slate-100 text-slate-400 border border-slate-200"
                 }`}
               >
@@ -1314,8 +1397,7 @@ export default function App() {
           <div className="flex items-center justify-between p-2 rounded-2xl bg-slate-50 border border-slate-200/60">
             <div className="flex items-center space-x-2.5 min-w-0">
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 shadow-xs"
-                style={{ background: "linear-gradient(135deg, #5ADBE5, #0A82A8)" }}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-on-primary font-black text-xs shrink-0 shadow-xs"
               >
                 {adminProfile.full_name
                   ? adminProfile.full_name
@@ -1401,7 +1483,20 @@ export default function App() {
           {activeTab === "catalog" && <CatalogUploadHome />}
           {activeTab === "image_bulk_upload" && <ImageBulkUploadPage />}
           {activeTab === "products" && <ProductList />}
-          {activeTab === "orders" && <OrderList />}
+          {activeTab === "orders" && (
+            <OrderList
+              initialOrderId={targetOrderId}
+              onClearInitialOrder={() => setTargetOrderId(null)}
+            />
+          )}
+          {activeTab === "coupons" && (
+            <CouponList
+              onSelectOrder={(orderId) => {
+                setTargetOrderId(orderId);
+                setActiveTab("orders");
+              }}
+            />
+          )}
           {activeTab === "returns" && <ReturnsHome />}
           {activeTab === "reviews" && <ReviewModerationList />}
           {activeTab === "content" && <ContentEditor />}

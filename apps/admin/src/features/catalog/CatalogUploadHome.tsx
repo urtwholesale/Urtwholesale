@@ -155,7 +155,7 @@ export function CatalogUploadHome() {
               triggerHaptic("selection");
               setActiveFlow("bulk");
             }}
-            className="px-6 py-3 rounded-2xl brand-gradient text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center space-x-2.5 cursor-pointer active:scale-95"
+            className="h-12 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Add Catalog in Bulk</span>

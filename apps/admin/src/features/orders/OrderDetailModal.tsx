@@ -38,6 +38,7 @@ import {
   Sparkles,
   Clock,
   Package,
+  Ticket,
   XCircle,
 } from "lucide-react";
 
@@ -267,12 +268,15 @@ export function OrderDetailModal({
   // 5. Print GST Invoice
   function handlePrintInvoice() {
     const safeOrderId = escapeHtml(order.id);
-    const subtotal = Number(order.subtotal || order.total || 0);
+    const subtotal = Number(order.subtotal_before_discount || order.subtotal || order.total || 0);
+    const couponCode = order.coupon_code || order.couponCode || null;
+    const discountAmount = Number(order.discount_amount || order.discountAmount || 0);
+    const effectiveSubtotal = Math.max(0, subtotal - discountAmount);
     const savings = Number(order.savings || 0);
     const shipping = Number(order.shipping || 0);
     const total = Number(order.total || 0);
-    const taxableBase = Math.round((subtotal / 1.18) * 100) / 100;
-    const gstAmount = Math.round((subtotal - taxableBase) * 100) / 100;
+    const taxableBase = Math.round((effectiveSubtotal / 1.18) * 100) / 100;
+    const gstAmount = Math.round((effectiveSubtotal - taxableBase) * 100) / 100;
     const cgst = Math.round((gstAmount / 2) * 100) / 100;
     const sgst = Math.round((gstAmount / 2) * 100) / 100;
     const invoiceDate = escapeHtml(new Date(order.created_at).toLocaleDateString("en-IN"));
@@ -356,6 +360,8 @@ export function OrderDetailModal({
           </table>
           <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
             <div style="width: 280px; font-size: 12px; line-height: 1.8;">
+              <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>₹${subtotal.toLocaleString("en-IN")}</span></div>
+              ${discountAmount > 0 ? `<div style="display: flex; justify-content: space-between; color: #0A82A8; font-weight: 600;"><span>Discount (${escapeHtml(couponCode || "COUPON")}):</span><span>-₹${discountAmount.toLocaleString("en-IN")}</span></div>` : ""}
               <div style="display: flex; justify-content: space-between;"><span>Taxable Base:</span><span>₹${taxableBase.toLocaleString("en-IN")}</span></div>
               <div style="display: flex; justify-content: space-between;"><span>CGST (9%):</span><span>₹${cgst.toLocaleString("en-IN")}</span></div>
               <div style="display: flex; justify-content: space-between;"><span>SGST (9%):</span><span>₹${sgst.toLocaleString("en-IN")}</span></div>
@@ -474,10 +480,10 @@ export function OrderDetailModal({
           )}
 
           {/* ── Customer Lifetime Stats Strip (Requirement 7) ── */}
-          <div className="p-4 rounded-2xl bg-linear-to-r from-sky-50 via-slate-50 to-indigo-50/50 border border-sky-100/80 shadow-2xs">
+          <div className="p-4 rounded-2xl bg-surface-card border border-surface-border shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-brand-light/20 text-brand-dark flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
                   <User className="w-5 h-5" />
                 </div>
                 <div>
@@ -486,7 +492,7 @@ export function OrderDetailModal({
                       {order.customer?.name || "Wholesale Buyer"}
                     </span>
                     {lifetimeStats && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-brand-dark text-white">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-primary text-on-primary">
                         {lifetimeStats.total_orders > 3 || lifetimeStats.total_spend >= 50000
                           ? "VIP Wholesale Account"
                           : lifetimeStats.total_orders > 1
@@ -770,7 +776,7 @@ export function OrderDetailModal({
                   <button
                     type="submit"
                     disabled={updatingStatus || (selectedStatus === order.status && !statusNote)}
-                    className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 bg-linear-to-b from-brand-light to-brand-dark"
+                    className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active"
                   >
                     {updatingStatus ? (
                       <>
@@ -844,9 +850,21 @@ export function OrderDetailModal({
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
                   <span className="font-bold text-slate-800">
-                    ₹{(order.subtotal || order.total).toLocaleString("en-IN")}
+                    ₹{(order.subtotal_before_discount || order.subtotal || order.total).toLocaleString("en-IN")}
                   </span>
                 </div>
+                {Boolean(order.discount_amount || order.discountAmount) && Number(order.discount_amount || order.discountAmount) > 0 && (
+                  <div className="flex justify-between items-center text-primary font-semibold">
+                    <span className="flex items-center gap-1.5">
+                      <span>Discount:</span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border">
+                        <Ticket className="w-2.5 h-2.5" />
+                        {order.coupon_code || order.couponCode || "COUPON"}
+                      </span>
+                    </span>
+                    <span>-₹{Number(order.discount_amount || order.discountAmount).toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {order.savings !== undefined && order.savings > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Wholesale Tier Savings:</span>

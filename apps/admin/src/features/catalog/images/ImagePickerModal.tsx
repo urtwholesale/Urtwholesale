@@ -349,7 +349,7 @@ export function ImagePickerModal({
               type="button"
               onClick={handleConfirm}
               disabled={selectedIds.size === 0}
-              className="px-4 py-2 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs hover:opacity-95 transition cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-1.5"
+              className="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-2xs hover:opacity-95 transition cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-1.5"
             >
               <Check className="w-3.5 h-3.5" />
               <span>

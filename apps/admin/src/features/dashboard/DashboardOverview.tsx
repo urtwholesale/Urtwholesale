@@ -95,7 +95,7 @@ export function DashboardOverview() {
               onClick={() => setDaysRange(7)}
               className={`px-3 py-1 rounded-lg transition cursor-pointer ${
                 daysRange === 7
-                  ? "bg-white text-[#0A82A8] shadow-xs"
+                  ? "bg-white text-primary shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -106,7 +106,7 @@ export function DashboardOverview() {
               onClick={() => setDaysRange(30)}
               className={`px-3 py-1 rounded-lg transition cursor-pointer ${
                 daysRange === 30
-                  ? "bg-white text-[#0A82A8] shadow-xs"
+                  ? "bg-white text-primary shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -117,7 +117,7 @@ export function DashboardOverview() {
               onClick={() => setDaysRange(90)}
               className={`px-3 py-1 rounded-lg transition cursor-pointer ${
                 daysRange === 90
-                  ? "bg-white text-[#0A82A8] shadow-xs"
+                  ? "bg-white text-primary shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -132,7 +132,7 @@ export function DashboardOverview() {
             aria-label="Refresh metrics"
             className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#0A82A8]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
           </button>
         </div>
       </div>
@@ -195,7 +195,7 @@ export function DashboardOverview() {
           <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">Orders</span>
-              <ShoppingBag className="w-4 h-4 text-[#0A82A8]" />
+              <ShoppingBag className="w-4 h-4 text-primary" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -345,7 +345,7 @@ export function DashboardOverview() {
                               className="h-full rounded-full transition-all"
                               style={{
                                 width: `${percentage}%`,
-                                background: "linear-gradient(to right, #5ADBE5, #0A82A8)",
+                                background: "var(--color-primary)",
                               }}
                             />
                           </div>

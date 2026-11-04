@@ -245,14 +245,10 @@ export function AddressFormModal({
                         triggerHaptic("selection");
                         setLabel(lbl);
                       }}
-                      style={{
-                        background: isSelected ? "var(--brand-gradient)" : undefined,
-                        boxShadow: isSelected ? "var(--brand-shadow)" : undefined,
-                      }}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         isSelected
-                          ? "text-white scale-102"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-transparent dark:border-slate-700/60"
+                          ? "bg-primary text-on-primary shadow-xs scale-102"
+                          : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle"
                       }`}
                     >
                       {lbl}
@@ -541,7 +537,7 @@ export function AddressFormModal({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
+            className="h-11 px-4 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             Cancel
           </button>
@@ -549,11 +545,7 @@ export function AddressFormModal({
             type="submit"
             form="address-form"
             disabled={submitting}
-            style={{
-              background: "var(--brand-gradient)",
-              boxShadow: "var(--brand-shadow)",
-            }}
-            className="px-5 py-2.5 rounded-xl text-white font-black text-xs transition active:scale-[0.98] shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-1.5"
+            className="h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {submitting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

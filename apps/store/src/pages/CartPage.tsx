@@ -23,6 +23,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { EmptyState } from "../components/EmptyState";
 import { AddressPicker } from "../components/AddressPicker";
+import { useCoupon } from "../hooks/useCoupon";
+import { CouponInput, CouponSavingsRow } from "../components/coupon";
 
 interface CartPageProps {
   cartItems: { product: Product; quantity: number; selectedColor?: string }[];
@@ -142,10 +144,24 @@ export function CartPage({
   );
   const displaySavings = Math.max(0, displayFirstTierTotal - displaySubtotal);
 
+  // Coupon validation hook
+  const couponItems = cartItems.map((item) => ({
+    product_id: item.product.id,
+    quantity: item.quantity,
+  }));
+
+  const coupon = useCoupon({
+    items: couponItems,
+    phone: customer.phone,
+  });
+
   const freeDeliveryMin = settings?.free_delivery_min ?? 999;
   const standardShippingFee = settings?.shipping_fee ?? 49;
   const displayShipping = displaySubtotal >= freeDeliveryMin ? 0 : standardShippingFee;
+  const couponDiscount = coupon.discountAmount || 0;
+  const discountedSubtotal = Math.max(0, displaySubtotal - couponDiscount);
   const displayTotal = displaySubtotal + displayShipping;
+  const finalEstimatedTotal = Math.max(0, discountedSubtotal + displayShipping);
 
   function handleCustomerChange(field: keyof CustomerDetails, value: string) {
     setCustomer((prev: CustomerDetails) => {
@@ -229,6 +245,7 @@ export function CartPage({
         whatsapp_message: null,
         honeypot: honeypot.trim() ? honeypot.trim() : null,
         turnstile_token: user ? null : turnstileToken,
+        couponCode: coupon.isApplied && coupon.code ? coupon.code : null,
       };
 
       // 1. Submit to server-verified order RPC
@@ -236,6 +253,7 @@ export function CartPage({
 
       // 2. Clear cart after successful creation
       onClearCart();
+      coupon.remove();
 
       // 3. Build WhatsApp message using SERVER-RETURNED totals, items and tracking token
       const targetPhone =
@@ -258,6 +276,8 @@ export function CartPage({
           subtotal: savedOrder.subtotal,
           savings: savedOrder.savings,
           shipping: savedOrder.shipping === 0 ? "FREE" : savedOrder.shipping,
+          couponCode: (savedOrder as any).coupon_code || (savedOrder as any).couponCode || (coupon.isApplied ? coupon.code : null),
+          discountAmount: (savedOrder as any).discount_amount ?? (savedOrder as any).discountAmount ?? (coupon.isApplied ? coupon.discountAmount : 0),
           total: savedOrder.total, // RETURNED by server
           customer: {
             name: savedOrder.customer?.name || customer.name.trim(),
@@ -296,12 +316,27 @@ export function CartPage({
       const tokenParam = orderPublicToken ? `?t=${encodeURIComponent(orderPublicToken)}` : "";
       navigate(`/order/${savedOrder.id}${tokenParam}`);
     } catch (err: unknown) {
-      const e = err as Error;
+      const e = err as any;
       console.error("[Cart] Checkout order creation failed:", e);
-      setErrorToast(
-        e?.message || "Failed to save order. Please check item stock and retry."
-      );
-      setTimeout(() => setErrorToast(null), 5000);
+
+      const isCouponInvalid =
+        e?.code === "COUPON_INVALID" ||
+        (typeof e?.message === "string" && e.message.includes("COUPON_INVALID"));
+
+      if (isCouponInvalid) {
+        // Drop coupon from state and sessionStorage so totals auto-recalculate
+        coupon.remove();
+        const displayMsg = e?.message
+          ? e.message.replace(/^COUPON_INVALID:\s*/i, "")
+          : "The applied coupon is invalid or has expired. Cart totals have been updated.";
+        setErrorToast(displayMsg);
+        setTimeout(() => setErrorToast(null), 6000);
+      } else {
+        setErrorToast(
+          e?.message || "Failed to save order. Please check item stock and retry."
+        );
+        setTimeout(() => setErrorToast(null), 5000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -637,6 +672,18 @@ export function CartPage({
                 )}
               </div>
             </div>
+
+            {/* Coupon Code in Checkout / Customer Details Section */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <CouponInput
+                onApply={coupon.apply}
+                isLoading={coupon.isLoading}
+                error={coupon.error}
+                appliedCode={coupon.code}
+                savedAmount={coupon.discountAmount}
+                onRemove={coupon.remove}
+              />
+            </div>
           </div>
         </div>
 
@@ -650,6 +697,16 @@ export function CartPage({
               {t("cart.order_summary_sub")}
             </p>
           </div>
+
+          {/* Coupon Input in Order Summary */}
+          <CouponInput
+            onApply={coupon.apply}
+            isLoading={coupon.isLoading}
+            error={coupon.error}
+            appliedCode={coupon.code}
+            savedAmount={coupon.discountAmount}
+            onRemove={coupon.remove}
+          />
 
           <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex justify-between">
@@ -666,6 +723,13 @@ export function CartPage({
               </div>
             )}
 
+            {coupon.isApplied && coupon.discountAmount > 0 && (
+              <CouponSavingsRow
+                code={coupon.code}
+                discountAmount={coupon.discountAmount}
+              />
+            )}
+
             <div className="flex justify-between">
               <span>{t("cart.shipping")}</span>
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
@@ -678,9 +742,16 @@ export function CartPage({
             <span className="font-black text-sm text-slate-900 dark:text-white">
               {t("cart.estimated_total")}
             </span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">
-              ₹{displayTotal.toLocaleString("en-IN")}
-            </span>
+            <div className="flex items-baseline space-x-2 text-right">
+              {coupon.isApplied && coupon.discountAmount > 0 && (
+                <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 line-through decoration-danger/60 font-semibold">
+                  ₹{displayTotal.toLocaleString("en-IN")}
+                </span>
+              )}
+              <span className="text-xl font-black text-slate-900 dark:text-white">
+                ₹{finalEstimatedTotal.toLocaleString("en-IN")}
+              </span>
+            </div>
           </div>
 
           <div className="pt-2 space-y-2">
@@ -698,12 +769,12 @@ export function CartPage({
               </div>
             )}
 
-            {/* WhatsApp Checkout */}
+            {/* WhatsApp Checkout (Keeps WhatsApp green as intentional exception) */}
             <button
               type="button"
               onClick={handleCheckout}
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center space-x-2 py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99] cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#1da851] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-base shadow-xs focus-visible:ring-2 ring-emerald-500 ring-offset-2 transition-all cursor-pointer"
             >
               {isSubmitting ? (
                 <>

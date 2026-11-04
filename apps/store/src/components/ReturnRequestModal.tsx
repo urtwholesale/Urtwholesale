@@ -300,9 +300,8 @@ export function ReturnRequestModal({
             </div>
             <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
-                className="h-full transition-all duration-300"
+                className="h-full bg-primary transition-all duration-300"
                 style={{
-                  background: "var(--brand-gradient)",
                   width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
                 }}
               />
@@ -720,11 +719,7 @@ export function ReturnRequestModal({
                     onClose();
                     navigate(`/returns/${createdReturn.id}`);
                   }}
-                  style={{
-                    background: "var(--brand-gradient)",
-                    boxShadow: "var(--brand-shadow)",
-                  }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-white text-xs font-bold transition hover:opacity-95 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold shadow-xs transition cursor-pointer"
                 >
                   View Return Details
                 </button>
@@ -761,7 +756,7 @@ export function ReturnRequestModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
+                className="h-11 px-4 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -771,11 +766,7 @@ export function ReturnRequestModal({
               <button
                 type="button"
                 onClick={handleNextToStep2}
-                style={{
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }}
-                className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-sm hover:opacity-95 transition cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
               >
                 <span>Continue ({selectedEntries.length} items)</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -786,11 +777,7 @@ export function ReturnRequestModal({
               <button
                 type="button"
                 onClick={handleNextToStep3}
-                style={{
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }}
-                className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-sm hover:opacity-95 transition cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
               >
                 <span>Add Evidence</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -802,11 +789,7 @@ export function ReturnRequestModal({
                 type="button"
                 onClick={handleSubmitReturn}
                 disabled={submitting}
-                style={{
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }}
-                className="inline-flex items-center space-x-1.5 px-6 py-2.5 rounded-xl text-white font-black text-xs shadow-sm hover:opacity-95 disabled:opacity-50 transition cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 h-11 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>

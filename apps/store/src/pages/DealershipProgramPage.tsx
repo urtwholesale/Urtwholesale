@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSettings } from "../context/SettingsContext";
+import { useLanguage } from "../context/LanguageContext";
 import { triggerHaptic } from "../utils/haptics";
 import type {
   DealershipTierMargin,
@@ -364,6 +365,7 @@ const FAQ_ITEMS = [
 export function DealershipProgramPage() {
   const navigate = useNavigate();
   const { whatsappNumber } = useSettings();
+  const { isHindi } = useLanguage();
 
   // Live Database States
   const [articles, setArticles] = useState<DealershipArticle[]>(FALLBACK_ARTICLES);
@@ -422,16 +424,16 @@ export function DealershipProgramPage() {
           className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 px-3.5 py-1.5 rounded-full shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back</span>
+          <span>{isHindi ? "पीछे जाएं" : "Back"}</span>
         </button>
 
         <div className="flex items-center space-x-2">
           <Link
             to="/dealers"
             onClick={() => triggerHaptic("selection")}
-            className="inline-flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white bg-brand-gradient shadow-xs hover:opacity-95 transition"
+            className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all"
           >
-            <span>Apply for Dealership</span>
+            <span>{isHindi ? "डीलरशिप के लिए आवेदन करें" : "Apply for Dealership"}</span>
             <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
           </Link>
         </div>
@@ -446,11 +448,13 @@ export function DealershipProgramPage() {
         <div className="relative space-y-4 max-w-3xl">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-brand-light/20 dark:bg-orange-500/20 text-brand-dark dark:text-orange-300 border border-brand/20 dark:border-orange-500/30">
             <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Official B2B Dealership &amp; Distribution Program</span>
+            <span>{isHindi ? "आधिकारिक B2B डीलरशिप एवं वितरण कार्यक्रम" : "Official B2B Dealership & Distribution Program"}</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            URT Wholesale Dealership: High-Margin Mobile Accessories Direct from Central Depots
+            {isHindi
+              ? "URT होलसेल डीलरशिप: सीधे सेंट्रल डिपो से हाई-मार्जिन मोबाइल एक्सेसरीज"
+              : "URT Wholesale Dealership: High-Margin Mobile Accessories Direct from Central Depots"}
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
@@ -463,9 +467,9 @@ export function DealershipProgramPage() {
             <Link
               to="/dealers"
               onClick={() => triggerHaptic("selection")}
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-black text-white bg-brand-gradient shadow-md hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active shadow-xs hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
             >
-              <span>Apply for Dealership Now</span>
+              <span>{isHindi ? "अभी डीलरशिप के लिए आवेदन करें" : "Apply for Dealership Now"}</span>
               <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </Link>
 
@@ -473,14 +477,14 @@ export function DealershipProgramPage() {
               href="#visual-tree"
               className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
             >
-              <span>Branded vs Copy Diagram ↓</span>
+              <span>{isHindi ? "ब्रांडेड बनाम कॉपी आरेख ↓" : "Branded vs Copy Diagram ↓"}</span>
             </a>
 
             <a
               href="#differentiation-table"
               className="inline-flex items-center space-x-2 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold text-brand-dark dark:text-brand-light bg-brand/10 dark:bg-orange-500/10 border border-brand/20 dark:border-orange-500/20 hover:bg-brand/15 transition"
             >
-              <span>Dealer vs Normal Perks ↓</span>
+              <span>{isHindi ? "डीलर लाभ तालिका ↓" : "Dealer vs Normal Perks ↓"}</span>
             </a>
           </div>
         </div>
@@ -562,12 +566,12 @@ export function DealershipProgramPage() {
             <div className="hidden md:block absolute top-0 left-1/4 right-1/4 h-0.5 bg-slate-200 dark:bg-slate-700 -mt-3" />
 
             {/* Branch 1: Branded Item Dealership */}
-            <div className="rounded-3xl border-2 border-brand/30 dark:border-orange-500/30 p-5 sm:p-6 bg-linear-to-b from-brand-light/5 to-transparent dark:from-orange-500/5 dark:to-transparent space-y-4">
+            <div className="rounded-3xl border-2 border-primary-border p-5 sm:p-6 bg-primary-soft/30 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-dark text-white">
                   PATH A: BRANDED ORIGINAL
                 </span>
-                <span className="text-xs font-bold text-brand-dark dark:text-orange-400">
+                <span className="text-xs font-bold text-primary">
                   ₹599 – ₹1,499 Ticket Size
                 </span>
               </div>
@@ -583,19 +587,19 @@ export function DealershipProgramPage() {
 
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/10 text-xs">
                 <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300 font-medium">
-                  <Check className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span><strong>Packaging:</strong> Premium metallic retail hard-box with security QR seal</span>
                 </div>
                 <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300 font-medium">
-                  <Check className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span><strong>Warranty:</strong> 1-Year unconditional 1-to-1 over-the-counter swap</span>
                 </div>
                 <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300 font-medium">
-                  <Check className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span><strong>Customer Base:</strong> Premium phone buyers &amp; quality repeat customers</span>
                 </div>
                 <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300 font-medium">
-                  <Check className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span><strong>Marketing:</strong> Free acrylic counter stands, display dummies &amp; posters</span>
                 </div>
               </div>
@@ -653,7 +657,7 @@ export function DealershipProgramPage() {
           <article className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-xs flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand/10 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 border border-brand/20 dark:border-orange-500/20">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand/10 dark:bg-orange-500/15 text-primary border border-brand/20 dark:border-orange-500/20">
                   {brandedArticle.badge}
                 </span>
                 <span className="text-[11px] font-bold text-slate-400">
@@ -679,7 +683,7 @@ export function DealershipProgramPage() {
                 </p>
                 {brandedArticle.key_points.map((pt, idx) => (
                   <div key={idx} className="flex items-start space-x-2 text-xs text-slate-700 dark:text-slate-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                     <span>{pt}</span>
                   </div>
                 ))}
@@ -818,7 +822,7 @@ export function DealershipProgramPage() {
                     <span
                       className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                         isBranded
-                          ? "bg-cyan-50 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 border-cyan-200 dark:border-orange-500/30"
+                          ? "bg-cyan-50 dark:bg-orange-500/15 text-primary border-cyan-200 dark:border-orange-500/30"
                           : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/40"
                       }`}
                     >
@@ -907,7 +911,7 @@ export function DealershipProgramPage() {
                           <Check
                             className={`w-3.5 h-3.5 shrink-0 ${
                               isBranded
-                                ? "text-brand-dark dark:text-orange-400"
+                                ? "text-primary"
                                 : "text-amber-600 dark:text-amber-400"
                             }`}
                           />
@@ -1055,7 +1059,7 @@ export function DealershipProgramPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-5 shadow-xs space-y-2">
-            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 font-black text-sm flex items-center justify-center">
+            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-primary font-black text-sm flex items-center justify-center">
               01
             </span>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -1067,7 +1071,7 @@ export function DealershipProgramPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-5 shadow-xs space-y-2">
-            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 font-black text-sm flex items-center justify-center">
+            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-primary font-black text-sm flex items-center justify-center">
               02
             </span>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -1079,7 +1083,7 @@ export function DealershipProgramPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-5 shadow-xs space-y-2">
-            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 font-black text-sm flex items-center justify-center">
+            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-primary font-black text-sm flex items-center justify-center">
               03
             </span>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -1091,7 +1095,7 @@ export function DealershipProgramPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-5 shadow-xs space-y-2">
-            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 font-black text-sm flex items-center justify-center">
+            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-primary font-black text-sm flex items-center justify-center">
               04
             </span>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -1103,7 +1107,7 @@ export function DealershipProgramPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-white/10 p-5 shadow-xs space-y-2">
-            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-brand-dark dark:text-orange-400 font-black text-sm flex items-center justify-center">
+            <span className="w-8 h-8 rounded-xl bg-brand/10 dark:bg-orange-500/15 text-primary font-black text-sm flex items-center justify-center">
               05
             </span>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -1181,7 +1185,7 @@ export function DealershipProgramPage() {
             </span>
             <Link
               to="/dealers"
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-black text-white bg-brand-gradient shadow-xs hover:opacity-95 transition"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active shadow-xs transition"
             >
               <span>Unlock Dealer Benefits Today</span>
               <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />

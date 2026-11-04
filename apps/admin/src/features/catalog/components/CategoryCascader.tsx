@@ -427,7 +427,7 @@ export function CategoryCascader({
           <button
             type="button"
             onClick={() => onSelectCategory(activeLeafCategory, activeBreadcrumb)}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl brand-gradient text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 shrink-0"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs rounded-xl shadow-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 shrink-0"
           >
             <span>{actionButtonLabel}</span>
             <ArrowRight className="w-4 h-4" />

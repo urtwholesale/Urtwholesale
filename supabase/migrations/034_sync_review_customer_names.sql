@@ -63,3 +63,4 @@ EXECUTE FUNCTION public.propagate_profile_name_to_reviews();
 
 -- Refresh PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
+

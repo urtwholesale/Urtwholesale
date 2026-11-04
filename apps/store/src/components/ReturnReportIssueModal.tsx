@@ -117,11 +117,7 @@ Please arrange a replacement / credit under the 1-Year Wholesale Warranty.`;
                 <button
                   type="button"
                   onClick={onClose}
-                  style={{
-                    background: "var(--brand-gradient)",
-                    boxShadow: "var(--brand-shadow)",
-                  }}
-                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs transition cursor-pointer hover:opacity-95"
+                  className="h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
                 >
                   Done
                 </button>
@@ -234,7 +230,7 @@ Please arrange a replacement / credit under the 1-Year Wholesale Warranty.`;
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
+              className="h-11 px-4 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
             >
               Cancel
             </button>

@@ -21,12 +21,16 @@ import type {
   Review,
   PromoCode,
   ValidatePromoCodeResult,
+  CouponValidationResult,
 } from "@urbanrat/shared";
 import {
   normalizeSearchQuery,
   generateSearchVariants,
   sanitizeText,
   validateReviewContent,
+  normalizeCouponCode,
+  mapCouponErrorMessage,
+  DEFAULT_HOMEPAGE_SECTIONS,
 } from "@urbanrat/shared";
 import * as addressService from "./addressService";
 
@@ -763,6 +767,8 @@ export interface CreateOrderInput {
   honeypot?: string | null;
   turnstile_token?: string | null;
   promo_code?: string | null;
+  coupon_code?: string | null;
+  couponCode?: string | null;
 }
 
 /**
@@ -780,6 +786,12 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     selected_color: item.selected_color || null,
   }));
 
+  const rawCoupon = input.couponCode ?? input.coupon_code ?? null;
+  const couponCode =
+    rawCoupon && typeof rawCoupon === "string" && rawCoupon.trim()
+      ? rawCoupon.trim().toUpperCase()
+      : null;
+
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session?.user) {
@@ -790,10 +802,14 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       p_whatsapp_message: input.whatsapp_message || null,
       p_honeypot: input.honeypot || null,
       p_promo_code: input.promo_code || null,
+      p_coupon_code: couponCode,
     });
 
     if (error) {
-      throw new StoreError(error.message, error.code, error);
+      const isCouponInvalid =
+        (typeof error.message === "string" && error.message.includes("COUPON_INVALID")) ||
+        error.code === "COUPON_INVALID";
+      throw new StoreError(error.message, isCouponInvalid ? "COUPON_INVALID" : error.code, error);
     }
     return data as Order;
   } else {
@@ -807,14 +823,39 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         honeypot: input.honeypot || null,
         turnstile_token: input.turnstile_token || null,
         promo_code: input.promo_code || null,
+        couponCode: couponCode,
       },
     });
 
     if (error) {
-      throw new StoreError(error.message, error.code, error);
+      let parsedBody: any = null;
+      try {
+        if ((error as any)?.context && typeof (error as any).context.json === "function") {
+          parsedBody = await (error as any).context.json();
+        }
+      } catch {
+        // ignore
+      }
+      const errMsg = parsedBody?.error || error.message;
+      const isCouponInvalid =
+        parsedBody?.code === "COUPON_INVALID" ||
+        (typeof errMsg === "string" && errMsg.includes("COUPON_INVALID"));
+      throw new StoreError(
+        errMsg,
+        isCouponInvalid ? "COUPON_INVALID" : "CHECKOUT_GATE_ERROR",
+        parsedBody || error
+      );
     }
     if ((data as any)?.error) {
-      throw new StoreError((data as any).error);
+      const errMsg = (data as any).error;
+      const isCouponInvalid =
+        (data as any).code === "COUPON_INVALID" ||
+        (typeof errMsg === "string" && errMsg.includes("COUPON_INVALID"));
+      throw new StoreError(
+        errMsg,
+        isCouponInvalid ? "COUPON_INVALID" : "CHECKOUT_GATE_ERROR",
+        data
+      );
     }
     return data as Order;
   }
@@ -1050,6 +1091,7 @@ export async function getSettings(): Promise<StoreSettings> {
         tagline: "Factory Direct Wholesale Mobile Gear",
         currency: "₹",
       },
+      homepage_sections: DEFAULT_HOMEPAGE_SECTIONS,
     };
 
     if (data) {
@@ -1079,6 +1121,8 @@ export async function getSettings(): Promise<StoreSettings> {
           if (!isNaN(parsed) && parsed > 0) {
             defaultSettings.max_order_qty = parsed;
           }
+        } else if (row.key === "homepage_sections" && Array.isArray(row.value)) {
+          defaultSettings.homepage_sections = row.value;
         }
       });
     }
@@ -1848,16 +1892,13 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
 
   let remoteReviews: Review[] = [];
   try {
-    // Select all reviews that are STRICTLY approved
-    const { data, error } = await supabase
-      .from("reviews")
-      .select("*")
-      .eq("product_id", productId)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false });
+    // 1. Try secure RPC that joins with profiles to retrieve actual customer names
+    const { data: rpcData, error: rpcError } = await supabase.rpc("get_product_reviews", {
+      p_product_id: productId,
+    });
 
-    if (!error && data) {
-      remoteReviews = (data as any[]).map((r) => {
+    if (!rpcError && Array.isArray(rpcData)) {
+      remoteReviews = (rpcData as any[]).map((r) => {
         let cleanBody = r.body || "";
         let author = r.user_name && r.user_name !== "Verified Wholesale Buyer" ? r.user_name : "";
         if (cleanBody) {
@@ -1873,9 +1914,39 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
         return {
           ...r,
           body: cleanBody || null,
-          user_name: author || r.user_name || "Verified Wholesale Buyer",
+          user_name: author || r.user_name || "Wholesale Customer",
         };
       });
+    } else {
+      // 2. Fallback to direct reviews query
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*")
+        .eq("product_id", productId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        remoteReviews = (data as any[]).map((r) => {
+          let cleanBody = r.body || "";
+          let author = r.user_name && r.user_name !== "Verified Wholesale Buyer" ? r.user_name : "";
+          if (cleanBody) {
+            const match = cleanBody.match(/\n*-- Reviewer:\s*([^\n]+)/);
+            if (match && !author) {
+              author = match[1].trim();
+            }
+            cleanBody = cleanBody
+              .replace(/\n*-- Reviewer:\s*[^\n]+/g, "")
+              .replace(/\n*-- Verified Order:\s*[^\n]+/g, "")
+              .trim();
+          }
+          return {
+            ...r,
+            body: cleanBody || null,
+            user_name: author || r.user_name || "Wholesale Customer",
+          };
+        });
+      }
     }
   } catch (err) {
     console.warn("Could not fetch remote reviews, using local fallback:", err);
@@ -1928,5 +1999,57 @@ export async function submitDealerApplication(formData: Record<string, any>): Pr
   }
 
   return data as { application_no: string; created_at: string; public_token?: string | null };
+}
+
+/**
+ * Validate a coupon code for current cart items & optional customer phone
+ */
+export async function validateCoupon(
+  code: string,
+  items: Array<{ product_id: string; quantity: number }>,
+  phone?: string | null
+): Promise<CouponValidationResult> {
+  ensureConfigured();
+
+  const normalizedCode = normalizeCouponCode(code);
+  if (!normalizedCode) {
+    return {
+      valid: false,
+      message: "Please enter a coupon code",
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("validate_coupon", {
+      p_code: normalizedCode,
+      p_items: items,
+      p_phone: phone || null,
+    });
+
+    if (error) {
+      return {
+        valid: false,
+        message: mapCouponErrorMessage(error.message),
+      };
+    }
+
+    if (!data) {
+      return {
+        valid: false,
+        message: "Unable to validate coupon. Please try again.",
+      };
+    }
+
+    const res = data as CouponValidationResult;
+    return {
+      ...res,
+      message: mapCouponErrorMessage(res.message),
+    };
+  } catch (err: any) {
+    return {
+      valid: false,
+      message: mapCouponErrorMessage(err?.message || "Failed to validate coupon"),
+    };
+  }
 }
 

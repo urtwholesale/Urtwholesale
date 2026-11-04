@@ -13,3 +13,16 @@ export interface Cart {
   items: CartItem[];
   total: number;
 }
+
+export interface CartSummary {
+  itemsCount: number;
+  subtotal: number;
+  shipping: number;
+  discountAmount: number;
+  totalBeforeDiscount: number;
+  total: number;
+  coupon?: {
+    code: string;
+    discountAmount: number;
+  };
+}

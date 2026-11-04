@@ -32,11 +32,7 @@ export function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 px-5 py-2.5 rounded-full text-xs font-bold text-white shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer"
-          style={{
-            background: "var(--brand-gradient, linear-gradient(to bottom, #5ADBE5, #0A82A8))",
-            boxShadow: "var(--brand-shadow, 0 4px 14px rgba(30, 175, 199, 0.25))",
-          }}
+          className="mt-5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer inline-flex items-center justify-center gap-2"
         >
           {actionText}
         </button>

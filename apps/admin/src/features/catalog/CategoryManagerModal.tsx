@@ -207,7 +207,7 @@ export function CategoryManagerModal({
               <button
                 type="button"
                 onClick={() => handleStartCreate()}
-                className="px-3 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1.5 shadow-2xs cursor-pointer hover:opacity-95"
+                className="px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs flex items-center space-x-1.5 shadow-2xs cursor-pointer hover:opacity-95"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>New Category</span>
@@ -404,7 +404,7 @@ export function CategoryManagerModal({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full py-2.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  className="w-full py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{editingCategory ? "Update Category" : "Save Category"}</span>
@@ -424,7 +424,7 @@ export function CategoryManagerModal({
                 <button
                   type="button"
                   onClick={() => handleStartCreate()}
-                  className="px-4 py-2 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs cursor-pointer hover:opacity-95"
+                  className="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-2xs cursor-pointer hover:opacity-95"
                 >
                   + Add Category
                 </button>

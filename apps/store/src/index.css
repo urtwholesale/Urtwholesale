@@ -5,47 +5,116 @@
 
 /* ── Light and Dark CSS Custom Properties ── */
 :root {
-  /* Brand cyan/blue in light mode */
-  --color-brand-light: #5ADBE5;
-  --color-brand: #1EAFC7;
-  --color-brand-dark: #0A82A8;
+  /* Semantic Primary & Interactive (Solid Teal) */
+  --color-primary: #087799;
+  --color-primary-hover: #066785;
+  --color-primary-active: #055670;
+  --color-on-primary: #FFFFFF;
+  --color-primary-soft: #EDF8FA;
+  --color-primary-border: #B5E4EC;
+  --color-ring: #1EAFC7;
 
+  /* Legacy Remap (Graceful degradation for existing classes) */
+  --color-brand-dark: var(--color-primary);
+  --color-brand: var(--color-ring);
+  --color-brand-light: #CFEFF4;
+
+  /* Neutrals & Surfaces */
   --color-surface: #F8F9FB;
   --color-surface-card: #FFFFFF;
   --color-surface-card-subtle: #F1F5F9;
   --color-surface-border: #E2E8F0;
 
-  --brand-gradient: linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%);
-  --brand-gradient-horizontal: linear-gradient(90deg, #5ADBE5 0%, #1EAFC7 50%, #0A82A8 100%);
-  --brand-gradient-accent: linear-gradient(135deg, #5ADBE5 0%, #1EAFC7 60%, #0A82A8 100%);
-  --brand-shadow: 0 4px 16px rgba(10, 130, 168, 0.35);
-  --brand-glow: 0 0 20px rgba(90, 219, 229, 0.4);
+  /* Text Neutrals */
+  --color-text: #0F172A;
+  --color-text-muted: #475569;
+  --color-text-subtle: #64748B;
+
+  /* Status Colors */
+  --color-success: #16A34A;
+  --color-success-soft: #DCFCE7;
+  --color-warning: #D97706;
+  --color-warning-soft: #FEF3C7;
+  --color-danger: #DC2626;
+  --color-danger-soft: #FEE2E2;
+  --color-info: #2563EB;
+  --color-info-soft: #DBEAFE;
+
+  /* Brand Gradient (Unified Subtle Single Hue - Non-interactive decorative only) */
+  --gradient-brand: linear-gradient(135deg, #0E94B8 0%, #0A82A8 100%);
+  --brand-gradient: var(--gradient-brand);
+  --brand-gradient-horizontal: var(--gradient-brand);
+  --brand-gradient-accent: var(--gradient-brand);
+
+  /* Shadows & Glows */
+  --brand-shadow: 0 4px 16px rgba(10, 130, 168, 0.25);
+  --brand-glow: 0 0 20px rgba(10, 130, 168, 0.25);
 }
 
 .dark, [data-theme="dark"] {
-  /* Brand black + gradient orange in dark mode */
-  --color-brand-light: #FFA033;
-  --color-brand: #FF7700;
-  --color-brand-dark: #E64A00;
+  /* Semantic Primary & Interactive (Same Teal Hue Family, Brighter on Dark) */
+  --color-primary: #2BBFD9;
+  --color-primary-hover: #4FD0E6;
+  --color-primary-active: #1FA8C2;
+  --color-on-primary: #04222B;
+  --color-primary-soft: rgba(43, 191, 217, 0.14);
+  --color-primary-border: rgba(43, 191, 217, 0.35);
+  --color-ring: #2BBFD9;
 
+  /* Legacy Remap (Graceful degradation for existing classes) */
+  --color-brand-dark: var(--color-primary);
+  --color-brand: var(--color-ring);
+  --color-brand-light: #2BBFD9;
+
+  /* Neutrals & Surfaces */
   --color-surface: #0B0F17;
   --color-surface-card: #131B26;
   --color-surface-card-subtle: #192333;
   --color-surface-border: #1E2D40;
 
-  --brand-gradient: linear-gradient(180deg, #FFA033 0%, #FF6B00 50%, #E64A00 100%);
-  --brand-gradient-horizontal: linear-gradient(90deg, #FFA033 0%, #FF7700 50%, #E64A00 100%);
-  --brand-gradient-accent: linear-gradient(135deg, #FFA033 0%, #FF7700 60%, #E64A00 100%);
-  --brand-shadow: 0 4px 18px rgba(255, 107, 0, 0.45);
-  --brand-glow: 0 0 24px rgba(255, 122, 0, 0.45);
+  /* Text Neutrals */
+  --color-text: #F1F5F9;
+  --color-text-muted: #94A3B8;
+  --color-text-subtle: #7C8BA1;
+
+  /* Status Colors */
+  --color-success: #4ADE80;
+  --color-success-soft: rgba(74, 222, 128, 0.14);
+  --color-warning: #FBBF24;
+  --color-warning-soft: rgba(251, 191, 36, 0.14);
+  --color-danger: #F87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.14);
+  --color-info: #60A5FA;
+  --color-info-soft: rgba(96, 165, 250, 0.14);
+
+  /* Brand Gradient (Unified Subtle Single Hue, Teal in Dark Mode) */
+  --gradient-brand: linear-gradient(135deg, #0E94B8 0%, #0A82A8 100%);
+  --brand-gradient: var(--gradient-brand);
+  --brand-gradient-horizontal: var(--gradient-brand);
+  --brand-gradient-accent: var(--gradient-brand);
+
+  /* Shadows & Glows */
+  --brand-shadow: 0 4px 16px rgba(43, 191, 217, 0.25);
+  --brand-glow: 0 0 20px rgba(43, 191, 217, 0.25);
 }
 
 /* ── Design Tokens & Typography ── */
 @theme {
+  /* Semantic Primary & Interactive */
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-active: var(--color-primary-active);
+  --color-on-primary: var(--color-on-primary);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-primary-border: var(--color-primary-border);
+  --color-ring: var(--color-ring);
+
+  /* Legacy Brand Aliases */
   --color-brand-light: var(--color-brand-light);
   --color-brand: var(--color-brand);
   --color-brand-dark: var(--color-brand-dark);
 
+  /* Surfaces */
   --color-surface: var(--color-surface);
   --color-surface-card: var(--color-surface-card);
   --color-surface-card-subtle: var(--color-surface-card-subtle);
@@ -54,6 +123,21 @@
   /* Deep slate nuances for dark mode navigation and sheets */
   --color-slate-750: #1a2436;
   --color-slate-850: #0e1624;
+
+  /* Text Neutrals */
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-subtle: var(--color-text-subtle);
+
+  /* Status Colors */
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
 
   --font-sans: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
@@ -79,7 +163,7 @@
   }
 }
 
-/* ── Brand Gradient Utilities ── */
+/* ── Brand Gradient Utilities (Decorative / Backgrounds Only) ── */
 .bg-brand-gradient {
   background: var(--brand-gradient);
 }
@@ -132,7 +216,7 @@
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 107, 0, 0.1);
+  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.6), 0 0 20px rgba(43, 191, 217, 0.15);
 }
 
 /* ── Glass Card ── */
@@ -148,7 +232,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 107, 0, 0.06);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), 0 0 12px rgba(43, 191, 217, 0.08);
 }
 
 /* ── Clean Flat Glassmorphic Theme ── */
@@ -186,8 +270,8 @@
 }
 
 .liquid-glass-active-pill {
-  background: #06b6d4;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 /* ── Base resets ── */
@@ -204,14 +288,14 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #F8F9FB;
-    color: #0F172A;
+    background-color: var(--color-surface);
+    color: var(--color-text);
     transition: background-color 200ms ease, color 200ms ease;
   }
 
   html.dark {
-    background-color: #0B0F17;
-    color: #F8FAFC;
+    background-color: var(--color-surface);
+    color: var(--color-text);
   }
 
   body {
@@ -278,3 +362,13 @@ a:active,
   }
 }
 
+/* ── Error Shake Animation ── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}

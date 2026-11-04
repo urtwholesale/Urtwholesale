@@ -215,7 +215,7 @@ export function CategoryMoveModal({
             type="button"
             disabled={saving || (!isUncategorizedTarget && !selectedTargetId)}
             onClick={handleConfirm}
-            className="px-5 py-2 rounded-xl brand-gradient text-white text-xs font-bold shadow-md hover:shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+            className="px-5 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-md hover:shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
           >
             {saving ? (
               <>

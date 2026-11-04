@@ -250,8 +250,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                       {/* Active Indicator Underline Pill */}
                       {isActive && (
                         <div
-                          className="w-8 h-1 rounded-full mt-1.5 shadow-xs"
-                          style={{ background: "var(--brand-gradient)" }}
+                          className="w-8 h-1 rounded-full mt-1.5 bg-primary shadow-xs"
                         />
                       )}
                     </button>
@@ -271,19 +270,11 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                   <button
                     type="button"
                     onClick={() => handleSelectSub(null)}
-                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 cursor-pointer ${
+                    className={`shrink-0 px-3 py-1 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs ${
                       selectedSubCategory === null
-                        ? "text-white shadow-xs font-black"
-                        : "bg-slate-100/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                        ? "bg-primary text-on-primary"
+                        : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle"
                     }`}
-                    style={
-                      selectedSubCategory === null
-                        ? {
-                            background: "var(--brand-gradient)",
-                            boxShadow: "var(--brand-shadow)",
-                          }
-                        : {}
-                    }
                   >
                     {activeParent
                       ? `${t("marketplace.all_in_category", "All in Category")} (${translateCategoryName(activeParent.name, isHindi)})`
@@ -299,19 +290,11 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                         key={sub.id}
                         type="button"
                         onClick={() => handleSelectSub(sub)}
-                        className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 cursor-pointer ${
+                        className={`shrink-0 inline-flex items-center space-x-1 px-3 py-1 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs ${
                           isSelected
-                            ? "text-white shadow-xs font-black"
-                            : "bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700 hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                            ? "bg-primary text-on-primary"
+                            : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle"
                         }`}
-                        style={
-                          isSelected
-                            ? {
-                                background: "var(--brand-gradient)",
-                                boxShadow: "var(--brand-shadow)",
-                              }
-                            : {}
-                        }
                       >
                         {sub.image_url && (
                           <img

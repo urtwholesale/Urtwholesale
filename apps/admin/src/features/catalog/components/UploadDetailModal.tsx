@@ -420,7 +420,7 @@ export function UploadDetailModal({
                         <button
                           type="button"
                           onClick={() => startFixItem(item)}
-                          className="px-2.5 py-1 rounded-xl brand-gradient text-white font-bold text-[11px] shadow-2xs hover:shadow-xs flex items-center space-x-1 cursor-pointer active:scale-95 transition"
+                          className="px-2.5 py-1 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs rounded-xl shadow-xs shadow-2xs hover:shadow-xs flex items-center space-x-1 cursor-pointer active:scale-95 transition"
                         >
                           <Wrench className="w-3 h-3" />
                           <span>Fix Issue</span>
@@ -808,7 +808,7 @@ export function UploadDetailModal({
                   <button
                     type="submit"
                     disabled={fixSaving}
-                    className="w-full py-3 rounded-xl brand-gradient text-white font-extrabold text-xs shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="w-full py-3 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs rounded-xl shadow-xs shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     {fixSaving ? (
                       <>

@@ -138,7 +138,9 @@ urbanrat-store/
 │   │   ├── 026_rollback.sql           # Emergency rollback migration restoring table-wide SELECT on products
 │   │   ├── 027_admin_mfa_enforcement.sql # Safe TOTP MFA audit RPC, JSONB is_admin() hardening, reversible enforcement commands
 │   │   ├── 028_marquee_announcements.sql # Continuous marquee announcements table, RLS policies, trigger & default wholesale seeds
-│   │   └── 029_dealership_program.sql # Dynamic Dealership Program: margins, branded vs copy showcase, differentiation & articles
+│   │   ├── 029_dealership_program.sql # Dynamic Dealership Program: margins, branded vs copy showcase, differentiation & articles
+│   │   └── 036_coupons.sql            # Promotional coupon engine
+│   │   └── 037_homepage_divisions.sql # Dynamic homepage divisions configuration, RLS lockdown, atomic redemptions & admin management
 │   └── seed.sql                       # 12 categories, 18 subcategories, products & volume tiers
 │
 ├── scripts/                           # Penetration testing & database verification scripts
@@ -180,14 +182,21 @@ The application strictly follows the guidelines codified in [`AGENT_RULES.md`](.
   - Deliberately built as an enterprise operations console utilizing a crisp light theme with an `#ECEEED` soft slate canvas backdrop, pure-white card surfaces, and `#1a1a1a` typography.
   - Dark mode styles, dark variants, and theme toggles are intentionally excluded from the admin suite to maintain uniform operational clarity and high-contrast supplier catalog workflows.
 
-### 3. Brand Signature Gradients & Design Tokens
-Urbanrat employs adaptive CSS variables in the storefront that shift seamlessly between light (electric cyan/teal) and dark (vibrant cyber orange/amber) brand accents, while the admin portal standardizes on the cyan brand gradient:
+### 3. Semantic Color Tokens & Theme System
+Urbanrat standardizes on a solid teal semantic design system across both the customer storefront and admin portal. Dark mode retains the **same teal hue family** (brighter teal `#2BBFD9` on dark surfaces; cyber orange has been completely removed).
 
-| Token | Light Theme (Store & Admin) | Dark Theme (Storefront Variant) | Purpose & Usage |
+#### Semantic Brand Tokens (WCAG AA Compliant >= 4.5:1)
+| Token | Light Theme | Dark Theme | Purpose & Role |
 | :--- | :--- | :--- | :--- |
-| `--color-brand-light` | `#5ADBE5` | `#FFA033` | Gradient start, active pill highlights, warm glow |
-| `--color-brand` | `#1EAFC7` | `#FF7700` | Intermediate accent, focus rings, vibrant orange |
-| `--color-brand-dark` | `#0A82A8` | `#E64A00` | Gradient end, primary CTA buttons, badges |
+| `--color-primary` | `#087799` | `#2BBFD9` | Primary interactive controls, key text accents, active indicators |
+| `--color-primary-hover` | `#066785` | `#4FD0E6` | Hover state for primary buttons and interactive elements |
+| `--color-primary-active` | `#055670` | `#1FA8C2` | Active/pressed state for primary controls |
+| `--color-on-primary` | `#FFFFFF` | `#04222B` | Text/icons on primary button fills (high contrast) |
+| `--color-primary-soft` | `#EDF8FA` | `rgba(43, 191, 217, 0.14)` | Tinted backgrounds, secondary buttons, selected tab fills, badges |
+| `--color-primary-border` | `#B5E4EC` | `rgba(43, 191, 217, 0.35)` | Borders for badges, secondary buttons, and selected states |
+| `--color-ring` | `#1EAFC7` | `#2BBFD9` | Keyboard focus ring halos |
+
+*Legacy backward-compatible aliases (`--color-brand-dark` -> primary, `--color-brand` -> ring, `--color-brand-light` -> soft strong) remain mapped in CSS so older utility classes degrade gracefully without breaking.*
 
 #### Surface & Canvas Tokens
 | Token | Light Storefront | Dark Storefront | Admin Panel | Purpose |
@@ -196,18 +205,34 @@ Urbanrat employs adaptive CSS variables in the storefront that shift seamlessly 
 | `--color-surface-card` | `#FFFFFF` | `#131B26` | `#FFFFFF` | Elevated cards, dialogs, and slide-overs |
 | `--color-surface-card-subtle` | `#F1F5F9` | `#192333` | `#F8FAFC` | Secondary surfaces, nested wells & table zebra rows |
 | `--color-surface-border` | `#E2E8F0` | `#1E2D40` | `#E2E8F0` | Specular card borders, dividers & inputs |
-| `--color-slate-750` | — | `#1A2436` | — | Dark navigation dock and sheet nuance |
-| `--color-slate-850` | — | `#0E1624` | — | Ultra-deep dark mode contrast backdrop |
 
-#### Brand Gradients & Visual Effects
-- **Light Theme**:
-  - Vertical: `linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)` (electric cyan to deep teal)
-  - Horizontal: `linear-gradient(90deg, #5ADBE5 0%, #1EAFC7 50%, #0A82A8 100%)`
-  - Shadow & Glow: `0 4px 16px rgba(10, 130, 168, 0.35)` / `0 0 20px rgba(90, 219, 229, 0.4)`
-- **Dark Theme**:
-  - Vertical: `linear-gradient(180deg, #FFA033 0%, #FF6B00 50%, #E64A00 100%)` (vibrant cyber orange to deep amber)
-  - Horizontal: `linear-gradient(90deg, #FFA033 0%, #FF7700 50%, #E64A00 100%)`
-  - Shadow & Glow: `0 4px 18px rgba(255, 107, 0, 0.45)` / `0 0 24px rgba(255, 122, 0, 0.45)`
+#### Text & Typography Tokens
+| Token | Light Theme | Dark Theme | Purpose |
+| :--- | :--- | :--- | :--- |
+| `--color-text` | `#0F172A` | `#F1F5F9` | High-contrast body text and headings |
+| `--color-text-muted` | `#475569` | `#94A3B8` | Subtext, timestamps, inactive navigation items |
+| `--color-text-subtle` | `#64748B` | `#7C8BA1` | Input placeholder text, secondary icons (WCAG compliant) |
+
+#### Status Tokens (State Only — Never Teal)
+| State | Light Fill / Text | Light Soft Tint | Dark Text | Dark Soft Tint |
+| :--- | :--- | :--- | :--- | :--- |
+| **Success** | `#16A34A` | `#DCFCE7` | `#4ADE80` | `rgba(74, 222, 128, 0.14)` |
+| **Warning** | `#D97706` | `#FEF3C7` | `#FBBF24` | `rgba(251, 191, 36, 0.14)` |
+| **Danger** | `#DC2626` | `#FEE2E2` | `#F87171` | `rgba(248, 113, 113, 0.14)` |
+| **Info** | `#2563EB` | `#DBEAFE` | `#60A5FA` | `rgba(96, 165, 250, 0.14)` |
+
+#### Gradient Policy
+- **Strict Prohibition on Controls**: Gradients are strictly forbidden on interactive controls (buttons, inputs, selects, pills, filter tabs) and interior card surfaces. All interactive controls must use solid semantic tokens (`bg-primary`, `bg-primary-soft`, `bg-danger`, etc.).
+- **Allowed Exceptions**: Gradients are permitted exclusively for:
+  1. Hero promotional banners and ambient photo background overlays (`bg-linear-to-*`, `dark:from-black/95`).
+  2. The circular official brand logo capsule.
+- **Unified Subtle Brand Gradient**: When used for non-interactive decorative glows, both light and dark themes share a subtle, single-hue gradient: `linear-gradient(135deg, #0E94B8 0%, #087799 100%)`.
+
+#### Color Usage Rules
+- **Primary (`--color-primary`)**: Reserved for actions, CTA buttons, active state indicators, link text on hover, price text, and key volume-tier highlights.
+- **Primary-Soft (`--color-primary-soft`)**: Used for selected item backgrounds, secondary buttons, and brand chips/badges. Always paired with `text-primary` and `border-primary-border`.
+- **Status Colors (`success`, `warning`, `danger`, `info`)**: Reserved exclusively for lifecycle and inventory state (order tracking status, stock pill warnings, error alerts). Never use teal for status badges.
+- **Intentional 3rd-Party Exceptions**: WhatsApp checkout buttons retain official WhatsApp green (`#25D366`), rating stars retain `amber-400`, and Shiprocket logistics retains purple (`#31145b`).
 
 ### 4. Official Brand Logo
 - Icon: Cyan circular badge with stylized black bunny/rat mark with 'x' and 'o' eyes.
@@ -313,6 +338,13 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 
 ---
 
+12. **Promotional Coupons & Checkout Discounts (`apps/store/src/components/coupon/`)**:
+    - **Interactive Coupon Entry (`CouponInput.tsx`)**: Collapsible ticket entry with uppercase auto-formatting, debounce, Enter-key submit, and loading indicator.
+    - **Active Discount Pill (`AppliedCouponChip.tsx`)**: Displays coupon savings amount ("You saved ₹X") with clear check badge and one-tap removal.
+    - **Dynamic Cart Line Item (`CouponSavingsRow.tsx`)**: Deducts coupon savings from the cart and checkout summary, with 18% GST (9% CGST + 9% SGST) dynamically computed on the discounted taxable base amount.
+    - **Server-Authoritative Anti-Tampering**: Submits coupon code to PostgreSQL RPCs (`create_verified_order` for authenticated users, `/functions/v1/checkout-gate` for guests); client-side price tampering is completely ignored and overwritten by server-side catalog tier recomputation.
+    - **Dual Theme & Mobile-First**: Uses solid teal semantic tokens (`bg-primary`, `bg-primary-soft`, `border-primary-border`), WCAG AA compliant contrast, tactile haptic feedback (`triggerHaptic`), and English/Hindi dictionary localization.
+
 ### Admin Panel (`apps/admin`)
 
 1. **Redesigned Sidebar Layout (LeaseFlow Inspired UI)**:
@@ -402,6 +434,14 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
     - **Touchpoint 4 — ProductEditor (`ProductEditor.tsx`)**: Embeds `KeywordsInput` under Search & Discovery to edit keywords post-publishing, saved directly to `products.keywords`.
     - **Touchpoint 5 — Catalog Upload Search (`UploadHistoryList.tsx`)**: Search query filter matches keywords and notes inside upload batches.
 
+13. **Coupons & Discounts Management Hub (`apps/admin/src/features/coupons/`)**:
+    - **Navigation Integration**: First-class "Coupons" entry with Ticket icon under Commerce & Sales in the desktop sidebar and mobile menu drawer (`/coupons` and `#coupons`).
+    - **Filterable Campaign Table (`CouponList.tsx`)**: Real-time code search, 6 status filter pills (`All`, `Active`, `Scheduled`, `Expired`, `Disabled`, `Used up`), monospace code with 1-click copy, live active toggle switch, and responsive desktop table & mobile card view.
+    - **Safe Deletion Pre-Flight**: Hard delete is blocked if `used_count > 0` with an explanatory modal prompting the administrator to disable the coupon instead to preserve historic accounting records.
+    - **Coupon Editor (`CouponEditor.tsx`)**: Modal / bottom sheet with 1-click random code generator (`URT...`), percentage and fixed discount controls, max discount caps, minimum cart value, validity date pickers, total usage limits, per-customer limits, first-order restrictions, category restrictions, and live customer preview card.
+    - **Performance & Redemptions Drawer (`CouponDetailDrawer.tsx`)**: Real-time KPI analytics (Total Redemptions, Total Discount Given, Revenue Influenced, Last Used) and paginated redemption history log linking directly to order modal records.
+    - **Orders & Invoicing Integration (`OrderList.tsx` & `OrderDetailModal.tsx`)**: Displays coupon badge `🎟️ CODE (-₹X)` in order table rows and mobile cards; `OrderDetailModal` financial breakdown includes coupon row; and browser-native GST tax invoice includes `"Discount (CODE)"` line with GST computed on the discounted taxable base.
+
 ---
 
 ## 5. Database Schema & Security (Supabase)
@@ -441,6 +481,8 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 | `027_admin_mfa_enforcement.sql` | Admin Multi-Factor Authentication (MFA) Safe Rollout & Enforcement | Administrative audit RPC `public.admin_get_mfa_enrollment_status()` for inspecting cross-admin TOTP verification status before enforcement; hardened `public.is_admin()` handling JSONB boolean and string variants of `enforce_admin_mfa`; includes explicit, commented-out reversible statements to enable (`true`) or roll back (`false`) strict AAL2 enforcement. *(Pending manual execution after all admins enroll)*. |
 | `028_marquee_announcements.sql` | Continuous Marquee Announcements & Dynamic Offers | Database table `public.marquee_announcements` with RLS policies, `set_updated_at` trigger, public read access, admin management access, and 8 seed wholesale promotional announcements. |
 | `029_dealership_program.sql` | Dealership Program Dynamic Content & Differentiation | Database tables for `public.dealership_tier_margins`, `public.dealership_item_showcase` (Branded vs Copy image comparisons), `public.dealership_benefits_comparison` (Authorized Dealer vs Normal Customer benefits), and `public.dealership_articles` (Branded & Copy dealership guide articles) with RLS policies, `set_updated_at` triggers, public read access, and admin full write access. Pre-seeded with production-grade data. |
+| `036_coupons.sql` | Promotional Coupon Engine, Server Validation & Secure Redemptions |
+| `037_homepage_divisions.sql` | Dynamic Homepage Divisions Configuration | Seeds `store_settings.homepage_sections` with punchy, jewel-grade division icons (Crown for Bestsellers, Zap for Fast Cables, Headphones for Audio, Flame for New Arrivals, Percent for Clearance Deals) with dual English/Hindi typography, badge tags, and sort orders. | Database tables `public.coupons`, `public.coupon_redemptions`, and `public.coupon_validation_attempts` with strict RLS policies (anon SELECT completely revoked); atomic order creation with coupon support in `create_verified_order` (authenticated) and `create_verified_order_guest` (service_role only) using `SELECT ... FOR UPDATE` row locking; sliding-window rate limit (10 attempts / 10 minutes) in `validate_coupon`; anti-oracle uniform error responses; category & first-order restrictions; per-customer limit via auth `user_id` or SHA-256 phone hash; idempotent auto-release on order cancellation (`trg_release_coupon_on_order_cancel`); and complete admin management RPCs (`admin_list_coupons`, `admin_upsert_coupon`, `admin_toggle_coupon`, `admin_delete_coupon`, `admin_coupon_stats`, `admin_list_coupon_redemptions`). |
 
 #### Referenced Migrations Not Found in Repository
 | Migration Reference | Status | Details & Resolution |
@@ -487,11 +529,13 @@ Verified (date: 2026-11-02): `handle_new_user()` hardcodes `role = 'customer'` (
 - [x] Every `SECURITY DEFINER` function sets `search_path`, checks `is_admin()` or `auth.uid()` first, and has EXECUTE revoked from `public`/`anon` unless it is intentionally public. *(Verified on 2026-11-03: `024_security_hardening.sql`, `026a_storefront_additive.sql`, `026b_storefront_tightening.sql`)*
 - [x] The storefront reads products through stored generated `in_stock` boolean and `products_public` view excluding warehouse stock quantities, cost, and supplier fields. *(Verified on 2026-11-03: `026a_storefront_additive.sql`, `026b_storefront_tightening.sql`, `PRODUCT_SAFE_COLUMNS` in `storeService.ts:61`)*
 - [x] Order inputs are validated server-side (quantity bounds, active products, line limits). *(Verified on 2026-11-03: `024_security_hardening.sql`, `026a_storefront_additive.sql:185-509` in `create_verified_order`, and `create_verified_order_guest`)*
+- [x] Coupon inputs and discounts are validated server-side (sliding-window rate limit 10 attempts/10 min, database tier pricing recomputation, usage limits locked via `SELECT ... FOR UPDATE`, and per-customer limit enforced via user ID or guest phone hash). *(Verified on 2026-11-05: `030_coupons.sql`, `scripts/coupon_security_test.js`)*
 
 #### Public endpoints
 - [x] Guest order tracking requires an unguessable token; responses are minimal and masked. *(Verified on 2026-11-03: `orders.public_token` & `get_order_by_id` in `026a_storefront_additive.sql`, `OrderPage.tsx:48-95`)*
 - [x] Guest checkout, dealer form, reviews and search logging are rate-limited, length-capped and CAPTCHA/honeypot-protected. *(Verified on 2026-11-03: `checkout-gate` Edge Function, Cloudflare Turnstile, `checkout_rate_limits`, honeypot in `026a/b`)*
 - [x] Review moderation is content-based, and no ratings are generated or scaled. *(Verified on 2026-11-03: `auto_moderate_review` in `026b_storefront_tightening.sql`, `HeroStackedCarousel.tsx:20-175`)*
+- [x] Coupon validation endpoint is rate-limited and anti-oracle protected (uniform privacy-safe response on invalid, expired, and non-existent codes). *(Verified on 2026-11-05: `030_coupons.sql`, `validate_coupon`, `scripts/coupon_security_test.js`)*
 
 #### Frontend
 - [x] All interpolated values in invoices, packing slips and OG tags are HTML-escaped; print views do not run in the admin origin. *(Verified on 2026-11-02: `order-og/index.ts:18-80`, `printHtmlSafely` in `OrderDetailModal.tsx:264, 377`)*
@@ -639,4 +683,8 @@ The complete technical implementation history, schema migration milestones, and 
     - **Official 3D Studio Visuals**: 1-click buttons to apply high-res dark or light 3D tech renders (`/categories/dark/${slug}.jpg` and `/categories/light/${slug}.jpg`).
     - **Category Product Image Gallery**: Live thumbnail picker fetching products from the selected category to link high-res product photos directly to the banner.
     - **Storefront Carousel Sync**: Dynamically renders custom CTA text (`activeCard.ctaText`) and category deep links.
-
+- **Touchpoint 43 (Coupons & Discounts System, Server-Side Verification & Secure Redemption Engine)**:
+  - **Database & Security Hardening (`030_coupons.sql`)**: Tables `coupons`, `coupon_redemptions`, and `coupon_validation_attempts` with strict RLS policies (anon SELECT completely revoked); row-level locking (`SELECT ... FOR UPDATE`) in `create_verified_order` preventing race condition usage limit overshoot; sliding-window rate limit (10 attempts / 10 minutes) in `validate_coupon`; uniform anti-oracle response on invalid/expired codes; per-customer limit via auth `user_id` or SHA-256 phone hash; and idempotent cancellation auto-release (`trg_release_coupon_on_order_cancel`).
+  - **Storefront Checkout (`apps/store`)**: Collapsible `CouponInput`, `AppliedCouponChip`, and `CouponSavingsRow` with dynamic GST recalculation on the discounted base, dual-theme WCAG AA tokens, haptic feedback, Hindi/English localization, and guest checkout forwarding via `checkout-gate`.
+  - **Admin Management (`apps/admin`)**: Navigation under Commerce & Sales (`/coupons`); `CouponList` with code search, 6 status filter pills, desktop table & mobile cards, and safe delete disable fallback; `CouponEditor` with 1-click code generator, percentage/fixed discounts, max discount cap, min order, date ranges, usage limits, and category restrictions; `CouponDetailDrawer` with KPI cards and redemption history linking to orders; and OrderList badge + GST tax invoice discount line.
+  - **Security Test Runner (`scripts/coupon_security_test.js`)**: 16/16 automated penetration probes passing against live Supabase backend.

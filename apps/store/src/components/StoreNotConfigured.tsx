@@ -2,7 +2,7 @@ import { Database, AlertTriangle, ShieldCheck, RefreshCw } from "lucide-react";
 
 export function StoreNotConfigured() {
   return (
-    <div className="min-h-dvh bg-[#F8F9FB] flex flex-col font-sans text-slate-900 antialiased selection:bg-[#5ADBE5]/30">
+    <div className="min-h-dvh bg-surface flex flex-col font-sans text-slate-900 antialiased selection:bg-primary/30">
       {/* ── Fixed Glassmorphism Top Bar ── */}
       <header className="fixed md:static top-0 left-0 right-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-white/40 shadow-[0_1px_8px_rgba(0,0,0,0.06)]">
         <div className="max-w-md md:max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -10,7 +10,7 @@ export function StoreNotConfigured() {
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-xs"
               style={{
-                background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                background: "linear-gradient(180deg, #087799 0%, #055670 100%)",
               }}
             >
               <Database className="w-3.5 h-3.5 text-white" />
@@ -67,7 +67,7 @@ export function StoreNotConfigured() {
               onClick={() => window.location.reload()}
               className="w-full py-3 px-5 rounded-2xl text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-2"
               style={{
-                background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                background: "linear-gradient(to bottom, #087799, #055670)",
               }}
             >
               <RefreshCw className="w-4 h-4" />

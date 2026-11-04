@@ -24,6 +24,8 @@ export interface BuildWhatsAppMessageOptions {
   shipping?: number | string;
   promoCode?: string | null;
   discount?: number;
+  couponCode?: string | null;
+  discountAmount?: number;
   total: number;
   customer?: CustomerInfo;
   siteUrl?: string;
@@ -70,6 +72,8 @@ export function buildWhatsAppMessage({
   shipping = "FREE",
   promoCode,
   discount,
+  couponCode,
+  discountAmount,
   total,
   customer,
   siteUrl,
@@ -93,9 +97,12 @@ export function buildWhatsAppMessage({
       ? `${E.savings} Wholesale savings: \u20B9${formatMoney(savings)}\n`
       : "";
 
-  const promoLine =
-    promoCode && discount && discount > 0
-      ? `${E.tag} Promo applied (${promoCode}): -\u20B9${formatMoney(discount)}\n`
+  const appliedCode = (couponCode || promoCode || "").trim();
+  const appliedDiscount = discountAmount ?? discount ?? 0;
+
+  const couponLine =
+    appliedCode && appliedDiscount > 0
+      ? `Coupon: ${appliedCode}\nDiscount: -\u20B9${formatMoney(appliedDiscount)}\n`
       : "";
 
   let shippingText = "FREE";
@@ -120,7 +127,7 @@ export function buildWhatsAppMessage({
     divider,
     itemsSection,
     divider,
-    `${savingsLine}${promoLine}${E.ship} Shipping: ${shippingText}\n${E.total} *Total: \u20B9${formatMoney(total)}*`,
+    `${savingsLine}${couponLine}${E.ship} Shipping: ${shippingText}\n${E.total} *Total: \u20B9${formatMoney(total)}*`,
     "",
     `${E.user} *Name:* ${customerName}`,
     `${E.phone} *Phone:* ${customerPhone}`,

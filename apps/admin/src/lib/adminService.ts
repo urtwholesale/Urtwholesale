@@ -39,6 +39,8 @@ import type {
   BulkStockItemPayload,
   BulkImageMode,
   BulkOpResult,
+  Coupon,
+  AdminCouponInput,
 } from "@urbanrat/shared";
 import {
   sanitizeFileName,
@@ -4355,4 +4357,170 @@ export async function fetchAdminMfaAuditStatus(): Promise<AdminMfaAuditStatus> {
     console.error("[adminService] Failed to fetch admin profiles for MFA audit:", err);
     return { enforceAdminMfa, admins: [], unenrolledCount: 0 };
   }
+}
+
+
+// ============================================================================
+// COUPON MANAGEMENT (MIGRATION 030 ADMIN RPCS)
+// ============================================================================
+
+export interface AdminCouponStats {
+  coupon_id: string;
+  code: string;
+  is_active: boolean;
+  used_count: number;
+  total_redemptions: number;
+  released_redemptions: number;
+  total_discount_given: number;
+  revenue_influenced: number;
+  last_used: string | null;
+}
+
+export interface AdminCouponRedemptionItem {
+  id: string;
+  coupon_id: string;
+  order_id: string;
+  user_id?: string | null;
+  user_name?: string | null;
+  phone_hash?: string | null;
+  discount_amount: number;
+  status: "applied" | "released";
+  created_at: string;
+  released_at?: string | null;
+  order_code?: string | null;
+  order_status?: string | null;
+  order_total?: number | null;
+}
+
+export interface AdminListCouponsResult {
+  coupons: Coupon[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminListRedemptionsResult {
+  redemptions: AdminCouponRedemptionItem[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+/**
+ * List coupons with server search, status filtering, and pagination
+ */
+export async function listCoupons(
+  search?: string,
+  status: string = "all",
+  limit: number = 50,
+  offset: number = 0
+): Promise<AdminListCouponsResult> {
+  const { data, error } = await supabase.rpc("admin_list_coupons", {
+    p_search: search && search.trim() ? search.trim() : null,
+    p_status: status || "all",
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to fetch coupons");
+  }
+
+  return (
+    (data as AdminListCouponsResult) || {
+      coupons: [],
+      total_count: 0,
+      limit,
+      offset,
+    }
+  );
+}
+
+/**
+ * Create or update a coupon
+ */
+export async function upsertCoupon(payload: AdminCouponInput): Promise<Coupon> {
+  const { data, error } = await supabase.rpc("admin_upsert_coupon", {
+    p_payload: payload,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to save coupon");
+  }
+
+  return data as Coupon;
+}
+
+/**
+ * Toggle coupon active status
+ */
+export async function toggleCoupon(id: string, active: boolean): Promise<Coupon> {
+  const { data, error } = await supabase.rpc("admin_toggle_coupon", {
+    p_id: id,
+    p_active: active,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to toggle coupon");
+  }
+
+  return data as Coupon;
+}
+
+/**
+ * Delete a coupon (only allowed if used_count == 0)
+ */
+export async function deleteCoupon(id: string): Promise<{ success: boolean; id: string; code: string }> {
+  const { data, error } = await supabase.rpc("admin_delete_coupon", {
+    p_id: id,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to delete coupon");
+  }
+
+  return data as { success: boolean; id: string; code: string };
+}
+
+/**
+ * Get coupon campaign analytics and redemption statistics
+ */
+export async function getCouponStats(id: string): Promise<AdminCouponStats> {
+  const { data, error } = await supabase.rpc("admin_coupon_stats", {
+    p_id: id,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to fetch coupon statistics");
+  }
+
+  return data as AdminCouponStats;
+}
+
+/**
+ * List redemption events for a specific coupon
+ */
+export async function listCouponRedemptions(
+  couponId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<AdminListRedemptionsResult> {
+  const { data, error } = await supabase.rpc("admin_list_coupon_redemptions", {
+    p_coupon_id: couponId,
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to fetch redemption records");
+  }
+
+  return (
+    (data as AdminListRedemptionsResult) || {
+      redemptions: [],
+      total_count: 0,
+      limit,
+      offset,
+    }
+  );
 }

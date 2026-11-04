@@ -784,12 +784,12 @@ export function SearchDropdown({
               }
             }}
             aria-label="Search accessories"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer group"
+            className="w-8 h-8 min-[360px]:w-8.5 min-[360px]:h-8.5 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer group shrink-0"
           >
             {isMobileActive ? (
-              <X className="w-4.5 h-4.5 stroke-[2.2] text-rose-500" />
+              <X className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2] text-rose-500" />
             ) : (
-              <Search className="w-4.5 h-4.5 stroke-[2.2] group-hover:scale-105 transition-transform" />
+              <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2] group-hover:scale-105 transition-transform" />
             )}
           </button>
         </CursorPhobicElement>

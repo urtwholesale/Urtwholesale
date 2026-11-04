@@ -80,11 +80,15 @@ export interface Order {
   whatsapp_message?: string | null;
   public_token?: string | null;
   promo_code?: string | null;
+  coupon_code?: string | null;
+  couponCode?: string | null;
   discount_amount?: number;
+  discountAmount?: number;
+  subtotal_before_discount?: number | null;
+  subtotalBeforeDiscount?: number | null;
   timeline?: OrderEvent[];
   events?: OrderEvent[];
   order_events?: OrderEvent[];
   created_at: string;
   updated_at?: string;
 }
-

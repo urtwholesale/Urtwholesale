@@ -16,6 +16,7 @@ export type NavTab =
   | "image_bulk_upload"
   | "products"
   | "orders"
+  | "coupons"
   | "returns"
   | "reviews"
   | "content"
@@ -60,7 +61,7 @@ export function AdminNavigationDock({
           style={
             activeTab === "dashboard" && !isMenuOpen
               ? {
-                  background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--color-primary)",
                 }
               : undefined
           }
@@ -87,7 +88,7 @@ export function AdminNavigationDock({
           style={
             activeTab === "products" && !isMenuOpen
               ? {
-                  background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--color-primary)",
                 }
               : undefined
           }
@@ -125,7 +126,7 @@ export function AdminNavigationDock({
           style={
             activeTab === "orders" && !isMenuOpen
               ? {
-                  background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--color-primary)",
                 }
               : undefined
           }
@@ -157,7 +158,7 @@ export function AdminNavigationDock({
           style={
             activeTab === "content" && !isMenuOpen
               ? {
-                  background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--color-primary)",
                 }
               : undefined
           }
@@ -187,7 +188,7 @@ export function AdminNavigationDock({
           style={
             isMenuOpen || (activeTab === "settings" && !isMenuOpen)
               ? {
-                  background: "linear-gradient(180deg, #5ADBE5 0%, #0A82A8 100%)",
+                  background: "var(--color-primary)",
                 }
               : undefined
           }

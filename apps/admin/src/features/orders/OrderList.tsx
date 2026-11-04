@@ -52,7 +52,12 @@ const SELLER_HUB_TABS: { key: SellerHubTab; label: string }[] = [
   { key: "all", label: "All Orders" },
 ];
 
-export function OrderList() {
+interface OrderListProps {
+  initialOrderId?: string | null;
+  onClearInitialOrder?: () => void;
+}
+
+export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProps = {}) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +143,16 @@ export function OrderList() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (initialOrderId && orders.length > 0) {
+      const match = orders.find((o) => o.id === initialOrderId);
+      if (match) {
+        setSelectedOrder(match);
+        onClearInitialOrder?.();
+      }
+    }
+  }, [initialOrderId, orders, onClearInitialOrder]);
 
   // Client-filtered orders based on active tab & filters
   const filteredOrders = useMemo(() => {
@@ -797,6 +812,11 @@ export function OrderList() {
                             <span className="font-black text-slate-900 text-sm">
                               ₹{ord.total.toLocaleString("en-IN")}
                             </span>
+                            {(ord.coupon_code || ord.couponCode) && (
+                              <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border block w-fit">
+                                🎟️ {ord.coupon_code || ord.couponCode} (-₹{Number(ord.discount_amount || ord.discountAmount || 0).toLocaleString("en-IN")})
+                              </span>
+                            )}
                             {ord.savings !== undefined && ord.savings > 0 && (
                               <span className="text-[10px] text-emerald-600 font-bold block">
                                 Save ₹{ord.savings}
@@ -951,9 +971,16 @@ export function OrderList() {
                     <div className="text-xs space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-900">{ord.customer?.name}</span>
-                        <span className="font-black text-slate-900 text-sm">
-                          ₹{ord.total.toLocaleString("en-IN")}
-                        </span>
+                        <div className="text-right">
+                          <span className="font-black text-slate-900 text-sm">
+                            ₹{ord.total.toLocaleString("en-IN")}
+                          </span>
+                          {(ord.coupon_code || ord.couponCode) && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border block ml-auto mt-0.5">
+                              🎟️ {ord.coupon_code || ord.couponCode} (-₹{Number(ord.discount_amount || ord.discountAmount || 0).toLocaleString("en-IN")})
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {ord.customer?.business_name && (
                         <p className="font-semibold text-slate-600">{ord.customer.business_name}</p>

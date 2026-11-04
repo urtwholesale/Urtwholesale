@@ -239,7 +239,7 @@ export function BulkPreviewPanel({
             className={`px-5 py-2 rounded-xl text-xs font-extrabold transition shadow-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center space-x-1.5 active:scale-95 ${
               isDestructive
                 ? "bg-rose-600 hover:bg-rose-700 text-white"
-                : "brand-gradient text-white"
+                : "bg-primary text-on-primary font-semibold shadow-xs"
             }`}
           >
             <span>Apply to {totalSelected} products</span>
@@ -465,7 +465,7 @@ export function BulkPreviewPanel({
                 disabled={requiresTypeApply && confirmInput.trim().toUpperCase() !== "APPLY"}
                 onClick={handleConfirmApply}
                 className={`px-5 py-2 rounded-xl text-xs font-extrabold text-white transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                  isDestructive ? "bg-rose-600 hover:bg-rose-700" : "brand-gradient"
+                  isDestructive ? "bg-rose-600 hover:bg-rose-700" : "bg-primary hover:bg-primary-hover text-on-primary font-semibold shadow-xs"
                 }`}
               >
                 Confirm &amp; Apply

@@ -478,7 +478,7 @@ export function BulkImagesTab({
                     type="button"
                     disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-xl brand-gradient hover:opacity-95 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
                   >
                     {isUploading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

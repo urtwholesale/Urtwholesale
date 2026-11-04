@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { m } from "../lib/motion";
 import { triggerHaptic } from "../utils/haptics";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 import { CursorPhobicElement, CursorPhobicWords } from "./CursorPhobicElement";
 import type { Banner } from "@urbanrat/shared";
 import {
@@ -34,6 +35,16 @@ export interface OfferCard {
   headlineSecond?: string;
   description?: string;
   highlights?: Array<{ icon: "Zap" | "ShieldCheck" | "Star" | "Flame" | "Sparkles"; text: string }>;
+  badge_hi?: string;
+  title_hi?: string;
+  subtitle_hi?: string;
+  tagline_hi?: string;
+  headlineFirst_hi?: string;
+  headlineHighlight_hi?: string;
+  headlineSecond_hi?: string;
+  description_hi?: string;
+  highlights_hi?: Array<{ icon: "Zap" | "ShieldCheck" | "Star" | "Flame" | "Sparkles"; text: string }>;
+  ctaText_hi?: string;
 }
 
 interface HeroStackedCarouselProps {
@@ -64,6 +75,21 @@ const DEFAULT_OFFER_CARDS: OfferCard[] = [
       { icon: "Flame", text: "Dual USB-C PD" },
       { icon: "Star", text: "4.9 Rated" },
     ],
+    badge_hi: "URBANRAT प्रो",
+    title_hi: "Urbanrat 65W GaN प्रो फ़ास्ट चार्जर",
+    subtitle_hi: "रिलीज़: जनवरी 2026 · ₹340 / पीस",
+    tagline_hi: "प्रीमियर 2026 · अल्ट्रा-फ़ास्ट GAN चार्जिंग",
+    headlineFirst_hi: "65W GAN टर्बो",
+    headlineHighlight_hi: "पावर एडेप्टर",
+    headlineSecond_hi: "2026",
+    description_hi:
+      "नेक्स्ट-जेनरेशन GaN III टर्बो तकनीक, डुअल-पोर्ट 65W अल्ट्रा-फ़ास्ट चार्जिंग, स्मार्ट थर्मल प्रोटेक्शन और शांत कूल ऑपरेशन के साथ।",
+    highlights_hi: [
+      { icon: "Zap", text: "65W GaN कोर" },
+      { icon: "Flame", text: "डुअल USB-C PD" },
+      { icon: "Star", text: "4.9 रेटिंग" },
+    ],
+    ctaText_hi: "स्टॉक प्राप्त करें",
   },
   {
     id: "offer-diamond-armor",
@@ -87,6 +113,21 @@ const DEFAULT_OFFER_CARDS: OfferCard[] = [
       { icon: "Sparkles", text: "2.5D Curved Edge" },
       { icon: "Star", text: "4.8 Rated" },
     ],
+    badge_hi: "URBANRAT प्रो",
+    title_hi: "Urbanrat 9H डायमंड आर्मर स्क्रीन",
+    subtitle_hi: "रिलीज़: जनवरी 2026 · ₹35 / पीस",
+    tagline_hi: "प्रीमियर 2026 · डिस्प्ले सुरक्षा सिस्टम",
+    headlineFirst_hi: "9H सफायर",
+    headlineHighlight_hi: "ग्लास आर्मर",
+    headlineSecond_hi: "2026",
+    description_hi:
+      "हाई-एल्युमिना टेम्पर्ड ग्लास, 9H डायमंड हार्डनेस, इलेक्ट्रोप्लेटेड ओलियोफोबिक कोटिंग और सीमलेस 2.5D कर्व्ड किनारों से निर्मित।",
+    highlights_hi: [
+      { icon: "ShieldCheck", text: "9H सफायर आर्मर" },
+      { icon: "Sparkles", text: "2.5D कर्व्ड किनारे" },
+      { icon: "Star", text: "4.8 रेटिंग" },
+    ],
+    ctaText_hi: "स्टॉक प्राप्त करें",
   },
   {
     id: "offer-tws-buds",
@@ -110,6 +151,21 @@ const DEFAULT_OFFER_CARDS: OfferCard[] = [
       { icon: "Sparkles", text: "38H Playtime" },
       { icon: "Star", text: "4.9 Rated" },
     ],
+    badge_hi: "URBANRAT प्रो",
+    title_hi: "AirBass प्रो वायरलेस ANC TWS",
+    subtitle_hi: "रिलीज़: जनवरी 2026 · ₹290 / पीस",
+    tagline_hi: "प्रीमियर 2026 · शानदार साउंड क्वालिटी",
+    headlineFirst_hi: "AIRBASS प्रो",
+    headlineHighlight_hi: "ANC वायरलेस",
+    headlineSecond_hi: "2026",
+    description_hi:
+      "13mm टाइटेनियम कंपोजिट ड्राइवर्स, डीप सब-बास साउंड, एक्टिव नॉइज़ कैंसलेशन (ANC) और 38 घंटे की लंबी बैटरी प्लेबैक।",
+    highlights_hi: [
+      { icon: "Zap", text: "13mm Ti ड्राइवर्स" },
+      { icon: "Sparkles", text: "38 घंटे प्लेबैक" },
+      { icon: "Star", text: "4.9 रेटिंग" },
+    ],
+    ctaText_hi: "स्टॉक प्राप्त करें",
   },
   {
     id: "offer-cables",
@@ -133,6 +189,21 @@ const DEFAULT_OFFER_CARDS: OfferCard[] = [
       { icon: "ShieldCheck", text: "Kevlar Reinforced" },
       { icon: "Star", text: "4.9 Rated" },
     ],
+    badge_hi: "URBANRAT ओरिजिनल",
+    title_hi: "Urbanrat 120W टाइटेनियम सुपर केबल",
+    subtitle_hi: "रिलीज़: जनवरी 2026 · ₹85 / पीस",
+    tagline_hi: "प्रीमियर 2026 · अटूट मजबूती एवं सुपर स्पीड",
+    headlineFirst_hi: "120W टाइटेनियम",
+    headlineHighlight_hi: "सुपर कॉर्ड",
+    headlineSecond_hi: "2026",
+    description_hi:
+      "केवलर-मजबूत डुअल-ब्रेडेड नायलॉन केबल, एयरोस्पेस टाइटेनियम मेटल शेल्स और E-Marker स्मार्ट पावर मैनेजमेंट चिप के साथ।",
+    highlights_hi: [
+      { icon: "Zap", text: "120W PD डिलीवरी" },
+      { icon: "ShieldCheck", text: "केवलर रिइन्फ़ोर्स्ड" },
+      { icon: "Star", text: "4.9 रेटिंग" },
+    ],
+    ctaText_hi: "स्टॉक प्राप्त करें",
   },
   {
     id: "offer-power-bank",
@@ -156,11 +227,29 @@ const DEFAULT_OFFER_CARDS: OfferCard[] = [
       { icon: "Sparkles", text: "LED Digital Display" },
       { icon: "Star", text: "5.0 Rated" },
     ],
+    badge_hi: "प्रीमियर पैक",
+    title_hi: "Urbanrat MagSafe टाइटेनियम पावर बैंक",
+    subtitle_hi: "रिलीज़: जनवरी 2026 · ₹540 / पीस",
+    tagline_hi: "प्रीमियर 2026 · वायरलेस मैग्नेटिक डॉक",
+    headlineFirst_hi: "MAGSAFE स्लिम",
+    headlineHighlight_hi: "टाइटेनियम पैक",
+    headlineSecond_hi: "2026",
+    description_hi:
+      "अल्ट्रा-कॉम्पैक्ट 10,000mAh मैग्नेटिक वायरलेस पावर बैंक, 15W MagSafe स्नैप चार्जिंग, 20W टाइप-C फ़ास्ट चार्जिंग और रीयल-टाइम LED डिजिटल डिस्प्ले।",
+    highlights_hi: [
+      { icon: "Zap", text: "15W MagSafe वायरलेस" },
+      { icon: "Sparkles", text: "LED डिजिटल डिस्प्ले" },
+      { icon: "Star", text: "5.0 रेटिंग" },
+    ],
+    ctaText_hi: "स्टॉक प्राप्त करें",
   },
 ];
 
 export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps) {
-  // Merge live database banners with curated offer cards
+  const { isDark } = useTheme();
+  const { isHindi } = useLanguage();
+
+  // Merge live database banners with curated offer cards and resolve Hindi localization
   const cards: OfferCard[] = (() => {
     const list: OfferCard[] = [];
 
@@ -188,53 +277,98 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
           return false;
         });
 
-        // The product description MUST be displayed on the left column.
-        // It comes from b.subtitle (if DB stored description in subtitle) or matchedDef.description.
-        const productDescription =
-          (b.subtitle && b.subtitle.trim().length > 30 ? b.subtitle.trim() : null) ||
-          matchedDef?.description ||
-          b.subtitle ||
-          "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and maximum wholesale margins.";
+        const fallbackDesc = isHindi
+          ? "नेक्स्ट-जेनरेशन मोबाइल एवं कंप्यूटर एक्सेसरीज, सुपर स्पीड, डायमंड-ग्रेड सुरक्षा और अधिकतम थोक मार्जिन के लिए निर्मित।"
+          : "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and maximum wholesale margins.";
 
-        // The card subtitle displayed in the floating pill at the bottom/downside of the 3D card image.
-        // Do NOT put the long description sentence here! Keep it clean with release/wholesale pricing.
+        const productDescription =
+          (isHindi && matchedDef?.description_hi) ||
+          (b.subtitle && b.subtitle.trim().length > 30 ? b.subtitle.trim() : null) ||
+          (isHindi ? matchedDef?.description_hi : matchedDef?.description) ||
+          b.subtitle ||
+          fallbackDesc;
+
+        const fallbackSub = isHindi
+          ? "रिलीज़: जनवरी 2026 · थोक मूल्य"
+          : "Release: January 2026 · Wholesale Pricing";
+
         const cardPillSubtitle =
+          (isHindi && matchedDef?.subtitle_hi) ||
           matchedDef?.subtitle ||
           (b.subtitle && b.subtitle.trim().length <= 30
             ? b.subtitle.trim()
-            : "Release: January 2026 · Wholesale Pricing");
+            : fallbackSub);
 
         const cardHighlights =
-          b.badges && Array.isArray(b.badges) && b.badges.length > 0
+          (isHindi && matchedDef?.highlights_hi) ||
+          (b.badges && Array.isArray(b.badges) && b.badges.length > 0
             ? b.badges.map((badge: any) => ({
                 icon: (["Zap", "ShieldCheck", "Star", "Flame", "Sparkles"].includes(badge.icon)
                   ? badge.icon
                   : "Zap") as "Zap" | "ShieldCheck" | "Star" | "Flame" | "Sparkles",
-                text: badge.text || badge.label || "Wholesale Grade",
+                text: badge.text || badge.label || (isHindi ? "थोक विनिर्देश" : "Wholesale Grade"),
               }))
-            : matchedDef?.highlights || [
-                { icon: "Zap", text: "Wholesale Spec" },
-                { icon: "ShieldCheck", text: "Quality Certified" },
-                { icon: "Star", text: `${customRating} Rated` },
-              ];
+            : (isHindi && matchedDef?.highlights_hi) || matchedDef?.highlights || [
+                { icon: "Zap", text: isHindi ? "थोक विनिर्देश" : "Wholesale Spec" },
+                { icon: "ShieldCheck", text: isHindi ? "गुणवत्ता प्रमाणित" : "Quality Certified" },
+                { icon: "Star", text: isHindi ? `${customRating || "5.0"} रेटिंग` : `${customRating || "5.0"} Rated` },
+              ]);
+
+        const localizedBadge = isHindi
+          ? (matchedDef?.badge_hi || b.badge_text || "URBANRAT प्रो")
+          : (b.badge_text || matchedDef?.badge || "URBANRAT PRO");
+
+        const localizedTitle = isHindi
+          ? (matchedDef?.title_hi || b.title)
+          : b.title;
+
+        const localizedTagline = isHindi
+          ? (matchedDef?.tagline_hi || `प्रीमियर 2026 · ${b.badge_text || "URT सिनेमैटिक गियर"}`)
+          : (matchedDef?.tagline || `PREMIERES 2026 · ${b.badge_text || "URBANRAT CINEMATIC GEAR"}`);
+
+        const localizedHeadlineFirst = isHindi
+          ? (matchedDef?.headlineFirst_hi || matchedDef?.headlineFirst || b.title.split(" ").slice(0, 2).join(" ").toUpperCase())
+          : (matchedDef?.headlineFirst || b.title.split(" ").slice(0, 2).join(" ").toUpperCase());
+
+        const localizedHeadlineHighlight = isHindi
+          ? (matchedDef?.headlineHighlight_hi || matchedDef?.headlineHighlight || b.title.split(" ").slice(2, 4).join(" ").toUpperCase() || "PREMIERE GEAR")
+          : (matchedDef?.headlineHighlight || b.title.split(" ").slice(2, 4).join(" ").toUpperCase() || "PREMIERE GEAR");
+
+        const localizedHeadlineSecond = isHindi
+          ? (matchedDef?.headlineSecond_hi || matchedDef?.headlineSecond || "2026")
+          : (matchedDef?.headlineSecond || "2026");
+
+        const localizedCta = isHindi
+          ? (matchedDef?.ctaText_hi || "स्टॉक प्राप्त करें")
+          : (b.cta_text || matchedDef?.ctaText || "Receive");
 
         list.push({
           id: b.id,
-          badge: b.badge_text || matchedDef?.badge || "URBANRAT PRO",
-          title: b.title,
-          subtitle: cardPillSubtitle, // Clean subtitle on the downside of the image!
+          badge: localizedBadge,
+          title: localizedTitle,
+          subtitle: cardPillSubtitle,
           rating: customRating,
           image: b.image_url!,
           darkImage: matchedDef?.darkImage || b.image_url!,
           lightImage: matchedDef?.lightImage || b.image_url!,
-          ctaText: b.cta_text || matchedDef?.ctaText || "Receive",
+          ctaText: localizedCta,
           ctaLink: b.cta_link || b.link_url || matchedDef?.ctaLink || "/urbanrat",
-          tagline: matchedDef?.tagline || `PREMIERES 2026 · ${b.badge_text || "URBANRAT CINEMATIC GEAR"}`,
-          headlineFirst: matchedDef?.headlineFirst || b.title.split(" ").slice(0, 2).join(" ").toUpperCase(),
-          headlineHighlight: matchedDef?.headlineHighlight || b.title.split(" ").slice(2, 4).join(" ").toUpperCase() || "PREMIERE GEAR",
-          headlineSecond: matchedDef?.headlineSecond || "2026",
-          description: productDescription, // Full description displayed on the LEFT!
+          tagline: localizedTagline,
+          headlineFirst: localizedHeadlineFirst,
+          headlineHighlight: localizedHeadlineHighlight,
+          headlineSecond: localizedHeadlineSecond,
+          description: productDescription,
           highlights: cardHighlights,
+          badge_hi: matchedDef?.badge_hi,
+          title_hi: matchedDef?.title_hi,
+          subtitle_hi: matchedDef?.subtitle_hi,
+          tagline_hi: matchedDef?.tagline_hi,
+          headlineFirst_hi: matchedDef?.headlineFirst_hi,
+          headlineHighlight_hi: matchedDef?.headlineHighlight_hi,
+          headlineSecond_hi: matchedDef?.headlineSecond_hi,
+          description_hi: matchedDef?.description_hi,
+          highlights_hi: matchedDef?.highlights_hi,
+          ctaText_hi: matchedDef?.ctaText_hi,
         });
       });
 
@@ -253,14 +387,25 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
         return false;
       });
       if (!alreadyPresent) {
-        list.push(def);
+        list.push({
+          ...def,
+          badge: isHindi ? (def.badge_hi || def.badge) : def.badge,
+          title: isHindi ? (def.title_hi || def.title) : def.title,
+          subtitle: isHindi ? (def.subtitle_hi || def.subtitle) : def.subtitle,
+          tagline: isHindi ? (def.tagline_hi || def.tagline) : def.tagline,
+          headlineFirst: isHindi ? (def.headlineFirst_hi || def.headlineFirst) : def.headlineFirst,
+          headlineHighlight: isHindi ? (def.headlineHighlight_hi || def.headlineHighlight) : def.headlineHighlight,
+          headlineSecond: isHindi ? (def.headlineSecond_hi || def.headlineSecond) : def.headlineSecond,
+          description: isHindi ? (def.description_hi || def.description) : def.description,
+          highlights: isHindi ? (def.highlights_hi || def.highlights) : def.highlights,
+          ctaText: isHindi ? (def.ctaText_hi || "स्टॉक प्राप्त करें") : def.ctaText,
+        });
       }
     });
 
     return list.slice(0, 5);
   })();
 
-  const { isDark } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -330,75 +475,115 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
     };
   }, []);
 
-  // Autoplay with pause on hover/interaction & background tab protection
-  // Tuned to a brisk 3.0s (3000ms) frequency for lively, engaging hero showcase
+  // Smooth Auto-Play Loop: Advances every 4.8s unless hovered, tab hidden or window blurred
   useEffect(() => {
     if (isPaused || total <= 1) return;
 
     const interval = setInterval(() => {
-      // Guard against background tab execution
-      if (typeof document !== "undefined" && document.hidden) return;
       setActiveIndex((prev) => (prev + 1) % total);
-    }, 3000);
+    }, 4800);
 
     return () => clearInterval(interval);
   }, [isPaused, total]);
 
-  // Touch drag tracking for mobile swipe gesture
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
+  // Touch Swipe Gesture Handling (Mobile / Tablet)
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
 
-  function handleMouseEnter() {
-    isHoveredRef.current = true;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? null;
+    touchStartYRef.current = e.touches[0]?.clientY ?? null;
+    touchStartTimeRef.current = Date.now();
     setIsPaused(true);
-  }
+  };
 
-  function handleMouseLeave() {
-    isHoveredRef.current = false;
-    setIsPaused(false);
-  }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const currentX = e.touches[0]?.clientX ?? 0;
+    const currentY = e.touches[0]?.clientY ?? 0;
+    const diffX = touchStartXRef.current - currentX;
+    const diffY = touchStartYRef.current - currentY;
 
-  function handleTouchStart(e: React.TouchEvent) {
-    setIsPaused(true);
-    if (e.targetTouches[0]) {
-      touchStartX.current = e.targetTouches[0].clientX;
+    // If horizontal swipe is clearly dominant over vertical scroll, lock it in
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
+      if (e.cancelable) {
+        // Prevent accidental page bounce during crisp carousel flick
+      }
     }
-  }
+  };
 
-  function handleTouchMove(e: React.TouchEvent) {
-    if (e.targetTouches[0]) {
-      touchEndX.current = e.targetTouches[0].clientX;
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) {
+      setIsPaused(false);
+      return;
     }
-  }
 
-  function handleTouchEnd() {
-    setIsPaused(false);
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 45;
-    const isRightSwipe = distance < -45;
+    const endX = e.changedTouches[0]?.clientX ?? 0;
+    const endY = e.changedTouches[0]?.clientY ?? 0;
+    const diffX = touchStartXRef.current - endX;
+    const diffY = (touchStartYRef.current ?? 0) - endY;
+    const elapsedTime = Date.now() - touchStartTimeRef.current;
 
-    if (isLeftSwipe) {
-      nextSlide();
-    } else if (isRightSwipe) {
-      prevSlide();
+    // Minimum swipe threshold (50px) or quick velocity flick (>30px under 250ms)
+    const isQuickFlick = elapsedTime < 250 && Math.abs(diffX) > 30;
+    const isSubstantialSwipe = Math.abs(diffX) > 50;
+
+    if ((isQuickFlick || isSubstantialSwipe) && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0) {
+        // Swiped Left -> Advance to next slide
+        nextSlide();
+      } else {
+        // Swiped Right -> Return to previous slide
+        prevSlide();
+      }
     }
-    touchStartX.current = null;
-    touchEndX.current = null;
-  }
 
-  function handleTouchCancel() {
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
     setIsPaused(false);
-    touchStartX.current = null;
-    touchEndX.current = null;
-  }
+  };
+
+  const handleTouchCancel = () => {
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    setIsPaused(false);
+  };
+
+  // Keyboard Arrow Navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is focused inside an input/textarea
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea") return;
+
+      if (e.key === "ArrowLeft") {
+        prevSlide();
+      } else if (e.key === "ArrowRight") {
+        nextSlide();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nextSlide, prevSlide]);
 
   const activeCard = cards[activeIndex] || cards[0];
+
+  const handleMouseEnter = () => {
+    isHoveredRef.current = true;
+    setIsPaused(true);
+  };
+
+  const handleMouseLeave = () => {
+    isHoveredRef.current = false;
+    setIsPaused(false);
+  };
 
   return (
     <section
       ref={sectionRef}
-      aria-label="Wholesale Offers Showcase"
+      aria-label={isHindi ? "थोक ऑफर्स शोकेस" : "Wholesale Offers Showcase"}
       className="relative w-full py-4 sm:py-6 select-none overflow-hidden lg:overflow-visible"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -432,7 +617,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 backdrop-blur-md border border-slate-700/60 dark:border-white/10 text-[11px] font-bold text-white shadow-xs w-fit">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="tracking-wider uppercase text-slate-200">
-                {activeCard?.tagline || "PREMIERES 2026 · URBANRAT CINEMATIC GEAR"}
+                {(isHindi && activeCard?.tagline_hi) ? activeCard.tagline_hi : (activeCard?.tagline || (isHindi ? "प्रीमियर 2026 · URT सिनेमैटिक गियर" : "PREMIERES 2026 · URBANRAT CINEMATIC GEAR"))}
               </span>
             </div>
           </CursorPhobicElement>
@@ -442,7 +627,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             <h1 className="text-4xl xl:text-5xl 2xl:text-6xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[1.05] transition-all duration-300">
               <div className="tracking-tight">
                 <CursorPhobicWords
-                  text={activeCard?.headlineFirst || "MAJOR GEAR"}
+                  text={(isHindi && activeCard?.headlineFirst_hi) ? activeCard.headlineFirst_hi : (activeCard?.headlineFirst || (isHindi ? "प्रमुख गियर" : "MAJOR GEAR"))}
                   repulsionRadius={170}
                   maxDisplacement={28}
                   maxTilt={8}
@@ -450,7 +635,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               </div>
               <div className="text-red-500 dark:text-red-500 drop-shadow-[0_0_24px_rgba(239,68,68,0.55)]">
                 <CursorPhobicWords
-                  text={activeCard?.headlineHighlight || "OF PREMIERES"}
+                  text={(isHindi && activeCard?.headlineHighlight_hi) ? activeCard.headlineHighlight_hi : (activeCard?.headlineHighlight || (isHindi ? "प्रीमियर का" : "OF PREMIERES"))}
                   repulsionRadius={170}
                   maxDisplacement={32}
                   maxTilt={8}
@@ -458,7 +643,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               </div>
               <div className="tracking-tight">
                 <CursorPhobicWords
-                  text={activeCard?.headlineSecond || "2026"}
+                  text={(isHindi && activeCard?.headlineSecond_hi) ? activeCard.headlineSecond_hi : (activeCard?.headlineSecond || "2026")}
                   repulsionRadius={170}
                   maxDisplacement={28}
                   maxTilt={8}
@@ -475,17 +660,16 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             maxTilt={3}
             className="text-sm xl:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg font-medium min-h-12 transition-all duration-300"
           >
-            {activeCard?.description ||
-              "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and 65W GaN ultra-fast charging."}
+            {(isHindi && activeCard?.description_hi) ? activeCard.description_hi : (activeCard?.description || (isHindi ? "नेक्स्ट-जेनरेशन मोबाइल एवं कंप्यूटर एक्सेसरीज, सुपर स्पीड, डायमंड-ग्रेड सुरक्षा और 65W GaN अल्ट्रा-फ़ास्ट चार्जिंग के लिए निर्मित।" : "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and 65W GaN ultra-fast charging."))}
           </CursorPhobicElement>
 
           {/* 3 Highlight Chips (Each chip repels away from cursor) */}
           <div className="flex items-center space-x-2.5 flex-wrap gap-y-2 text-xs font-bold transition-all duration-300">
-            {(activeCard?.highlights || [
-              { icon: "Zap", text: "65W GaN Core" },
-              { icon: "ShieldCheck", text: "9H Sapphire Armor" },
-              { icon: "Star", text: "4.9 Rated" },
-            ]).map((h, i) => (
+            {((isHindi && activeCard?.highlights_hi) ? activeCard.highlights_hi : (activeCard?.highlights || [
+              { icon: "Zap", text: isHindi ? "65W GaN कोर" : "65W GaN Core" },
+              { icon: "ShieldCheck", text: isHindi ? "9H सफायर आर्मर" : "9H Sapphire Armor" },
+              { icon: "Star", text: isHindi ? "4.9 रेटिंग" : "4.9 Rated" },
+            ])).map((h, i) => (
               <CursorPhobicElement
                 key={i}
                 as="div"
@@ -516,9 +700,9 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             >
               <Link
                 to={activeCard?.ctaLink || "/urbanrat"}
-                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-linear-to-r from-red-600 via-rose-600 to-orange-600 shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:shadow-[0_0_32px_rgba(239,68,68,0.7)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-semibold text-xs sm:text-sm text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active shadow-xs hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
               >
-                <span>{activeCard?.ctaText || "Receive Premiere Gear"}</span>
+                <span>{(isHindi && activeCard?.ctaText_hi) ? activeCard.ctaText_hi : (activeCard?.ctaText || (isHindi ? "स्टॉक प्राप्त करें" : "Receive"))}</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </Link>
             </CursorPhobicElement>
@@ -532,7 +716,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               <button
                 type="button"
                 onClick={prevSlide}
-                aria-label="Previous slide"
+                aria-label={isHindi ? "पिछला ऑफर" : "Previous slide"}
                 className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4 stroke-[2.4]" />
@@ -548,7 +732,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               <button
                 type="button"
                 onClick={nextSlide}
-                aria-label="Next slide"
+                aria-label={isHindi ? "अगला ऑफर" : "Next slide"}
                 className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4 stroke-[2.4]" />
@@ -643,14 +827,14 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                     {/* Gradient Vignette Overlay for High Legibility (Dual Theme) */}
                     <div className="absolute inset-0 bg-linear-to-t from-white/95 via-transparent to-white/15 dark:from-black/95 dark:via-black/35 dark:to-black/15 pointer-events-none transition-colors" />
 
-                    {/* ── Top Pill Badge (e.g. URBANRAT PRO) ── */}
+                    {/* ── Top Pill Badge (e.g. URBANRAT PRO / प्रीमियर पैक) ── */}
                     <div
                       className={`absolute top-4 left-4 z-20 transition-opacity duration-300 ${
                         isCenter ? "opacity-100" : "opacity-40"
                       }`}
                     >
                       <span className="inline-flex items-center px-3 py-1 rounded-xl bg-white/90 dark:bg-black/75 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-white shadow-sm">
-                        {card.badge}
+                        {(isHindi && card.badge_hi) ? card.badge_hi : card.badge}
                       </span>
                     </div>
 
@@ -668,7 +852,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                       }`}
                     >
                       <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate max-w-full">
-                        {card.title}
+                        {(isHindi && card.title_hi) ? card.title_hi : card.title}
                       </h3>
                     </Link>
                   </CursorPhobicElement>
@@ -680,7 +864,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             <button
               type="button"
               onClick={prevSlide}
-              aria-label="Previous Offer"
+              aria-label={isHindi ? "पिछला ऑफर" : "Previous Offer"}
               className="lg:hidden flex absolute left-3 top-1/2 -translate-y-1/2 z-35 w-9.5 h-9.5 rounded-full bg-white/35 dark:bg-black/40 backdrop-blur-xl border border-white/70 dark:border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.7)] items-center justify-center text-slate-900 dark:text-white hover:bg-white/55 dark:hover:bg-white/15 active:scale-90 transition-all cursor-pointer"
             >
               <ChevronLeft className="w-4.5 h-4.5 stroke-[2.5] drop-shadow-xs" />
@@ -689,7 +873,7 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
             <button
               type="button"
               onClick={nextSlide}
-              aria-label="Next Offer"
+              aria-label={isHindi ? "अगला ऑफर" : "Next Offer"}
               className="lg:hidden flex absolute right-3 top-1/2 -translate-y-1/2 z-35 w-9.5 h-9.5 rounded-full bg-white/35 dark:bg-black/40 backdrop-blur-xl border border-white/70 dark:border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.7)] items-center justify-center text-slate-900 dark:text-white hover:bg-white/55 dark:hover:bg-white/15 active:scale-90 transition-all cursor-pointer"
             >
               <ChevronRight className="w-4.5 h-4.5 stroke-[2.5] drop-shadow-xs" />
@@ -702,10 +886,10 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
       {activeCard && (
         <div className="lg:hidden px-4 pt-3 text-center space-y-1.5 animate-in fade-in duration-200">
           <CursorPhobicElement as="h2" repulsionRadius={140} maxDisplacement={14} maxTilt={4} className="text-base font-black text-slate-900 dark:text-white tracking-tight">
-            {activeCard.title}
+            {(isHindi && activeCard.title_hi) ? activeCard.title_hi : activeCard.title}
           </CursorPhobicElement>
           <CursorPhobicElement as="p" repulsionRadius={130} maxDisplacement={10} className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto font-medium">
-            {activeCard.description}
+            {(isHindi && activeCard.description_hi) ? activeCard.description_hi : activeCard.description}
           </CursorPhobicElement>
         </div>
       )}
@@ -719,20 +903,12 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
               key={card.id}
               type="button"
               onClick={() => goToSlide(idx)}
-              aria-label={`Go to offer slide ${idx + 1}`}
+              aria-label={isHindi ? `ऑफर स्लाइड ${idx + 1} पर जाएं` : `Go to offer slide ${idx + 1}`}
               className={`transition-all duration-300 rounded-full cursor-pointer ${
                 isActive
-                  ? "w-7 h-2 shadow-sm"
+                  ? "w-7 h-2 bg-primary shadow-xs"
                   : "w-2 h-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600"
               }`}
-              style={
-                isActive
-                  ? {
-                      background: "var(--brand-gradient)",
-                      boxShadow: "var(--brand-shadow)",
-                    }
-                  : undefined
-              }
             />
           );
         })}
@@ -740,4 +916,3 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
     </section>
   );
 }
-

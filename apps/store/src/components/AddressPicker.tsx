@@ -90,10 +90,7 @@ export function AddressPicker({
               triggerHaptic("selection");
               onOpenAuth();
             }}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-2xs hover:opacity-95 transition cursor-pointer"
-            style={{
-              background: "var(--brand-gradient, linear-gradient(to bottom, #5ADBE5, #0A82A8))",
-            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active shadow-xs transition cursor-pointer"
           >
             Sign In
           </button>
@@ -141,10 +138,7 @@ export function AddressPicker({
               triggerHaptic("selection");
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-2xs"
-            style={{
-              background: "var(--brand-gradient, linear-gradient(to bottom, #5ADBE5, #0A82A8))",
-            }}
+            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Add Saved Address</span>

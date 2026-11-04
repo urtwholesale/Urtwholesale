@@ -43,10 +43,11 @@ import {
 import { ImageCompressorTool } from "./ImageCompressorTool";
 import { MarqueeManager } from "./MarqueeManager";
 import { DealershipManager } from "../dealership/DealershipManager";
+import { HomepageSectionsManager } from "./HomepageSectionsManager";
 
 export function ContentEditor() {
   const [subTab, setSubTab] = useState<
-    "banners" | "marquee" | "dealership" | "pages" | "searches" | "compressor" | "bestsellers"
+    "banners" | "sections" | "marquee" | "dealership" | "pages" | "searches" | "compressor" | "bestsellers"
   >("banners");
 
   // 1. Banners state
@@ -621,7 +622,7 @@ export function ContentEditor() {
                   onClick={handleCreateBanner}
                   className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-white text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer hover:opacity-95 disabled:opacity-50"
                   style={{
-                    background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                    /* solid brand */
                   }}
                 >
                   {creatingBanner ? (
@@ -673,7 +674,7 @@ export function ContentEditor() {
                           onClick={() => handleSaveBanner(b)}
                           className="px-4 py-1.5 rounded-xl text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                           style={{
-                            background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                            /* solid brand */
                           }}
                         >
                           {savingBannerId === b.id ? (
@@ -867,8 +868,7 @@ export function ContentEditor() {
 
                             <div className="flex items-center space-x-2 w-full sm:w-auto">
                               <label
-                                className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs cursor-pointer transition hover:opacity-90"
-                                style={{ background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }}
+                                className="h-11 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-2"
                               >
                                 {uploadingBannerId === b.id ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1118,6 +1118,8 @@ export function ContentEditor() {
           {/* ══════════════════════════════════════════════════════════════════
               SUB-TAB 1.5: MARQUEE ANNOUNCEMENTS & OFFERS TICKER
              ══════════════════════════════════════════════════════════════════ */}
+          {subTab === "sections" && <HomepageSectionsManager />}
+
           {subTab === "marquee" && <MarqueeManager />}
 
           {/* ══════════════════════════════════════════════════════════════════
@@ -1191,7 +1193,7 @@ export function ContentEditor() {
                       onClick={handleSaveActivePage}
                       className="px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                       style={{
-                        background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                        /* solid brand */
                       }}
                     >
                       {savingPage ? (
@@ -1284,7 +1286,7 @@ export function ContentEditor() {
                   onClick={handleSaveSearches}
                   className="px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                   style={{
-                    background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
+                    /* solid brand */
                   }}
                 >
                   {savingSearches ? (

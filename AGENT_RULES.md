@@ -15,30 +15,37 @@ smallest viewport.
 - **Customer Storefront (`apps/store`)**: Dual-Theme (Light & Dark).
   - Uses `ThemeContext` with reactive Sun/Moon toggle in the top bar and menu drawer.
   - Supports `dark:` Tailwind classes and dark glassmorphic surfaces.
-  - Light mode uses cyan/teal brand tokens (`#5ADBE5` to `#0A82A8`) on `#F8F9FB` canvas.
-  - Dark mode uses cyber orange brand tokens (`#FFA033` to `#E64A00`) on an obsidian canvas (`#0B0F17`).
+  - Light mode uses solid teal brand tokens (`#087799`) on `#F8F9FB` canvas.
+  - Dark mode retains the **same teal hue family** (`#2BBFD9`) on obsidian `#0B0F17` canvas (no orange).
 - **Admin Management Portal (`apps/admin`)**: Light Theme Only.
-  - Standardized enterprise light operations theme with `#ECEEED` soft slate canvas and cyan brand gradient.
+  - Standardized enterprise light operations theme with `#ECEEED` soft slate canvas and primary teal.
   - Dark-mode styles, toggles, and dark variants are excluded from the admin suite.
 
-## 3. Brand Gradient
+## 3. Color Rules & Semantic Tokens
 
-| Token | Light Theme (Store & Admin) | Dark Theme (Storefront Variant) |
-| :--- | :--- | :--- |
-| `--color-brand-light` | `#5ADBE5` | `#FFA033` |
-| `--color-brand` | `#1EAFC7` | `#FF7700` |
-| `--color-brand-dark` | `#0A82A8` | `#E64A00` |
+Both applications follow a strict, cohesive semantic color system defined in `@theme` / `index.css`:
 
-The light gradient runs **top → bottom** (`from #5ADBE5 to #0A82A8`).
-The dark storefront gradient runs **top → bottom** (`from #FFA033 to #E64A00`).
+### Semantic Tokens
+- **`--color-primary`** (`#087799` light / `#2BBFD9` dark): Primary interactive controls, price text, active indicators.
+- **`--color-primary-hover`** (`#066785` light / `#4FD0E6` dark): Hover state for primary buttons.
+- **`--color-primary-active`** (`#055670` light / `#1FA8C2` dark): Active/pressed state for controls.
+- **`--color-on-primary`** (`#FFFFFF` light / `#04222B` dark): Text/icons on primary button fills.
+- **`--color-primary-soft`** (`#EDF8FA` light / `rgba(43, 191, 217, 0.14)` dark): Tinted backgrounds, secondary buttons, selected tabs, brand badges.
+- **`--color-primary-border`** (`#B5E4EC` light / `rgba(43, 191, 217, 0.35)` dark): Borders for badges & secondary buttons.
+- **`--color-ring`** (`#1EAFC7` light / `#2BBFD9` dark): Focus rings (`focus-visible:ring-2 ring-ring ring-offset-2`).
 
-Use it for:
-- Primary buttons
-- Active / selected states
-- Highlights and accents
-
-These are defined as Tailwind v4 `@theme` tokens and the `brand-gradient`
-utility class in `index.css`.
+### Color Usage Rules
+1. **Primary = Actions**: Solid teal (`bg-primary text-on-primary`). Use for CTA buttons, Add to Cart, Checkout, Save, active tabs, and link hover states.
+2. **Primary-Soft = Selected & Tint**: `bg-primary-soft text-primary border border-primary-border`. Use for secondary buttons, selected filter pills, and brand badges.
+3. **No Gradients for Interactive Controls**: Buttons, inputs, selects, tabs, and pills must **never** use gradients. Gradients are only permitted for (a) hero promotional banners/photo overlays and (b) the official logo badge.
+4. **Status Colors = State Only**:
+   - `success` (`#16A34A` / `#4ADE80`): Order delivered, in-stock pills, payment verified.
+   - `warning` (`#D97706` / `#FBBF24`): Low stock, pending verification, return requested.
+   - `danger` (`#DC2626` / `#F87171`): Out of stock, cancelled orders, delete actions. Never use teal for danger.
+   - `info` (`#2563EB` / `#60A5FA`): In transit, dispatch tracking, informational notices.
+   - **Never** use teal for status or lifecycle badges.
+5. **Form Controls**: `border-surface-border focus:border-primary focus:ring-2 focus:ring-ring/30 placeholder:text-text-subtle`.
+6. **WCAG AA Compliance**: All text/fill combinations must meet WCAG AA standards (>= 4.5:1 for body text, >= 3.0:1 for large text/UI).
 
 ## 4. Glassmorphism Bars
 

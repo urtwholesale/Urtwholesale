@@ -24,7 +24,7 @@ import {
 import { m, AnimatePresence } from "../lib/motion";
 import { ProductCard } from "./ProductCard";
 
-export type SliderThemeColor = "amber" | "rose" | "cyan" | "violet" | "slate";
+export type SliderThemeColor = "amber" | "rose" | "cyan" | "violet" | "slate" | "emerald" | "blue" | "orange";
 
 interface CategoryProductSliderProps {
   title: string;
@@ -50,54 +50,71 @@ const THEME_STYLES: Record<
   }
 > = {
   amber: {
-    iconBadge: "bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/20",
-    iconText: "text-amber-600 dark:text-amber-400",
+    iconBadge: "bg-linear-to-br from-amber-500/25 via-amber-400/15 to-amber-600/10 dark:from-amber-400/30 dark:via-amber-500/15 dark:to-transparent border border-amber-500/35 dark:border-amber-400/35 shadow-[0_4px_16px_rgba(245,158,11,0.22)]",
+    iconText: "text-amber-500 dark:text-amber-400",
     cardBorder: "border-amber-500/20 dark:border-amber-500/30",
     cardGlow: "shadow-[0_8px_32px_rgba(245,158,11,0.08)] dark:shadow-[0_8px_32px_rgba(245,158,11,0.18)]",
     activeDot: "bg-amber-500",
     accentBg: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
   },
   rose: {
-    iconBadge: "bg-rose-500/10 dark:bg-rose-400/15 border border-rose-500/20",
-    iconText: "text-rose-600 dark:text-rose-400",
+    iconBadge: "bg-linear-to-br from-rose-500/25 via-rose-400/15 to-rose-600/10 dark:from-rose-400/30 dark:via-rose-500/15 dark:to-transparent border border-rose-500/35 dark:border-rose-400/35 shadow-[0_4px_16px_rgba(244,63,94,0.22)]",
+    iconText: "text-rose-500 dark:text-rose-400",
     cardBorder: "border-rose-500/20 dark:border-rose-500/30",
     cardGlow: "shadow-[0_8px_32px_rgba(244,63,94,0.08)] dark:shadow-[0_8px_32px_rgba(244,63,94,0.18)]",
     activeDot: "bg-rose-500",
     accentBg: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300",
   },
   cyan: {
-    iconBadge: "bg-cyan-500/10 dark:bg-cyan-400/15 border border-cyan-500/20",
-    iconText: "text-cyan-600 dark:text-cyan-400",
+    iconBadge: "bg-linear-to-br from-cyan-500/25 via-cyan-400/15 to-cyan-600/10 dark:from-cyan-400/30 dark:via-cyan-500/15 dark:to-transparent border border-cyan-500/35 dark:border-cyan-400/35 shadow-[0_4px_16px_rgba(6,182,212,0.22)]",
+    iconText: "text-cyan-500 dark:text-cyan-400",
     cardBorder: "border-cyan-500/20 dark:border-cyan-500/30",
     cardGlow: "shadow-[0_8px_32px_rgba(6,182,212,0.08)] dark:shadow-[0_8px_32px_rgba(6,182,212,0.18)]",
     activeDot: "bg-cyan-500",
     accentBg: "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300",
   },
   violet: {
-    iconBadge: "bg-violet-500/10 dark:bg-violet-400/15 border border-violet-500/20",
-    iconText: "text-violet-600 dark:text-violet-400",
+    iconBadge: "bg-linear-to-br from-violet-500/25 via-violet-400/15 to-violet-600/10 dark:from-violet-400/30 dark:via-violet-500/15 dark:to-transparent border border-violet-500/35 dark:border-violet-400/35 shadow-[0_4px_16px_rgba(139,92,246,0.22)]",
+    iconText: "text-violet-500 dark:text-violet-400",
     cardBorder: "border-violet-500/20 dark:border-violet-500/30",
     cardGlow: "shadow-[0_8px_32px_rgba(139,92,246,0.08)] dark:shadow-[0_8px_32px_rgba(139,92,246,0.18)]",
     activeDot: "bg-violet-500",
     accentBg: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
   },
   slate: {
-    iconBadge: "bg-slate-500/10 dark:bg-orange-500/15 border border-slate-300 dark:border-orange-500/30",
-    iconText: "text-slate-700 dark:text-orange-400",
+    iconBadge: "bg-linear-to-br from-slate-500/20 via-slate-400/15 to-slate-600/10 dark:from-orange-500/25 dark:via-orange-400/15 dark:to-transparent border border-slate-300 dark:border-orange-500/35 shadow-[0_4px_16px_rgba(15,23,42,0.12)]",
+    iconText: "text-slate-800 dark:text-orange-400",
     cardBorder: "border-slate-200 dark:border-slate-800",
     cardGlow: "shadow-[0_8px_32px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_32px_rgba(249,115,22,0.15)]",
     activeDot: "bg-orange-500",
     accentBg: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
   },
+  emerald: {
+    iconBadge: "bg-linear-to-br from-emerald-500/25 via-emerald-400/15 to-emerald-600/10 dark:from-emerald-400/30 dark:via-emerald-500/15 dark:to-transparent border border-emerald-500/35 dark:border-emerald-400/35 shadow-[0_4px_16px_rgba(16,185,129,0.22)]",
+    iconText: "text-emerald-500 dark:text-emerald-400",
+    cardBorder: "border-emerald-500/20 dark:border-emerald-500/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(16,185,129,0.08)] dark:shadow-[0_8px_32px_rgba(16,185,129,0.18)]",
+    activeDot: "bg-emerald-500",
+    accentBg: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300",
+  },
+  blue: {
+    iconBadge: "bg-linear-to-br from-blue-500/25 via-blue-400/15 to-blue-600/10 dark:from-blue-400/30 dark:via-blue-500/15 dark:to-transparent border border-blue-500/35 dark:border-blue-400/35 shadow-[0_4px_16px_rgba(59,130,246,0.22)]",
+    iconText: "text-blue-500 dark:text-blue-400",
+    cardBorder: "border-blue-500/20 dark:border-blue-500/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(59,130,246,0.08)] dark:shadow-[0_8px_32px_rgba(59,130,246,0.18)]",
+    activeDot: "bg-blue-500",
+    accentBg: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300",
+  },
+  orange: {
+    iconBadge: "bg-linear-to-br from-orange-500/25 via-orange-400/15 to-orange-600/10 dark:from-orange-400/30 dark:via-orange-500/15 dark:to-transparent border border-orange-500/35 dark:border-orange-400/35 shadow-[0_4px_16px_rgba(249,115,22,0.22)]",
+    iconText: "text-orange-500 dark:text-orange-400",
+    cardBorder: "border-orange-500/20 dark:border-orange-500/30",
+    cardGlow: "shadow-[0_8px_32px_rgba(249,115,22,0.08)] dark:shadow-[0_8px_32px_rgba(249,115,22,0.18)]",
+    activeDot: "bg-orange-500",
+    accentBg: "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300",
+  },
 };
 
-/**
- * Dynamically determines how many products to show per row based on viewport width:
- * - Mobile (< 768px): 1 card slider
- * - Tablet (768px - 1023px): 3 in a row
- * - Laptop (1024px - 1535px): 4 in a row (spacious, non-cramped cards)
- * - Desktop (1536px+): 5 in a row
- */
 function useResponsiveItemsPerPage(): number {
   const [itemsPerPage, setItemsPerPage] = useState<number>(() => {
     if (typeof window === "undefined") return 4;
@@ -302,7 +319,7 @@ export function CategoryProductSlider({
       {/* ── Section Header: Title, "See more" Button & Slider Controls ── */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className={`p-1.5 rounded-xl ${currentTheme.iconBadge} ${currentTheme.iconText} shrink-0`}>
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shrink-0 ${currentTheme.iconBadge} ${currentTheme.iconText} shadow-xs transition-transform duration-300 group-hover:scale-105`}>
             {icon}
           </div>
 
@@ -321,11 +338,7 @@ export function CategoryProductSlider({
             {seeMoreUrl && (
               <Link
                 to={seeMoreUrl}
-                className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-black text-white hover:opacity-95 active:scale-95 transition cursor-pointer shadow-xs shrink-0"
-                style={{
-                  background: "var(--brand-gradient)",
-                  boxShadow: "var(--brand-shadow)",
-                }}
+                className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active active:scale-95 transition cursor-pointer shadow-xs shrink-0"
               >
                 <span>{t("home.see_more", "See more")}</span>
                 <ArrowRight className="w-3 h-3 stroke-[2.5]" />
@@ -568,7 +581,7 @@ export function CategoryProductSlider({
 
                 {/* Wholesale MOQ & Quick Add Button Row */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 mt-auto">
-                  <span className="text-[10px] font-bold text-brand-dark dark:text-orange-400 bg-cyan-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded border border-cyan-100 dark:border-orange-500/20">
+                  <span className="text-[10px] font-bold text-primary bg-primary-soft px-1.5 py-0.5 rounded border border-primary-border">
                     {t("product.moq", "MOQ")}: {currentProduct.min_order_qty || 10} {t("product.pcs", "pcs")}
                   </span>
 
@@ -580,19 +593,11 @@ export function CategoryProductSlider({
                         ? `${t("product.added", "Added")} ${currentProduct.name}`
                         : `${t("product.add", "Add")} ${currentProduct.name}`
                     }
-                    className={`relative h-7.5 px-3 rounded-full flex items-center space-x-1 text-[11px] font-black text-white cursor-pointer transition-all duration-300 shrink-0 ${
+                    className={`relative h-8 px-3 rounded-xl flex items-center space-x-1 text-xs font-semibold cursor-pointer transition-all duration-150 shrink-0 focus-visible:ring-2 ring-offset-2 ${
                       isAdded
-                        ? "bg-emerald-600 shadow-[0_4px_16px_rgba(16,185,129,0.5)] ring-2 ring-emerald-300"
-                        : "hover:opacity-95 active:scale-95 shadow-2xs"
+                        ? "bg-emerald-600 text-white shadow-xs ring-emerald-400"
+                        : "bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active shadow-xs ring-ring"
                     }`}
-                    style={
-                      isAdded
-                        ? undefined
-                        : {
-                            background: "var(--brand-gradient)",
-                            boxShadow: "var(--brand-shadow)",
-                          }
-                    }
                   >
                     {isAdded ? (
                       <>

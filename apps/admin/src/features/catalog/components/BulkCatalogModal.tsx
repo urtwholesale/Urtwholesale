@@ -703,7 +703,7 @@ export function BulkCatalogModal({
                     onSuccess(importReport.uploadId);
                     onClose();
                   }}
-                  className="px-5 py-2.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-md hover:shadow-lg transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-md hover:shadow-lg transition cursor-pointer"
                 >
                   View Catalog Uploads
                 </button>
@@ -848,7 +848,7 @@ export function BulkCatalogModal({
                       </p>
                     </div>
 
-                    <label className="inline-flex px-5 py-2.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-md hover:shadow-lg transition-all items-center space-x-2 cursor-pointer active:scale-95">
+                    <label className="inline-flex px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-md hover:shadow-lg transition-all items-center space-x-2 cursor-pointer active:scale-95">
                       {parsing ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -978,7 +978,7 @@ export function BulkCatalogModal({
                               type="button"
                               onClick={() => handleApplyCustomMapping(customMappings)}
                               disabled={parsing}
-                              className="px-4 py-2 rounded-xl brand-gradient text-white text-xs font-bold shadow-2xs hover:shadow-md transition cursor-pointer disabled:opacity-50"
+                              className="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-2xs hover:shadow-md transition cursor-pointer disabled:opacity-50"
                             >
                               {parsing ? "Re-checking..." : "Apply Column Mapping & Re-check"}
                             </button>
@@ -1078,7 +1078,7 @@ export function BulkCatalogModal({
                             type="button"
                             onClick={handleAutoAttachImages}
                             disabled={autoAttaching}
-                            className="px-3.5 py-1.5 rounded-xl brand-gradient text-white text-xs font-bold flex items-center space-x-1.5 shadow-2xs hover:opacity-95 cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto disabled:opacity-50"
+                            className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs flex items-center space-x-1.5 shadow-2xs hover:opacity-95 cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto disabled:opacity-50"
                           >
                             {autoAttaching ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1224,7 +1224,7 @@ export function BulkCatalogModal({
                         type="button"
                         disabled={processing || validCount === 0}
                         onClick={handleBatchSubmit}
-                        className="w-full py-3.5 rounded-2xl brand-gradient text-white font-extrabold text-sm shadow-md hover:shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="w-full py-3.5 rounded-2xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm rounded-xl shadow-xs shadow-md hover:shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         {processing ? (
                           <>

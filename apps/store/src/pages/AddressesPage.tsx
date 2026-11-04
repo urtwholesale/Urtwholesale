@@ -13,6 +13,7 @@ import {
 } from "../services/addressService";
 import { AddressFormModal } from "../components/AddressFormModal";
 import { triggerHaptic } from "../utils/haptics";
+import { useLanguage } from "../context/LanguageContext";
 import { formatIndianMobile } from "@urbanrat/shared";
 import {
   MapPin,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 
 export function AddressesPage() {
+  const { t, isHindi } = useLanguage();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,11 +59,11 @@ export function AddressesPage() {
       setAddresses(data);
     } catch (err: unknown) {
       const e = err as Error;
-      setError(e.message || "Failed to load saved addresses");
+      setError(e.message || (isHindi ? "सहेजे गए पते लोड करने में विफल" : "Failed to load saved addresses"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isHindi]);
 
   useEffect(() => {
     loadAddresses();
@@ -87,10 +89,10 @@ export function AddressesPage() {
   async function handleSaveAddress(data: CreateAddressInput) {
     if (editingAddress) {
       await updateAddress(editingAddress.id, data);
-      showToast("Address updated successfully");
+      showToast(isHindi ? "पता सफलतापूर्वक अपडेट हो गया" : "Address updated successfully");
     } else {
       await createAddress(data);
-      showToast("New address added successfully");
+      showToast(isHindi ? "नया पता सफलतापूर्वक जोड़ दिया गया" : "New address added successfully");
     }
     await loadAddresses();
   }
@@ -101,12 +103,12 @@ export function AddressesPage() {
     try {
       await setDefaultAddress(id);
       triggerHaptic("success");
-      showToast("Default address updated");
+      showToast(isHindi ? "डिफ़ॉल्ट पता अपडेट हो गया" : "Default address updated");
       await loadAddresses();
     } catch (err: unknown) {
       triggerHaptic("heavy");
       const e = err as Error;
-      alert(e.message || "Failed to set default address");
+      alert(e.message || (isHindi ? "डिफ़ॉल्ट पता सेट करने में विफल" : "Failed to set default address"));
     } finally {
       setSettingDefaultId(null);
     }
@@ -119,13 +121,13 @@ export function AddressesPage() {
     try {
       await deleteAddress(deletingId);
       triggerHaptic("success");
-      showToast("Address removed");
+      showToast(isHindi ? "पता हटा दिया गया" : "Address removed");
       setDeletingId(null);
       await loadAddresses();
     } catch (err: unknown) {
       triggerHaptic("heavy");
       const e = err as Error;
-      alert(e.message || "Failed to delete address");
+      alert(e.message || (isHindi ? "पता हटाने में विफल" : "Failed to delete address"));
     } finally {
       setIsDeleting(false);
     }
@@ -154,10 +156,10 @@ export function AddressesPage() {
           </Link>
           <div>
             <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Saved Address Book
+              {t("addresses.title", "Saved Addresses")}
             </h1>
             <p className="text-xs text-slate-400 dark:text-slate-400">
-              Manage shop, warehouse &amp; branch delivery locations
+              {t("addresses.sub", "Manage your wholesale shipping and billing destinations")}
             </p>
           </div>
         </div>
@@ -165,14 +167,10 @@ export function AddressesPage() {
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-sm hover:opacity-95 transition active:scale-95 cursor-pointer self-stretch sm:self-auto justify-center"
-          style={{
-            background: "var(--brand-gradient)",
-            boxShadow: "var(--brand-shadow)",
-          }}
+          className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer self-stretch sm:self-auto"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Add New Address</span>
+          <span>{t("addresses.add_new", "Add New Address")}</span>
         </button>
       </div>
 
@@ -180,7 +178,9 @@ export function AddressesPage() {
       {loading && (
         <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-12 text-center border border-slate-100 dark:border-slate-800 shadow-2xs">
           <Loader2 className="w-8 h-8 text-brand-dark dark:text-brand-light animate-spin mx-auto mb-3" />
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Loading saved addresses...</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {isHindi ? "सहेजे गए पते लोड हो रहे हैं..." : "Loading saved addresses..."}
+          </p>
         </div>
       )}
 
@@ -191,7 +191,9 @@ export function AddressesPage() {
             <AlertCircle className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Failed to load addresses</h3>
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+              {isHindi ? "पते लोड करने में विफल" : "Failed to load addresses"}
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{error}</p>
           </div>
           <button
@@ -199,7 +201,7 @@ export function AddressesPage() {
             onClick={loadAddresses}
             className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-700 transition cursor-pointer"
           >
-            Try Again
+            {isHindi ? "पुनः प्रयास करें" : "Try Again"}
           </button>
         </div>
       )}
@@ -211,22 +213,20 @@ export function AddressesPage() {
             <MapPin className="w-8 h-8 stroke-[1.8]" />
           </div>
           <div className="max-w-sm mx-auto">
-            <h3 className="font-black text-base text-slate-900 dark:text-white">No saved addresses yet</h3>
+            <h3 className="font-black text-base text-slate-900 dark:text-white">
+              {t("addresses.no_addresses", "No saved addresses yet")}
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Add your shop, warehouse or business dispatch address to enjoy swift, 1-click wholesale checkout.
+              {t("addresses.no_addresses_sub", "Add a delivery address for quicker wholesale checkout")}
             </p>
           </div>
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="inline-flex items-center space-x-2 px-5 py-3 rounded-xl text-white font-black text-xs shadow-sm hover:opacity-95 transition active:scale-95 cursor-pointer"
-            style={{
-              background: "var(--brand-gradient)",
-              boxShadow: "var(--brand-shadow)",
-            }}
+            className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Add Your First Address</span>
+            <span>{t("addresses.add_new", "Add New Address")}</span>
           </button>
         </div>
       )}
@@ -253,7 +253,7 @@ export function AddressesPage() {
                     {address.is_default && (
                       <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-light/20 dark:bg-orange-500/20 text-brand-dark dark:text-brand-light border border-brand-dark/20 dark:border-orange-500/30">
                         <Star className="w-3 h-3 fill-current text-brand-dark dark:text-brand-light" />
-                        <span>Default</span>
+                        <span>{t("addresses.default_badge", "Default Address")}</span>
                       </span>
                     )}
                   </div>
@@ -262,7 +262,7 @@ export function AddressesPage() {
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(address)}
-                      title="Edit address"
+                      title={t("addresses.edit", "Edit")}
                       className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -273,7 +273,7 @@ export function AddressesPage() {
                         triggerHaptic("heavy");
                         setDeletingId(address.id);
                       }}
-                      title="Delete address"
+                      title={t("addresses.delete", "Delete")}
                       className="w-8 h-8 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center transition cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -316,7 +316,9 @@ export function AddressesPage() {
                   <p className="font-medium text-slate-800 dark:text-slate-200">{address.line1}</p>
                   {address.line2 && <p>{address.line2}</p>}
                   {address.landmark && (
-                    <p className="text-[11px] text-slate-400">Landmark: {address.landmark}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {isHindi ? "लैंडमार्क: " : "Landmark: "}{address.landmark}
+                    </p>
                   )}
                   <p className="font-semibold text-slate-900 dark:text-white mt-1">
                     {address.city}, {address.state} – {address.pincode}
@@ -338,12 +340,12 @@ export function AddressesPage() {
                     ) : (
                       <Star className="w-3.5 h-3.5" />
                     )}
-                    <span>Set as Default</span>
+                    <span>{t("addresses.set_default", "Set as Default")}</span>
                   </button>
                 ) : (
                   <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Primary Checkout Address</span>
+                    <span>{isHindi ? "मुख्य चेकआउट पता" : "Primary Checkout Address"}</span>
                   </span>
                 )}
               </div>
@@ -360,9 +362,13 @@ export function AddressesPage() {
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-black text-base text-slate-900 dark:text-white">Delete Address?</h3>
+              <h3 className="font-black text-base text-slate-900 dark:text-white">
+                {isHindi ? "पता हटाएं?" : "Delete Address?"}
+              </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Are you sure you want to remove this delivery location from your wholesale account?
+                {isHindi
+                  ? "क्या आप निश्चित रूप से अपने थोक खाते से इस डिलीवरी पते को हटाना चाहते हैं?"
+                  : "Are you sure you want to remove this delivery location from your wholesale account?"}
               </p>
             </div>
             <div className="flex space-x-2 pt-2">
@@ -371,7 +377,7 @@ export function AddressesPage() {
                 onClick={() => setDeletingId(null)}
                 className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
               >
-                Cancel
+                {t("account.cancel", "Cancel")}
               </button>
               <button
                 type="button"
@@ -380,7 +386,7 @@ export function AddressesPage() {
                 className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1.5"
               >
                 {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+                <span>{isDeleting ? (isHindi ? "हटाया जा रहा है..." : "Deleting...") : t("addresses.delete", "Delete")}</span>
               </button>
             </div>
           </div>

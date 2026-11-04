@@ -186,7 +186,7 @@ export function CategoryMobileDrawer({
                   key={node.id}
                   className={`p-3 rounded-2xl border flex items-center justify-between gap-3 transition cursor-pointer ${
                     isSelected
-                      ? "bg-linear-to-r from-sky-50 via-teal-50 to-white border-brand-dark ring-1 ring-brand-dark/20 text-slate-900 shadow-xs"
+                      ? "bg-primary-soft text-primary border-primary ring-2 ring-ring/30 shadow-xs"
                       : "bg-white hover:bg-slate-50 border-slate-200/80 text-slate-800"
                   }`}
                   onClick={() => {
@@ -251,7 +251,7 @@ export function CategoryMobileDrawer({
             <button
               type="button"
               onClick={() => handleApplySelection(currentParent.id, false)}
-              className="w-full py-2.5 rounded-xl brand-gradient text-white text-xs font-bold shadow-md flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold rounded-xl shadow-xs shadow-md flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Show products in &quot;{currentParent.name}&quot; ({currentParent.total_count})</span>

@@ -190,7 +190,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
 
         {/* Wholesale MOQ & Quick Add Button Row */}
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 mt-auto">
-          <span className="text-[10px] font-bold text-brand-dark dark:text-orange-400 bg-cyan-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded border border-cyan-100 dark:border-orange-500/20">
+          <span className="text-[10px] font-bold text-primary bg-primary-soft px-1.5 py-0.5 rounded border border-primary-border">
             {t("product.moq", "MOQ")}: {product.min_order_qty || 10} {t("product.pcs", "pcs")}
           </span>
 
@@ -202,19 +202,11 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
                 ? `${t("product.added", "Added")} ${product.name}`
                 : `${t("product.add", "Add")} ${product.name}`
             }
-            className={`relative h-7 sm:h-7.5 px-2.5 sm:px-3 rounded-full flex items-center space-x-1 text-[11px] font-black text-white cursor-pointer transition-all duration-300 shrink-0 ${
+            className={`relative h-8 px-3 rounded-xl flex items-center space-x-1 text-xs font-semibold cursor-pointer transition-all duration-150 shrink-0 focus-visible:ring-2 ring-offset-2 ${
               isAdded
-                ? "bg-emerald-600 shadow-[0_4px_16px_rgba(16,185,129,0.5)] ring-2 ring-emerald-300"
-                : "hover:opacity-95 active:scale-95 shadow-2xs"
+                ? "bg-emerald-600 text-white shadow-xs ring-emerald-400"
+                : "bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active shadow-xs ring-ring"
             }`}
-            style={
-              isAdded
-                ? undefined
-                : {
-                    background: "var(--brand-gradient)",
-                    boxShadow: "var(--brand-shadow)",
-                  }
-            }
           >
             {isAdded ? (
               <>

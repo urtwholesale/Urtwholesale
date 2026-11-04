@@ -233,14 +233,10 @@ export function ReturnsPage() {
                   triggerHaptic("selection");
                   setTabFilter(tab.id as TabFilter);
                 }}
-                style={{
-                  background: isActive ? "var(--brand-gradient)" : undefined,
-                  boxShadow: isActive ? "var(--brand-shadow)" : undefined,
-                }}
-                className={`px-3.5 py-1.5 rounded-full font-bold transition cursor-pointer shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-xl font-semibold text-xs transition cursor-pointer shrink-0 shadow-xs ${
                   isActive
-                    ? "text-white scale-102"
-                    : "bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    ? "bg-primary text-on-primary"
+                    : "bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-medium"
                 }`}
               >
                 {tab.label}
@@ -267,11 +263,7 @@ export function ReturnsPage() {
           <button
             type="button"
             onClick={loadReturns}
-            style={{
-              background: "var(--brand-gradient)",
-              boxShadow: "var(--brand-shadow)",
-            }}
-            className="px-4 py-2 rounded-xl text-white font-bold text-xs transition cursor-pointer hover:opacity-95"
+            className="h-9 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
           >
             Retry
           </button>
@@ -300,11 +292,7 @@ export function ReturnsPage() {
           <Link
             to="/my-orders"
             onClick={() => triggerHaptic("selection")}
-            style={{
-              background: "var(--brand-gradient)",
-              boxShadow: "var(--brand-shadow)",
-            }}
-            className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-sm cursor-pointer hover:opacity-95 transition"
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Go to My Orders</span>

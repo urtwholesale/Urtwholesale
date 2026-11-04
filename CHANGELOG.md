@@ -7,6 +7,7 @@ All notable changes, architectural touchpoints, schema migrations, and feature r
 
 ## Table of Contents
 
+- [Touchpoint 43 — Coupons & Discounts Management, Server-Side Verification & Secure Redemption Engine](#touchpoint-43--coupons--discounts-management-server-side-verification--secure-redemption-engine)
 - [Touchpoint 39 — Dedicated Home Page Bestsellers Curation & Catalog Management](#touchpoint-39--touchpoint-39-dedicated-home-page-bestsellers-curation-catalog-management)
 - [Touchpoint 38 — Premium Glassmorphic Navigation Icons on Home Page Carousels](#touchpoint-38--touchpoint-38-premium-glassmorphic-navigation-icons-on-home-page-carousels)
 - [Touchpoint 37 — Multi-Category Balanced New Arrivals Showcase on Home Page](#touchpoint-37--touchpoint-37-multi-category-balanced-new-arrivals-showcase-on-home-page)
@@ -46,6 +47,54 @@ All notable changes, architectural touchpoints, schema migrations, and feature r
 - [Touchpoint 03 — 4-Level Category Hierarchy & Attribute Schemas (`006_category_attributes.sql`)](#touchpoint-03--touchpoint-03-4-level-category-hierarchy-attribute-schemas-006categoryattributessql)
 - [Touchpoint 02 — Atomic Verified Orders, Volume Pricing Engine & Image Compression (`005_create_verified_order.sql`)](#touchpoint-02--touchpoint-02-atomic-verified-orders-volume-pricing-engine-image-compression-005createverifiedordersql)
 - [Touchpoint 01 — Core Storefront Architecture, Centerpiece Navigation Dock & Branding Standards](#touchpoint-01--touchpoint-01-core-storefront-architecture-centerpiece-navigation-dock-branding-standards)
+
+---
+
+## Touchpoint 44 — Dynamic Homepage Divisions Management & Punchy Visual Brand Identity (`037_homepage_divisions.sql`)
+
+- **Dynamic Homepage Divisions Engine (`037_homepage_divisions.sql`)**:
+  - Seeded `store_settings.homepage_sections` to drive all storefront product division sliders dynamically from Supabase Postgres.
+  - Pre-configured the 5 wholesale division sliders:
+    - 🏆 **Bestsellers**: Gold amber theme, filled `Crown` icon, #1 Bestseller badge tag.
+    - ⚡ **Fast Data & Charging Cables**: Cyan theme, high-voltage `Zap` icon, 100W PD & Fast Sync badge tag.
+    - 🔊 **Speakers & Audio**: Studio violet theme, acoustic `Headphones` icon, Studio Audio badge tag.
+    - 🔥 **New Arrivals**: Rose crimson theme, fiery `Flame` icon, Fresh Factory Drop badge tag.
+    - 🏷️ **Clearance Deals**: Emerald theme, `Percent` icon, Extra Margin Drop badge tag.
+  - Complete dual English and Hindi typography support across titles, subtitles, and badge tags.
+- **Admin Content Management (`apps/admin`)**:
+  - Built `HomepageSectionsManager` under **Content Management -> Homepage Divisions**.
+  - Provides administrators with drag/arrow reordering, visibility toggle, division editor modal, category linking, theme color picker, icon picker, and live header preview.
+  - Real-time persistence to `store_settings` via `updateStoreSetting("homepage_sections", sections)`.
+- **Punchy & Elegant Visual Styling (`apps/store`)**:
+  - Upgraded `CategoryProductSlider.tsx` icon badge containers to jewel-like 40px rounded squircle containers with glassmorphic linear gradients and theme glows.
+  - Solid-filled, glowing SVG icons (`Crown`, `Zap`, `Headphones`, `Flame`) with hover scale micro-interactions.
+  - Storefront `HomePage.tsx` dynamically loads products for active divisions in real time.
+
+---
+
+## Touchpoint 43 — Coupons & Discounts Management, Server-Side Verification & Secure Redemption Engine (`030_coupons.sql`)
+
+- **Promotional Coupon Database & Security Hardening (`030_coupons.sql`)**:
+  - Implemented Postgres schema `public.coupons`, `public.coupon_redemptions`, and `public.coupon_validation_attempts` with strict Row Level Security (RLS) actively denying anonymous/public `SELECT`.
+  - Added atomic row locking (`SELECT ... FOR UPDATE`) in `create_verified_order` and `create_verified_order_guest` to prevent race condition overshooting on `usage_limit_total`.
+  - Built IP sliding-window rate limiting in `validate_coupon` (10 attempts per 10-minute window) to prevent brute-force attacks.
+  - Uniform anti-oracle failure responses: invalid, expired, and non-existent codes return identical privacy-safe error payloads.
+  - Pure domain calculations in `@urbanrat/shared` (`calculateCouponDiscount`, `computeGstOnDiscountedTotal`, `validateAdminCouponInput`).
+  - Added idempotent auto-release trigger `trg_release_coupon_on_order_cancel` ensuring cancelled or refunded orders release redemptions exactly once.
+- **Storefront Checkout Experience (`apps/store`)**:
+  - Built interactive `CouponInput` with auto-uppercase formatting, debounce, and loading spinner.
+  - `AppliedCouponChip` displaying savings breakdown with one-tap removal.
+  - Cart and checkout financial summaries updated to include `CouponSavingsRow` and adjusted GST computations on the discounted taxable base.
+  - Dual-theme (light/dark) WCAG AA compliance with teal primary tokens and tactile haptic feedback.
+  - Hindi and English localization support in `LanguageContext`.
+- **Merchant Admin Operations (`apps/admin`)**:
+  - Added **Coupons** with `Ticket` icon under **Commerce & Sales** in desktop sidebar and mobile menu drawer, routed under `/coupons` and `#coupons`.
+  - `CouponList`: code search, 6 status filter pills (`All`, `Active`, `Scheduled`, `Expired`, `Disabled`, `Used up`), desktop table & mobile card view, copy code button, and safe delete protection (disable fallback if `used_count > 0`).
+  - `CouponEditor`: Modal / bottom sheet with 1-click random code generator, percentage and fixed discount types, max discount cap, min order amount, validity dates, usage limits, and category restrictions.
+  - `CouponDetailDrawer`: Real-time KPI cards (Redemptions, Discounts Given, Revenue Influenced, Last Used) and redemption history log with deep links to orders.
+  - Orders Integration: `OrderList` table row coupon badge (`🎟️ CODE (-₹X)`), `OrderDetailModal` financial breakdown, and GST tax invoice generation computing 18% GST on the discounted taxable base.
+- **Automated Security Verification (`scripts/coupon_security_test.js`)**:
+  - 16/16 automated penetration probes passing against live Supabase backend verifying anon table dumps, admin RPC locks, rate limiting, anti-oracle responses, price-tampering immunity, concurrency locking, and PGRST203 overload prevention.
 
 ---
 

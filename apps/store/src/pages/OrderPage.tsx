@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { fetchOrderById } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { triggerHaptic } from "../utils/haptics";
 import { printOrderInvoice } from "../utils/invoiceGenerator";
 import { ReturnRequestModal } from "../components/ReturnRequestModal";
@@ -51,6 +52,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
   const { user, profile } = useAuth();
+  const { isHindi } = useLanguage();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -409,11 +411,11 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     // Canonical progression: Placed -> Confirmed -> Processing -> Shipped -> Delivered
     const sequence = ["pending", "confirmed", "processing", "shipped", "delivered"];
     const statusLabels: Record<string, string> = {
-      pending: "Order Placed",
-      confirmed: "Order Confirmed",
-      processing: "Packing & Quality Verification",
-      shipped: "Dispatched / In Transit",
-      delivered: "Delivered",
+      pending: isHindi ? "ऑर्डर प्राप्त हुआ" : "Order Placed",
+      confirmed: isHindi ? "ऑर्डर कन्फर्म हुआ" : "Order Confirmed",
+      processing: isHindi ? "पैकिंग एवं गुणवत्ता जांच" : "Packing & Quality Verification",
+      shipped: isHindi ? "डिस्पैच / रास्ते में" : "Dispatched / In Transit",
+      delivered: isHindi ? "डिलीवर हो गया" : "Delivered",
     };
 
     const currentIndex = sequence.indexOf(status);
@@ -545,7 +547,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
 
             <button
               type="submit"
-              className="w-full py-3 px-5 rounded-2xl bg-brand-dark hover:bg-brand-dark/90 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99] flex items-center justify-center space-x-2 cursor-pointer"
+              className="w-full h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Search className="w-4 h-4" />
               <span>Track Order</span>
@@ -593,6 +595,8 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   const savings = order.savings || 0;
   const shipping = order.shipping || 0;
   const total = order.total;
+  const couponCode = (order as any).coupon_code || (order as any).couponCode || null;
+  const couponDiscount = Number((order as any).discount_amount ?? (order as any).discountAmount ?? 0);
 
   // Approximate GST (Wholesale: 18% GST included, broken down as 9% CGST + 9% SGST)
   const taxableBase = Math.round((subtotal / 1.18) * 100) / 100;
@@ -617,42 +621,42 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
       border: "border-amber-200",
     },
     confirmed: {
-      label: "Order Confirmed",
+      label: isHindi ? "ऑर्डर कन्फर्म हुआ" : "Order Confirmed",
       bg: "bg-blue-50",
       text: "text-blue-800",
       dot: "bg-blue-500",
       border: "border-blue-200",
     },
     processing: {
-      label: "In Processing & Quality Check",
+      label: isHindi ? "पैकिंग एवं गुणवत्ता जांच" : "In Processing & Quality Check",
       bg: "bg-purple-50",
       text: "text-purple-800",
       dot: "bg-purple-500",
       border: "border-purple-200",
     },
     shipped: {
-      label: "Dispatched / In Transit",
+      label: isHindi ? "डिस्पैच / रास्ते में" : "Dispatched / In Transit",
       bg: "bg-indigo-50",
       text: "text-indigo-800",
       dot: "bg-indigo-500",
       border: "border-indigo-200",
     },
     delivered: {
-      label: "Delivered",
+      label: isHindi ? "डिलीवर हो गया" : "Delivered",
       bg: "bg-emerald-50",
       text: "text-emerald-800",
       dot: "bg-emerald-500",
       border: "border-emerald-200",
     },
     cancelled: {
-      label: "Cancelled",
+      label: isHindi ? "ऑर्डर रद्द" : "Cancelled",
       bg: "bg-rose-50",
       text: "text-rose-800",
       dot: "bg-rose-500",
       border: "border-rose-200",
     },
     returned: {
-      label: "Replacement / Returned",
+      label: isHindi ? "रिप्लेसमेंट / रिटर्न" : "Replacement / Returned",
       bg: "bg-amber-50",
       text: "text-amber-900",
       dot: "bg-amber-500",
@@ -834,7 +838,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
           <button
             type="button"
             onClick={handleReorderAll}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 py-2 px-3.5 rounded-xl bg-brand-dark hover:bg-brand-dark/90 text-white font-bold text-xs shadow-xs transition active:scale-[0.99] cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reorder All</span>
@@ -844,7 +848,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             <button
               type="button"
               onClick={handleDownloadInvoice}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 py-2 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-[0.99] cursor-pointer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5 text-slate-500" />
               <span>Tax Invoice</span>
@@ -869,7 +873,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                   triggerHaptic("selection");
                   setReportModalOpen(true);
                 }}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 py-2 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs transition active:scale-[0.99] cursor-pointer"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-xl bg-primary-soft text-primary border border-primary-border hover:bg-primary-soft/70 font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
                 <span>Return / Replace</span>
@@ -1378,6 +1382,20 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
                     <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
                       <span>Wholesale Volume Savings</span>
                       <span>-₹{savings.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+
+                  {couponCode && couponDiscount > 0 && (
+                    <div className="flex justify-between items-center text-success font-semibold">
+                      <span className="flex items-center space-x-1.5">
+                        <span>Coupon</span>
+                        <span className="font-extrabold text-[10px] uppercase px-1.5 py-0.5 rounded bg-success-soft text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                          ({couponCode})
+                        </span>
+                      </span>
+                      <span className="font-bold">
+                        -₹{couponDiscount.toLocaleString("en-IN")}
+                      </span>
                     </div>
                   )}
 

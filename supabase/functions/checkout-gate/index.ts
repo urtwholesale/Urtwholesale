@@ -76,7 +76,41 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { customer, items, whatsapp_message, honeypot, turnstile_token, promo_code } = body;
+    const {
+      customer,
+      items,
+      whatsapp_message,
+      honeypot,
+      turnstile_token,
+      promo_code,
+      coupon_code,
+      couponCode,
+    } = body;
+
+    // Validate optional couponCode format (1-32 alphanumeric, uppercase, dashes, underscores)
+    const rawCoupon = couponCode !== undefined ? couponCode : coupon_code;
+    let cleanCoupon: string | null = null;
+    if (rawCoupon !== undefined && rawCoupon !== null && String(rawCoupon).trim() !== "") {
+      if (typeof rawCoupon !== "string") {
+        return new Response(
+          JSON.stringify({
+            error: "Coupon code must be a string.",
+            code: "COUPON_INVALID",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      cleanCoupon = rawCoupon.trim().toUpperCase();
+      if (!/^[A-Z0-9_-]{1,32}$/.test(cleanCoupon)) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid coupon code format. Code must be 1-32 alphanumeric characters, dashes, or underscores.",
+            code: "COUPON_INVALID",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     // 3. Honeypot Bot Trap
     if (honeypot && String(honeypot).trim() !== "") {
@@ -147,13 +181,23 @@ Deno.serve(async (req: Request) => {
       p_whatsapp_message: whatsapp_message || null,
       p_honeypot: honeypot || null,
       p_promo_code: promo_code || null,
+      p_coupon_code: cleanCoupon || null,
     });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const isCouponInvalid =
+        (typeof error.message === "string" && error.message.includes("COUPON_INVALID")) ||
+        error.code === "COUPON_INVALID";
+      return new Response(
+        JSON.stringify({
+          error: error.message,
+          code: isCouponInvalid ? "COUPON_INVALID" : (error.code || "ORDER_ERROR"),
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(JSON.stringify(data), {

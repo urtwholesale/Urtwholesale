@@ -534,7 +534,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
 
               <button
                 type="submit"
-                className="hidden sm:inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-2xl text-white font-bold text-xs shadow-sm hover:opacity-95 transition cursor-pointer bg-linear-to-b from-brand-light to-brand-dark shrink-0"
+                className="hidden sm:inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer shrink-0"
               >
                 <Search className="w-3.5 h-3.5" />
                 <span>Search Orders</span>
@@ -665,7 +665,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
                 <Link
                   to="/marketplace"
                   onClick={() => triggerHaptic("selection")}
-                  className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-white font-black text-xs shadow-sm hover:opacity-95 transition active:scale-95 cursor-pointer bg-linear-to-b from-brand-light to-brand-dark"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span>Explore Wholesale Marketplace</span>
@@ -832,12 +832,20 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
                         )}
                       </div>
 
-                      {/* Total Amount */}
+                      {/* Total Amount & Optional Coupon Badge */}
                       <div className="text-left sm:text-right">
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500 mr-1.5">Total Paid:</span>
-                        <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
-                          ₹{order.total.toLocaleString("en-IN")}
-                        </span>
+                        <div className="flex items-center sm:justify-end gap-1.5 flex-wrap">
+                          {((order as any).coupon_code || (order as any).couponCode) && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-success-soft text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                              Coupon {(order as any).coupon_code || (order as any).couponCode}
+                              {(order as any).discount_amount || (order as any).discountAmount ? ` (-₹${Number((order as any).discount_amount || (order as any).discountAmount).toLocaleString("en-IN")})` : ""}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 mr-1.5">Total Paid:</span>
+                          <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
+                            ₹{order.total.toLocaleString("en-IN")}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1140,7 +1148,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-linear-to-b from-brand-light to-brand-dark text-white text-xs font-bold transition cursor-pointer"
+                className="flex-1 h-11 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center"
               >
                 Apply Filters
               </button>

@@ -884,8 +884,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
                   <button
                     type="button"
                     onClick={() => handleAddLinks()}
-                    className="px-3.5 py-2 rounded-xl text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs shrink-0"
-                    style={{ background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)" }}
+                    className="h-9 px-3.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer shrink-0 flex items-center justify-center"
                   >
                     Add Image
                   </button>
@@ -1533,10 +1532,7 @@ export function ProductEditor({ product, onClose, onSaved }: ProductEditorProps)
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-md transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-                style={{
-                  background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
-                }}
+                className="h-11 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
               >
                 {saving ? (
                   <>
