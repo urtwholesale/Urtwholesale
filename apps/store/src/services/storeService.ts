@@ -1562,6 +1562,7 @@ export async function submitReview(input: {
         .insert({
           product_id: input.productId,
           user_id: authUser.id,
+          user_name: authorName,
           rating: input.rating,
           title: safeTitle,
           body: input.authorName
@@ -1574,6 +1575,9 @@ export async function submitReview(input: {
 
       if (!error && data) {
         fullReview.id = data.id;
+        if (data.user_name) {
+          fullReview.user_name = data.user_name;
+        }
       }
     } catch (err) {
       console.warn("Supabase review insert failed, using local persistence:", err);
@@ -1605,18 +1609,20 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
     if (!error && data) {
       remoteReviews = (data as any[]).map((r) => {
         let cleanBody = r.body;
-        let author = "Verified Wholesale Buyer";
+        let author = r.user_name && r.user_name !== "Verified Wholesale Buyer" ? r.user_name : "";
         if (cleanBody) {
           const match = cleanBody.match(/\n\n-- Reviewer:\s*(.+)$/);
           if (match) {
-            author = match[1].trim();
+            if (!author) {
+              author = match[1].trim();
+            }
             cleanBody = cleanBody.replace(/\n\n-- Reviewer:\s*.+$/, "").trim();
           }
         }
         return {
           ...r,
           body: cleanBody,
-          user_name: r.user_name || author,
+          user_name: author || r.user_name || "Verified Wholesale Buyer",
         };
       });
     }

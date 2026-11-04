@@ -13,8 +13,8 @@ import { recordRecentlyViewed } from "../services/recentViews";
 import { ProductCatalogNav } from "../components/ProductCatalogNav";
 import { useSettings } from "../context/SettingsContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 import { translateCategoryName } from "../locales/categoryTranslations";
-import { supabase } from "../lib/supabase";
 import { ProductCard } from "../components/ProductCard";
 import { ProductDetailSkeleton } from "../components/Skeletons";
 import { EmptyState } from "../components/EmptyState";
@@ -47,6 +47,9 @@ import {
   Lightbulb,
   Palette,
   Clock,
+  Lock,
+  ArrowRight,
+  User,
 } from "lucide-react";
 import { QuantityInput } from "../components/QuantityInput";
 import { triggerHaptic } from "../utils/haptics";
@@ -67,6 +70,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
   const { t, isHindi } = useLanguage();
+  const { user, profile } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
@@ -99,18 +103,24 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [reviewRating, setReviewRating] = useState(5);
-  const [reviewAuthor, setReviewAuthor] = useState(() => {
-    try {
-      const savedCust = localStorage.getItem("urt_customer_details");
-      if (savedCust) {
-        const parsed = JSON.parse(savedCust);
-        return parsed.name || "";
+  const [reviewAuthor, setReviewAuthor] = useState("");
+
+  // Sync reviewer name from authenticated profile or metadata
+  useEffect(() => {
+    if (!reviewAuthor && (profile || user)) {
+      const defaultName =
+        profile?.full_name?.trim() ||
+        (user?.user_metadata?.full_name as string)?.trim() ||
+        (user?.user_metadata?.name as string)?.trim() ||
+        profile?.business_name?.trim() ||
+        user?.email?.split("@")[0] ||
+        "";
+      if (defaultName) {
+        setReviewAuthor(defaultName);
       }
-    } catch {}
-    return "";
-  });
+    }
+  }, [profile, user, reviewAuthor]);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewBody, setReviewBody] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -236,10 +246,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         setQuantity(prod.min_order_qty || 1);
 
         // Fetch categories first to construct category family for related accessories
-        const [cats, approvedRevs, authRes] = await Promise.all([
+        const [cats, approvedRevs] = await Promise.all([
           fetchCategories().catch(() => []),
           getApprovedReviews(prod.id).catch(() => []),
-          supabase.auth.getUser().catch(() => ({ data: { user: null } })),
         ]);
         setAllCategories(cats);
 
@@ -279,7 +288,6 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         }
 
         setReviews(approvedRevs);
-        setCurrentUser(authRes.data.user);
       }
     } catch (err: any) {
       console.error("Failed to load product detail:", err);
@@ -409,13 +417,26 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   async function handleReviewSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!product) return;
+
+    if (!user) {
+      setReviewError(
+        isHindi
+          ? "समीक्षा सबमिट करने के लिए कृपया लॉग इन करें।"
+          : "Please log in to submit a wholesale review."
+      );
+      return;
+    }
+
     setSubmittingReview(true);
     setReviewError(null);
     try {
       const author =
         reviewAuthor.trim() ||
-        currentUser?.user_metadata?.full_name ||
-        currentUser?.email?.split("@")[0] ||
+        profile?.full_name?.trim() ||
+        (user.user_metadata?.full_name as string)?.trim() ||
+        (user.user_metadata?.name as string)?.trim() ||
+        profile?.business_name?.trim() ||
+        user.email?.split("@")[0] ||
         "Verified Wholesale Buyer";
 
       const newReview = await submitReview({
@@ -965,45 +986,83 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         </div>
       </div>
 
-      {/* ── Customer Reviews & Ratings ── */}
-      <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-              {t("detail.customer_reviews")}
-            </h2>
-            <p className="text-xs text-slate-400">
-              {t("detail.verified_buyer_feedback")}
-            </p>
+      {/* ── Customer Reviews & Ratings (Visible Only After Logging In) ── */}
+      {!user ? (
+        <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                {t("detail.customer_reviews")}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {t("detail.verified_buyer_feedback")}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic("selection");
-                setShowReviewForm((prev) => !prev);
-              }}
-              className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
-                showReviewForm
-                  ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-750 border border-slate-300/80 dark:border-white/10"
-                  : "bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
-              }`}
+          <div className="bg-slate-50/70 dark:bg-slate-900/60 p-6 sm:p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-3.5 max-w-lg mx-auto transition-colors">
+            <div className="w-11 h-11 rounded-full bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 flex items-center justify-center mx-auto shadow-2xs">
+              <Lock className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                {isHindi ? "समीक्षाएं केवल लॉग इन के बाद उपलब्ध हैं" : "Reviews Available After Login Only"}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                {isHindi
+                  ? "थोक ग्राहक समीक्षाएं, रेटिंग और सत्यापित खरीदार फीडबैक केवल सत्यापित खातों के लिए लॉग इन करने के बाद ही दिखाई देंगे।"
+                  : "Customer reviews, ratings, and verified wholesale buyer feedback are visible only after logging in."}
+              </p>
+            </div>
+            <Link
+              to={`/login?redirect=${encodeURIComponent(`/product/${product.slug}`)}`}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold transition shadow-xs hover:shadow-md active:scale-95 cursor-pointer"
             >
-              {showReviewForm ? (
-                <>
-                  <X className="w-3.5 h-3.5" />
-                  <span>{t("detail.close")}</span>
-                </>
-              ) : (
-                <>
-                  <PenLine className="w-3.5 h-3.5" />
-                  <span>{t("detail.write_review")}</span>
-                </>
-              )}
-            </button>
+              <User className="w-3.5 h-3.5" />
+              <span>{isHindi ? "समीक्षाएं देखने के लिए लॉग इन करें" : "Log In to Access Reviews"}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-        </div>
+        </section>
+      ) : (
+        <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                {t("detail.customer_reviews")}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {t("detail.verified_buyer_feedback")}
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setShowReviewForm((prev) => !prev);
+                }}
+                className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+                  showReviewForm
+                    ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-750 border border-slate-300/80 dark:border-white/10"
+                    : "bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
+                }`}
+              >
+                {showReviewForm ? (
+                  <>
+                    <X className="w-3.5 h-3.5" />
+                    <span>{t("detail.close")}</span>
+                  </>
+                ) : (
+                  <>
+                    <PenLine className="w-3.5 h-3.5" />
+                    <span>{t("detail.write_review")}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
 
         {/* ── When Write Review is Open: 2-Column Responsive Studio Layout (Form on Left, "Our Customer Reviews" Card on Right) ── */}
         {showReviewForm ? (
@@ -1118,13 +1177,14 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          Your Name or Store Name
+                          {isHindi ? "आपका नाम या दुकान का नाम (समीक्षा में दिखेगा)" : "Your Name or Store Name (Visible in Review)"}
                         </label>
                         <input
                           type="text"
                           value={reviewAuthor}
                           onChange={(e) => setReviewAuthor(e.target.value)}
-                          placeholder="e.g. Apex Mobiles or Rajesh K."
+                          placeholder="e.g. Rajesh Kumar or Apex Mobiles"
+                          required
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all"
                         />
                       </div>
@@ -1302,27 +1362,40 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         key={rev.id}
                         className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center space-x-2">
-                            <div className="flex items-center text-amber-400">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-3.5 h-3.5 ${
-                                    i < rev.rating
-                                      ? "fill-amber-400 text-amber-400"
-                                      : "text-slate-200 dark:text-slate-700"
-                                  }`}
-                                />
-                              ))}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center space-x-2.5 min-w-0">
+                            <div className="w-7 h-7 rounded-full bg-linear-to-br from-orange-500 to-amber-500 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 shadow-2xs">
+                              {(rev.user_name || "V").charAt(0).toUpperCase()}
                             </div>
-                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-35 sm:max-w-none">
-                              {rev.user_name || "Verified Wholesale Buyer"}
-                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center space-x-1.5 flex-wrap">
+                                <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white truncate">
+                                  {rev.user_name || "Verified Wholesale Buyer"}
+                                </span>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
+                                  <CheckCircle2 className="w-2.5 h-2.5 mr-0.5 text-emerald-500" />
+                                  Verified Buyer
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-1 mt-0.5">
+                                <div className="flex items-center text-amber-400">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3 h-3 ${
+                                        i < rev.rating
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "text-slate-200 dark:text-slate-700"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+                                  • {new Date(rev.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                            {new Date(rev.created_at).toLocaleDateString()}
-                          </span>
                         </div>
                         {rev.title && (
                           <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
@@ -1360,27 +1433,40 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 key={rev.id}
                 className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center text-amber-400">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-3.5 h-3.5 ${
-                            i < rev.rating
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-slate-200 dark:text-slate-700"
-                          }`}
-                        />
-                      ))}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-linear-to-br from-orange-500 to-amber-500 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 shadow-2xs">
+                      {(rev.user_name || "V").charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-35 sm:max-w-none">
-                      {rev.user_name || "Verified Wholesale Buyer"}
-                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1.5 flex-wrap">
+                        <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white truncate">
+                          {rev.user_name || "Verified Wholesale Buyer"}
+                        </span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
+                          <CheckCircle2 className="w-2.5 h-2.5 mr-0.5 text-emerald-500" />
+                          Verified Buyer
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 mt-0.5">
+                        <div className="flex items-center text-amber-400">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 ${
+                                i < rev.rating
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-slate-200 dark:text-slate-700"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+                          • {new Date(rev.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                    {new Date(rev.created_at).toLocaleDateString()}
-                  </span>
                 </div>
                 {rev.title && (
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
@@ -1416,6 +1502,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           </div>
         )}
       </section>
+      )}
 
       {/* ── Similar Products Row (Compatibility Group / Same Cut Glass) ── */}
       {similarProducts.length > 0 && (
