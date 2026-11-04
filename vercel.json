@@ -3,14 +3,34 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/sjain",
+      "permanent": false
+    },
     {
       "source": "/admin/:path*",
-      "destination": "/admin/index.html"
+      "destination": "/sjain/:path*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/sjain/:path*",
+      "destination": "/sjain/index.html"
+    },
+    {
+      "source": "/sjain",
+      "destination": "/sjain/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/sjain/index.html"
     },
     {
       "source": "/admin",
-      "destination": "/admin/index.html"
+      "destination": "/sjain/index.html"
     },
     {
       "source": "/(.*)",

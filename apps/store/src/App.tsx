@@ -12,6 +12,7 @@ import { StoreNotConfigured } from "./components/StoreNotConfigured";
 import { TopBar } from "./components/TopBar";
 import { NavigationDock } from "./components/NavigationDock";
 import { StoreMenuDrawer } from "./components/StoreMenuDrawer";
+import { Footer } from "./components/Footer";
 import { HomePage } from "./pages/HomePage";
 import { MarketplacePage } from "./pages/MarketplacePage";
 import { CategoriesPage } from "./pages/CategoriesPage";
@@ -23,6 +24,7 @@ import { OrderPage } from "./pages/OrderPage";
 import { PolicyPage } from "./pages/PolicyPage";
 import { MyOrdersPage } from "./pages/MyOrdersPage";
 import { DealerApplicationPage } from "./pages/DealerApplicationPage";
+import { DealershipProgramPage } from "./pages/DealershipProgramPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AccountPage } from "./pages/AccountPage";
 import { AddressesPage } from "./pages/AddressesPage";
@@ -300,7 +302,7 @@ export default function App() {
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased pb-24 selection:bg-brand-light/30 overflow-x-clip">
+      <div className="min-h-screen bg-surface text-slate-800 flex flex-col font-sans antialiased selection:bg-brand-light/30 overflow-x-clip">
       <ScrollToTop />
 
       {/* ── Fixed Glassmorphism Top Navigation Bar ── */}
@@ -393,7 +395,10 @@ export default function App() {
             }
           />
 
-          {/* ── Independent Authorized Dealer Program ── */}
+          {/* ── Independent Authorized Dealer Program & Explainer ── */}
+          <Route path="/dealership" element={<DealershipProgramPage />} />
+          <Route path="/dealer" element={<DealershipProgramPage />} />
+          <Route path="/dealer-program" element={<DealershipProgramPage />} />
           <Route path="/dealers" element={<DealerApplicationPage />} />
           <Route path="/become-a-dealer" element={<DealerApplicationPage />} />
 
@@ -427,6 +432,9 @@ export default function App() {
           <Route path="/order" element={<OrderPage onAddToCart={handleAddToCart} />} />
         </Routes>
       </main>
+
+      {/* ── Storefront Global Sticky Footer ── */}
+      <Footer />
 
       {/* ── Toast Notification ── */}
       {toastMessage && (

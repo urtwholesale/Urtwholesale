@@ -11,10 +11,19 @@ import {
   ShieldCheck,
   User,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
   QrCode,
   Eye,
   EyeOff,
+  RefreshCw,
+  Users,
+  ShieldAlert,
 } from "lucide-react";
+import {
+  fetchAdminMfaAuditStatus,
+  type AdminMfaAuditStatus,
+} from "../../lib/adminService";
 
 export function SettingsEditor() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -50,6 +59,10 @@ export function SettingsEditor() {
   const [mfaError, setMfaError] = useState<string | null>(null);
   const [mfaSuccess, setMfaSuccess] = useState<string | null>(null);
 
+  // Admin MFA Rollout & Enforcement Audit State
+  const [mfaAudit, setMfaAudit] = useState<AdminMfaAuditStatus | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+
   async function loadMfaFactors() {
     try {
       const { data, error: mfaErr } = await supabase.auth.mfa.listFactors();
@@ -58,6 +71,18 @@ export function SettingsEditor() {
       }
     } catch {
       // Ignore
+    }
+  }
+
+  async function loadMfaAudit() {
+    setAuditLoading(true);
+    try {
+      const res = await fetchAdminMfaAuditStatus();
+      setMfaAudit(res);
+    } catch (err) {
+      console.warn("Failed to load admin MFA audit:", err);
+    } finally {
+      setAuditLoading(false);
     }
   }
 
@@ -107,7 +132,7 @@ export function SettingsEditor() {
       setMfaQrCode(null);
       setMfaSecret(null);
       setMfaVerificationCode("");
-      await loadMfaFactors();
+      await Promise.all([loadMfaFactors(), loadMfaAudit()]);
     } catch (err: any) {
       setMfaError(err.message || "Invalid two-factor code. Please check your authenticator.");
     } finally {
@@ -123,7 +148,7 @@ export function SettingsEditor() {
       const { error: unenrollErr } = await supabase.auth.mfa.unenroll({ factorId });
       if (unenrollErr) throw unenrollErr;
       setMfaSuccess("Two-factor authentication factor removed.");
-      await loadMfaFactors();
+      await Promise.all([loadMfaFactors(), loadMfaAudit()]);
     } catch (err: any) {
       setMfaError(err.message || "Failed to remove MFA factor");
     } finally {
@@ -169,6 +194,7 @@ export function SettingsEditor() {
     }
     loadSettings();
     loadMfaFactors();
+    loadMfaAudit();
   }, []);
 
   async function handleSave(e: React.FormEvent) {
@@ -632,6 +658,169 @@ export function SettingsEditor() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* ── Admin MFA Rollout & Enrollment Audit Card ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <ShieldAlert className="w-5 h-5 text-brand-dark" />
+              <h2 className="text-lg font-bold text-slate-900">
+                Admin MFA Rollout & Enrollment Audit
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Verify that all administrator accounts have enrolled a TOTP factor before enabling strict database enforcement (<code className="font-mono text-[11px] bg-slate-100 px-1 py-0.5 rounded text-slate-700">enforce_admin_mfa</code>).
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0">
+            {mfaAudit?.enforceAdminMfa ? (
+              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Check className="w-3.5 h-3.5" />
+                <span>Enforcement: Active (AAL2 Required)</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>Safe Rollout Mode (Enforcement Inactive)</span>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={loadMfaAudit}
+              disabled={auditLoading}
+              title="Re-check administrator MFA status"
+              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${auditLoading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Warning Banner: Unenrolled Admins Detected ── */}
+        {mfaAudit && mfaAudit.unenrolledCount > 0 && (
+          <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/90 text-amber-900 space-y-2.5">
+            <div className="flex items-start space-x-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                  Rollout Warning: {mfaAudit.unenrolledCount} Administrator Account{mfaAudit.unenrolledCount > 1 ? "s" : ""} Missing TOTP
+                </h3>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  The following administrator account{mfaAudit.unenrolledCount > 1 ? "s have" : " has"} not completed TOTP authenticator enrollment. Enabling <code className="font-mono font-semibold bg-amber-100/80 px-1 py-0.5 rounded text-amber-950">enforce_admin_mfa</code> prematurely will reject their requests to administrator RPCs and tables.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1 pl-7.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                Action Required Before Enabling Enforcement:
+              </p>
+              {mfaAudit.admins
+                .filter((admin) => !admin.hasMfa)
+                .map((admin) => (
+                  <div
+                    key={admin.adminId}
+                    className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-white/90 border border-amber-200/80 text-xs shadow-2xs"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <User className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span className="font-bold text-slate-900">{admin.fullName}</span>
+                      {admin.email && (
+                        <span className="text-slate-500 font-mono text-[11px]">({admin.email})</span>
+                      )}
+                      <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                        ID: {admin.adminId.slice(0, 8)}...
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                      Missing TOTP Enrollment
+                    </span>
+                  </div>
+                ))}
+            </div>
+
+            <p className="text-[11px] text-amber-700/90 pl-7.5 pt-1">
+              Have each administrator sign in, open this Settings page, and complete the enrollment wizard below before executing migration 027.
+            </p>
+          </div>
+        )}
+
+        {/* ── Ready Confirmation: All Admins Enrolled ── */}
+        {mfaAudit && mfaAudit.admins.length > 0 && mfaAudit.unenrolledCount === 0 && (
+          <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 flex items-start space-x-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-900">
+                Ready for Enforcement: All {mfaAudit.admins.length} Administrator Accounts Enrolled
+              </h3>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                Every registered administrator account has a verified TOTP factor active. You can now safely apply migration <code className="font-mono font-semibold bg-emerald-100/80 px-1 py-0.5 rounded text-emerald-950">027_admin_mfa_enforcement.sql</code> to activate strict AAL2 enforcement on <code className="font-mono font-semibold bg-emerald-100/80 px-1 py-0.5 rounded text-emerald-950">public.is_admin()</code> without lockout risk.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Registered Administrators Audit Table ── */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <div className="flex items-center space-x-1.5">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span>Registered Administrator Accounts ({mfaAudit?.admins.length ?? 0})</span>
+            </div>
+            {mfaAudit && (
+              <span className="text-[11px] font-normal text-slate-500">
+                {mfaAudit.admins.length - mfaAudit.unenrolledCount} / {mfaAudit.admins.length} Protected with TOTP
+              </span>
+            )}
+          </div>
+
+          <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden bg-slate-50/50">
+            {mfaAudit && mfaAudit.admins.length > 0 ? (
+              mfaAudit.admins.map((admin) => (
+                <div
+                  key={admin.adminId}
+                  className="p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs hover:bg-slate-50 transition"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                      admin.hasMfa ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                    }`}>
+                      {admin.fullName.slice(0, 1).toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-900 block">{admin.fullName}</span>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        {admin.email || admin.adminId}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    {admin.hasMfa ? (
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <Check className="w-3 h-3" />
+                        <span>Enrolled (AAL2 Active)</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                        <AlertCircle className="w-3 h-3" />
+                        <span>Unenrolled (Action Required)</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-xs text-slate-400">
+                {auditLoading ? "Auditing administrator accounts..." : "No administrator profiles found."}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ── Two-Factor Authentication (TOTP MFA) Card ── */}

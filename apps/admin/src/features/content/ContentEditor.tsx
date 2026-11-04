@@ -15,9 +15,12 @@ import {
   fetchBestsellerProducts,
   toggleProductBestseller,
   searchProductsForBestseller,
+  fetchCategories,
+  fetchProductsPage,
   type ZeroResultSearchRecord,
 } from "../../lib/adminService";
-import type { Banner, StorePage, Product } from "@urbanrat/shared";
+import type { Banner, StorePage, Product, Category } from "@urbanrat/shared";
+import { getCategoryVisualPath } from "@urbanrat/shared";
 import {
   Image as ImageIcon,
   FileText,
@@ -35,11 +38,16 @@ import {
   Star,
   Award,
   X,
+  Sliders,
 } from "lucide-react";
 import { ImageCompressorTool } from "./ImageCompressorTool";
+import { MarqueeManager } from "./MarqueeManager";
+import { DealershipManager } from "../dealership/DealershipManager";
 
 export function ContentEditor() {
-  const [subTab, setSubTab] = useState<"banners" | "pages" | "searches" | "compressor" | "bestsellers">("banners");
+  const [subTab, setSubTab] = useState<
+    "banners" | "marquee" | "dealership" | "pages" | "searches" | "compressor" | "bestsellers"
+  >("banners");
 
   // 1. Banners state
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -76,6 +84,17 @@ export function ContentEditor() {
   const [isSearchingBestsellers, setIsSearchingBestsellers] = useState(false);
   const [togglingBestsellerId, setTogglingBestsellerId] = useState<string | null>(null);
 
+  // 6. Category linking & visual picker state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryByBanner, setSelectedCategoryByBanner] = useState<Record<string, string>>({});
+  const [categoryProductPicker, setCategoryProductPicker] = useState<{
+    bannerId: string;
+    categorySlug: string;
+    categoryName: string;
+    products: Product[];
+    loading: boolean;
+  } | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +102,50 @@ export function ContentEditor() {
   function showToast(msg: string) {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  }
+
+  function extractCategorySlug(ctaLink?: string | null): string {
+    if (!ctaLink) return "";
+    const match = ctaLink.match(/[?&]category=([a-zA-Z0-9_-]+)/);
+    return match && match[1] ? match[1] : "";
+  }
+
+  async function loadCategoryProducts(bannerId: string, categorySlug: string) {
+    const cat = categories.find((c) => c.slug === categorySlug);
+    if (!cat) return;
+    setCategoryProductPicker({
+      bannerId,
+      categorySlug,
+      categoryName: cat.name,
+      products: [],
+      loading: true,
+    });
+
+    try {
+      const res = await fetchProductsPage({ categoryId: cat.id, pageSize: 12 });
+      setCategoryProductPicker({
+        bannerId,
+        categorySlug,
+        categoryName: cat.name,
+        products: res.products || [],
+        loading: false,
+      });
+    } catch (err) {
+      console.warn("Failed to load products for category:", err);
+      setCategoryProductPicker((prev) => (prev ? { ...prev, loading: false } : null));
+    }
+  }
+
+  function handleSelectProductImageForBanner(bannerId: string, product: Product) {
+    const img = product.images?.[0] || "";
+    if (img) {
+      handleBannerChange(bannerId, "image_url", img);
+      const b = banners.find((x) => x.id === bannerId);
+      if (b && !b.subtitle) {
+        handleBannerChange(bannerId, "subtitle", `Wholesale from ₹${product.price} • MOQ: ${product.min_order_qty || 1} pcs`);
+      }
+      showToast(`Linked image from "${product.name}" to banner!`);
+    }
   }
 
   const loadBestsellers = useCallback(async () => {
@@ -101,17 +164,19 @@ export function ContentEditor() {
     setLoading(true);
     setError(null);
     try {
-      const [bannersData, pagesData, settingsData, bestsellersData] = await Promise.all([
+      const [bannersData, pagesData, settingsData, bestsellersData, categoriesData] = await Promise.all([
         fetchBanners(),
         fetchStorePages(),
         fetchStoreSettings(),
         fetchBestsellerProducts().catch(() => [] as Product[]),
+        fetchCategories().catch(() => [] as Category[]),
       ]);
 
       setBanners(bannersData);
       setPages(pagesData);
       setPopularSearches(settingsData.popular_searches || []);
       setBestsellers(bestsellersData);
+      setCategories(categoriesData.filter((c) => c.is_active));
     } catch (err: any) {
       console.error("Failed to load content management data:", err);
       setError(err?.message || "Failed to load content records.");
@@ -426,6 +491,32 @@ export function ContentEditor() {
 
           <button
             type="button"
+            onClick={() => setSubTab("marquee")}
+            className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              subTab === "marquee"
+                ? "bg-brand-dark text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Marquee Announcements</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab("dealership")}
+            className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              subTab === "dealership"
+                ? "bg-brand-dark text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>Dealership Program</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setSubTab("pages")}
             className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
               subTab === "pages"
@@ -544,7 +635,11 @@ export function ContentEditor() {
 
               {/* Banners List */}
               <div className="space-y-5">
-                {filteredBanners.map((b) => (
+                {filteredBanners.map((b) => {
+                  const activeCatSlug = selectedCategoryByBanner[b.id] || extractCategorySlug(b.cta_link) || "";
+                  const activeCat = categories.find((c) => c.slug === activeCatSlug);
+
+                  return (
                   <div
                     key={b.id}
                     className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-xs space-y-4"
@@ -797,6 +892,183 @@ export function ContentEditor() {
                         )}
                       </div>
 
+                      {/* ── Category Quick Link & Image Picker ── */}
+                      <div className="sm:col-span-3 p-4 rounded-2xl bg-cyan-50/60 border border-cyan-100/90 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="p-1.5 rounded-lg bg-brand-light/20 text-brand-dark">
+                              <Sliders className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-slate-900">
+                                Link Hero to Specific Category
+                              </span>
+                              <p className="text-[11px] text-slate-500">
+                                Route this banner to a wholesale category route &amp; link official category visuals
+                              </p>
+                            </div>
+                          </div>
+
+                          {activeCat && (
+                            <div className="flex items-center space-x-2">
+                              <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-brand-dark text-white shadow-2xs">
+                                <span>🎯 Active Link: {activeCat.name}</span>
+                              </span>
+                              <a
+                                href={`/marketplace?category=${activeCat.slug}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[11px] font-bold text-brand-dark hover:underline flex items-center space-x-0.5"
+                              >
+                                <span>Preview Route</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                          <div className="sm:col-span-5 space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700">
+                              Target Category
+                            </label>
+                            <select
+                              value={activeCatSlug}
+                              onChange={(e) => {
+                                const slug = e.target.value;
+                                setSelectedCategoryByBanner((prev) => ({ ...prev, [b.id]: slug }));
+                                if (slug) {
+                                  const cat = categories.find((c) => c.slug === slug);
+                                  handleBannerChange(b.id, "cta_link", `/marketplace?category=${slug}`);
+                                  if (!b.cta_text || b.cta_text === "Receive") {
+                                    handleBannerChange(b.id, "cta_text", `Shop ${cat?.name || "Category"}`);
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-light cursor-pointer"
+                            >
+                              <option value="">-- No Category Link (Custom URL) --</option>
+                              {categories.map((c) => (
+                                <option key={c.id} value={c.slug}>
+                                  {c.name} ({c.slug})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="sm:col-span-7 space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700">
+                              Category Visuals &amp; Products
+                            </label>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <button
+                                type="button"
+                                disabled={!activeCatSlug}
+                                onClick={() => {
+                                  if (activeCatSlug) {
+                                    const darkImg = getCategoryVisualPath(activeCatSlug, "dark");
+                                    handleBannerChange(b.id, "image_url", darkImg);
+                                    showToast(`Applied Dark 3D visual for ${activeCat?.name || activeCatSlug}!`);
+                                  }
+                                }}
+                                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+                                title="Use official dark obsidian 3D tech render for this category"
+                              >
+                                <span>🌙 Dark Visual</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={!activeCatSlug}
+                                onClick={() => {
+                                  if (activeCatSlug) {
+                                    const lightImg = getCategoryVisualPath(activeCatSlug, "light");
+                                    handleBannerChange(b.id, "image_url", lightImg);
+                                    showToast(`Applied Light Studio visual for ${activeCat?.name || activeCatSlug}!`);
+                                  }
+                                }}
+                                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+                                title="Use clean light studio 3D render for this category"
+                              >
+                                <span>☀️ Light Visual</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={!activeCatSlug}
+                                onClick={() => loadCategoryProducts(b.id, activeCatSlug)}
+                                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-brand-light/20 text-brand-dark border border-brand-light/30 hover:bg-brand-light/30 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+                                title="Browse product hero images from this category"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Pick from Products</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expandable Category Products Picker Grid */}
+                        {categoryProductPicker && categoryProductPicker.bannerId === b.id && (
+                          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2 mt-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-brand-dark" />
+                                <span>
+                                  Select a product image from {categoryProductPicker.categoryName} ({categoryProductPicker.products.length} products)
+                                </span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setCategoryProductPicker(null)}
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            {categoryProductPicker.loading ? (
+                              <div className="flex items-center justify-center py-6 space-x-2 text-slate-400 text-xs">
+                                <Loader2 className="w-4 h-4 animate-spin text-brand-dark" />
+                                <span>Loading category products...</span>
+                              </div>
+                            ) : categoryProductPicker.products.length === 0 ? (
+                              <p className="text-xs text-slate-400 py-3 text-center">
+                                No products found in this category.
+                              </p>
+                            ) : (
+                              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-56 overflow-y-auto p-1">
+                                {categoryProductPicker.products.map((prod) => {
+                                  const img = prod.images?.[0] || "";
+                                  if (!img) return null;
+                                  return (
+                                    <button
+                                      key={prod.id}
+                                      type="button"
+                                      onClick={() => handleSelectProductImageForBanner(b.id, prod)}
+                                      className="group text-left p-1.5 rounded-xl border border-slate-200 hover:border-brand-dark hover:ring-2 hover:ring-brand-light/30 transition bg-slate-50 hover:bg-white cursor-pointer"
+                                    >
+                                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-slate-100 mb-1">
+                                        <img
+                                          src={img}
+                                          alt={prod.name}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                        />
+                                      </div>
+                                      <p className="text-[10px] font-bold text-slate-800 truncate">
+                                        {prod.name}
+                                      </p>
+                                      <p className="text-[9px] text-brand-dark font-black">
+                                        ₹{prod.price}
+                                      </p>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
                       <div className="space-y-1 sm:col-span-3">
                         <label className="font-bold text-slate-700">Subtitle / Wholesale Deal Description</label>
                         <textarea
@@ -837,10 +1109,21 @@ export function ContentEditor() {
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             </div>
           )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              SUB-TAB 1.5: MARQUEE ANNOUNCEMENTS & OFFERS TICKER
+             ══════════════════════════════════════════════════════════════════ */}
+          {subTab === "marquee" && <MarqueeManager />}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              SUB-TAB 1.6: DEALERSHIP PROGRAM, MARGINS & BRANDED VS COPY
+             ══════════════════════════════════════════════════════════════════ */}
+          {subTab === "dealership" && <DealershipManager />}
 
           {/* ══════════════════════════════════════════════════════════════════
               SUB-TAB 2: STORE PAGES (About, Terms, Privacy)

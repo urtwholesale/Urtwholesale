@@ -10,6 +10,15 @@ import type {
   PriceTier,
   StorePage,
   Banner,
+  MarqueeAnnouncement,
+  MarqueeAnnouncementInput,
+  DealershipTierMargin,
+  DealershipTierMarginInput,
+  DealershipItemShowcase,
+  DealershipItemShowcaseInput,
+  DealershipBenefitComparison,
+  DealershipBenefitComparisonInput,
+  DealershipArticle,
   StoreSettings,
   Category,
   CategoryProductCounts,
@@ -40,6 +49,8 @@ import {
   computeStockResult,
   computeImageUpdate,
   sanitizeText,
+  RETURN_EVIDENCE_URL_TTL_SECONDS,
+  getReturnEvidenceSignedUrl,
 } from "@urbanrat/shared";
 import { compressImage, type CompressionResult } from "../utils/imageCompressor";
 
@@ -2274,6 +2285,352 @@ export async function saveBanner(banner: Partial<Banner> & { id: string }): Prom
 }
 
 // ----------------------------------------------------------------------------
+// 5.5. MARQUEE ANNOUNCEMENTS SERVICES
+// ----------------------------------------------------------------------------
+
+export async function fetchAdminMarqueeAnnouncements(): Promise<MarqueeAnnouncement[]> {
+  const { data, error } = await supabase
+    .from("marquee_announcements")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as MarqueeAnnouncement[]) || [];
+}
+
+export async function createMarqueeAnnouncement(
+  announcement: MarqueeAnnouncementInput
+): Promise<MarqueeAnnouncement> {
+  const { data, error } = await supabase
+    .from("marquee_announcements")
+    .insert([
+      {
+        badge: announcement.badge.trim() || "WHOLESALE",
+        title: announcement.title.trim(),
+        subtitle: announcement.subtitle?.trim() || "",
+        icon: announcement.icon || "Sparkles",
+        link_url: announcement.link_url?.trim() || null,
+        sort_order: announcement.sort_order ?? 0,
+        is_active: announcement.is_active ?? true,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as MarqueeAnnouncement;
+}
+
+export async function updateMarqueeAnnouncement(
+  announcement: Partial<MarqueeAnnouncement> & { id: string }
+): Promise<void> {
+  const updatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (announcement.badge !== undefined) updatePayload.badge = announcement.badge.trim();
+  if (announcement.title !== undefined) updatePayload.title = announcement.title.trim();
+  if (announcement.subtitle !== undefined) updatePayload.subtitle = announcement.subtitle.trim();
+  if (announcement.icon !== undefined) updatePayload.icon = announcement.icon;
+  if (announcement.link_url !== undefined) updatePayload.link_url = announcement.link_url?.trim() || null;
+  if (announcement.sort_order !== undefined) updatePayload.sort_order = announcement.sort_order;
+  if (announcement.is_active !== undefined) updatePayload.is_active = announcement.is_active;
+
+  const { error } = await supabase
+    .from("marquee_announcements")
+    .update(updatePayload)
+    .eq("id", announcement.id);
+
+  if (error) throw error;
+}
+
+export async function deleteMarqueeAnnouncement(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("marquee_announcements")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// ----------------------------------------------------------------------------
+// 5.6. DEALERSHIP PROGRAM SERVICES
+// ----------------------------------------------------------------------------
+
+export async function fetchAdminDealershipMargins(): Promise<DealershipTierMargin[]> {
+  const { data, error } = await supabase
+    .from("dealership_tier_margins")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as DealershipTierMargin[]) || [];
+}
+
+export async function createDealershipMargin(
+  margin: DealershipTierMarginInput
+): Promise<DealershipTierMargin> {
+  const { data, error } = await supabase
+    .from("dealership_tier_margins")
+    .insert([
+      {
+        item_type: margin.item_type,
+        category: margin.category.trim(),
+        item_name: margin.item_name.trim(),
+        lot_size: margin.lot_size.trim(),
+        cost_price: Number(margin.cost_price),
+        retail_price_range: margin.retail_price_range.trim(),
+        margin_percentage: margin.margin_percentage.trim(),
+        profit_per_lot: margin.profit_per_lot.trim(),
+        description: margin.description?.trim() || "",
+        image_url: margin.image_url?.trim() || null,
+        badge_text: margin.badge_text?.trim() || null,
+        sort_order: margin.sort_order ?? 0,
+        is_active: margin.is_active ?? true,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DealershipTierMargin;
+}
+
+export async function updateDealershipMargin(
+  margin: Partial<DealershipTierMargin> & { id: string }
+): Promise<void> {
+  const updatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (margin.item_type !== undefined) updatePayload.item_type = margin.item_type;
+  if (margin.category !== undefined) updatePayload.category = margin.category.trim();
+  if (margin.item_name !== undefined) updatePayload.item_name = margin.item_name.trim();
+  if (margin.lot_size !== undefined) updatePayload.lot_size = margin.lot_size.trim();
+  if (margin.cost_price !== undefined) updatePayload.cost_price = Number(margin.cost_price);
+  if (margin.retail_price_range !== undefined) updatePayload.retail_price_range = margin.retail_price_range.trim();
+  if (margin.margin_percentage !== undefined) updatePayload.margin_percentage = margin.margin_percentage.trim();
+  if (margin.profit_per_lot !== undefined) updatePayload.profit_per_lot = margin.profit_per_lot.trim();
+  if (margin.description !== undefined) updatePayload.description = margin.description.trim();
+  if (margin.image_url !== undefined) updatePayload.image_url = margin.image_url?.trim() || null;
+  if (margin.badge_text !== undefined) updatePayload.badge_text = margin.badge_text?.trim() || null;
+  if (margin.sort_order !== undefined) updatePayload.sort_order = margin.sort_order;
+  if (margin.is_active !== undefined) updatePayload.is_active = margin.is_active;
+
+  const { error } = await supabase
+    .from("dealership_tier_margins")
+    .update(updatePayload)
+    .eq("id", margin.id);
+
+  if (error) throw error;
+}
+
+export async function deleteDealershipMargin(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("dealership_tier_margins")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function fetchAdminDealershipShowcase(): Promise<DealershipItemShowcase[]> {
+  const { data, error } = await supabase
+    .from("dealership_item_showcase")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as DealershipItemShowcase[]) || [];
+}
+
+export async function createDealershipShowcase(
+  showcase: DealershipItemShowcaseInput
+): Promise<DealershipItemShowcase> {
+  const { data, error } = await supabase
+    .from("dealership_item_showcase")
+    .insert([
+      {
+        item_type: showcase.item_type,
+        title: showcase.title.trim(),
+        subtitle: showcase.subtitle?.trim() || "",
+        image_url: showcase.image_url.trim(),
+        packaging_type: showcase.packaging_type?.trim() || "",
+        warranty_type: showcase.warranty_type?.trim() || "",
+        quality_grade: showcase.quality_grade?.trim() || "",
+        target_customer: showcase.target_customer?.trim() || "",
+        dealer_margin: showcase.dealer_margin?.trim() || "",
+        features: showcase.features || [],
+        sort_order: showcase.sort_order ?? 0,
+        is_active: showcase.is_active ?? true,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DealershipItemShowcase;
+}
+
+export async function updateDealershipShowcase(
+  showcase: Partial<DealershipItemShowcase> & { id: string }
+): Promise<void> {
+  const updatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (showcase.item_type !== undefined) updatePayload.item_type = showcase.item_type;
+  if (showcase.title !== undefined) updatePayload.title = showcase.title.trim();
+  if (showcase.subtitle !== undefined) updatePayload.subtitle = showcase.subtitle.trim();
+  if (showcase.image_url !== undefined) updatePayload.image_url = showcase.image_url.trim();
+  if (showcase.packaging_type !== undefined) updatePayload.packaging_type = showcase.packaging_type.trim();
+  if (showcase.warranty_type !== undefined) updatePayload.warranty_type = showcase.warranty_type.trim();
+  if (showcase.quality_grade !== undefined) updatePayload.quality_grade = showcase.quality_grade.trim();
+  if (showcase.target_customer !== undefined) updatePayload.target_customer = showcase.target_customer.trim();
+  if (showcase.dealer_margin !== undefined) updatePayload.dealer_margin = showcase.dealer_margin.trim();
+  if (showcase.features !== undefined) updatePayload.features = showcase.features;
+  if (showcase.sort_order !== undefined) updatePayload.sort_order = showcase.sort_order;
+  if (showcase.is_active !== undefined) updatePayload.is_active = showcase.is_active;
+
+  const { error } = await supabase
+    .from("dealership_item_showcase")
+    .update(updatePayload)
+    .eq("id", showcase.id);
+
+  if (error) throw error;
+}
+
+export async function deleteDealershipShowcase(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("dealership_item_showcase")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function fetchAdminDealershipBenefits(): Promise<DealershipBenefitComparison[]> {
+  const { data, error } = await supabase
+    .from("dealership_benefits_comparison")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as DealershipBenefitComparison[]) || [];
+}
+
+export async function createDealershipBenefit(
+  benefit: DealershipBenefitComparisonInput
+): Promise<DealershipBenefitComparison> {
+  const { data, error } = await supabase
+    .from("dealership_benefits_comparison")
+    .insert([
+      {
+        feature_name: benefit.feature_name.trim(),
+        normal_person_benefit: benefit.normal_person_benefit.trim(),
+        urt_dealer_benefit: benefit.urt_dealer_benefit.trim(),
+        category: benefit.category?.trim() || "General",
+        sort_order: benefit.sort_order ?? 0,
+        is_active: benefit.is_active ?? true,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DealershipBenefitComparison;
+}
+
+export async function updateDealershipBenefit(
+  benefit: Partial<DealershipBenefitComparison> & { id: string }
+): Promise<void> {
+  const updatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (benefit.feature_name !== undefined) updatePayload.feature_name = benefit.feature_name.trim();
+  if (benefit.normal_person_benefit !== undefined) updatePayload.normal_person_benefit = benefit.normal_person_benefit.trim();
+  if (benefit.urt_dealer_benefit !== undefined) updatePayload.urt_dealer_benefit = benefit.urt_dealer_benefit.trim();
+  if (benefit.category !== undefined) updatePayload.category = benefit.category.trim();
+  if (benefit.sort_order !== undefined) updatePayload.sort_order = benefit.sort_order;
+  if (benefit.is_active !== undefined) updatePayload.is_active = benefit.is_active;
+
+  const { error } = await supabase
+    .from("dealership_benefits_comparison")
+    .update(updatePayload)
+    .eq("id", benefit.id);
+
+  if (error) throw error;
+}
+
+export async function deleteDealershipBenefit(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("dealership_benefits_comparison")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function fetchAdminDealershipArticles(): Promise<DealershipArticle[]> {
+  const { data, error } = await supabase
+    .from("dealership_articles")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+  return (data as DealershipArticle[]) || [];
+}
+
+export async function updateDealershipArticle(
+  article: Partial<DealershipArticle> & { id: string }
+): Promise<void> {
+  const updatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (article.title !== undefined) updatePayload.title = article.title.trim();
+  if (article.short_summary !== undefined) updatePayload.short_summary = article.short_summary.trim();
+  if (article.content !== undefined) updatePayload.content = article.content.trim();
+  if (article.badge !== undefined) updatePayload.badge = article.badge.trim();
+  if (article.key_points !== undefined) updatePayload.key_points = article.key_points;
+  if (article.sort_order !== undefined) updatePayload.sort_order = article.sort_order;
+  if (article.is_active !== undefined) updatePayload.is_active = article.is_active;
+
+  const { error } = await supabase
+    .from("dealership_articles")
+    .update(updatePayload)
+    .eq("id", article.id);
+
+  if (error) throw error;
+}
+
+export async function uploadDealershipImage(
+  file: File,
+  folder: "branded" | "copy" = "branded"
+): Promise<string> {
+  const sanitizedName = sanitizeFileName(file.name);
+  const ext = sanitizedName.split(".").pop() || "jpg";
+  const uniqueName = `dealership/${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("banners")
+    .upload(uniqueName, file, {
+      contentType: file.type || "image/jpeg",
+      upsert: true,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from("banners").getPublicUrl(uniqueName);
+  return data.publicUrl;
+}
+
+// ----------------------------------------------------------------------------
 // 6. CATEGORY SERVICES
 // ----------------------------------------------------------------------------
 
@@ -2853,19 +3210,18 @@ export async function fetchPendingReturnsBadgeCount(): Promise<{
   }
 }
 
-export async function getReturnEvidenceUrl(path: string): Promise<string> {
-  try {
-    const { data, error } = await supabase.storage
-      .from("return-evidence")
-      .createSignedUrl(path, 3600);
-    if (!error && data?.signedUrl) {
-      return data.signedUrl;
-    }
-  } catch {
-    // fallback
-  }
-  const { data } = supabase.storage.from("return-evidence").getPublicUrl(path);
-  return data.publicUrl;
+export { RETURN_EVIDENCE_URL_TTL_SECONDS };
+
+/**
+ * Generates an on-demand temporary signed URL to view private return evidence in Admin portal.
+ * Strictly capped at RETURN_EVIDENCE_URL_TTL_SECONDS (900s = 15 minutes).
+ * Generated on demand when the admin opens ReturnDetailDrawer, never stored in DB or cached.
+ */
+export async function getReturnEvidenceUrl(
+  path: string,
+  expiresIn: number = RETURN_EVIDENCE_URL_TTL_SECONDS
+): Promise<string> {
+  return getReturnEvidenceSignedUrl(supabase.storage, path, expiresIn);
 }
 
 export function exportReturnsToExcel(
@@ -3909,3 +4265,94 @@ export async function searchProductsForBestseller(
   })) as Product[];
 }
 
+
+// ----------------------------------------------------------------------------
+// 12. ADMIN MFA ENFORCEMENT & AUDIT SERVICES
+// ----------------------------------------------------------------------------
+
+export interface AdminMfaAuditItem {
+  adminId: string;
+  fullName: string;
+  email?: string;
+  hasMfa: boolean;
+  factorsCount: number;
+}
+
+export interface AdminMfaAuditStatus {
+  enforceAdminMfa: boolean;
+  admins: AdminMfaAuditItem[];
+  unenrolledCount: number;
+}
+
+/**
+ * Fetches the list of all administrator profiles and audits their TOTP MFA enrollment status.
+ * Attempts RPC admin_get_mfa_enrollment_status if available, and gracefully falls back to
+ * querying public.profiles and auth.mfa.listFactors().
+ */
+export async function fetchAdminMfaAuditStatus(): Promise<AdminMfaAuditStatus> {
+  // 1. Check current enforcement status in store_settings
+  let enforceAdminMfa = false;
+  try {
+    const { data: settingData } = await supabase
+      .from("store_settings")
+      .select("value")
+      .eq("key", "enforce_admin_mfa")
+      .maybeSingle();
+
+    if (settingData) {
+      enforceAdminMfa = settingData.value === true || settingData.value === "true";
+    }
+  } catch (err) {
+    console.warn("[adminService] Could not read enforce_admin_mfa setting:", err);
+  }
+
+  // 2. Attempt RPC admin_get_mfa_enrollment_status if deployed
+  try {
+    const { data, error } = await supabase.rpc("admin_get_mfa_enrollment_status");
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const admins: AdminMfaAuditItem[] = data.map((row: any) => ({
+        adminId: row.admin_id,
+        fullName: row.full_name || "Administrator",
+        email: row.email || "",
+        hasMfa: Boolean(row.has_mfa),
+        factorsCount: Number(row.factors_count || 0),
+      }));
+
+      const unenrolledCount = admins.filter((a) => !a.hasMfa).length;
+      return { enforceAdminMfa, admins, unenrolledCount };
+    }
+  } catch {
+    // Fall back to client-side profiles inspection
+  }
+
+  // 3. Fallback: inspect profiles with role = 'admin' + current user session factors
+  try {
+    const { data: profiles, error: profErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, role")
+      .eq("role", "admin");
+
+    if (profErr) throw profErr;
+
+    // Get current user session factors
+    const { data: mfaData } = await supabase.auth.mfa.listFactors();
+    const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+    const currentHasTotp = Boolean(mfaData?.totp && mfaData.totp.length > 0);
+
+    const admins: AdminMfaAuditItem[] = (profiles || []).map((p: any) => {
+      const isCurrent = p.id === currentUserId;
+      return {
+        adminId: p.id,
+        fullName: p.full_name || "Administrator",
+        hasMfa: isCurrent ? currentHasTotp : false,
+        factorsCount: isCurrent && currentHasTotp ? mfaData!.totp.length : 0,
+      };
+    });
+
+    const unenrolledCount = admins.filter((a) => !a.hasMfa).length;
+    return { enforceAdminMfa, admins, unenrolledCount };
+  } catch (err) {
+    console.error("[adminService] Failed to fetch admin profiles for MFA audit:", err);
+    return { enforceAdminMfa, admins: [], unenrolledCount: 0 };
+  }
+}

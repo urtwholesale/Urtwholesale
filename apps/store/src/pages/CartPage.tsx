@@ -19,6 +19,7 @@ import { buildWhatsAppMessage } from "../utils/buildWhatsAppMessage";
 import { createVerifiedOrder } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { EmptyState } from "../components/EmptyState";
 import { AddressPicker } from "../components/AddressPicker";
@@ -41,6 +42,7 @@ export function CartPage({
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
   const { user } = useAuth();
+  const { t, isHindi } = useLanguage();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Load saved customer details from localStorage
@@ -310,9 +312,9 @@ export function CartPage({
       <div className="py-8">
         <EmptyState
           icon={<ShoppingBag className="w-8 h-8 text-brand-dark" />}
-          title="Your Cart is Empty"
-          description="Explore our wholesale catalog of tempered glass, chargers, and premium mobile cables."
-          actionText="Start Shopping"
+          title={t("cart.empty_title")}
+          description={t("cart.empty_desc")}
+          actionText={t("cart.start_shopping")}
           onAction={() => navigate("/marketplace")}
         />
       </div>
@@ -332,10 +334,11 @@ export function CartPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Wholesale Cart
+            {t("cart.title")}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {cartItems.length} {cartItems.length === 1 ? "line item" : "line items"} ready for dispatch
+            {cartItems.length}{" "}
+            {cartItems.length === 1 ? t("cart.item_ready") : t("cart.items_ready")}
           </p>
         </div>
 
@@ -344,7 +347,7 @@ export function CartPage({
           onClick={onClearCart}
           className="text-xs font-bold text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition cursor-pointer"
         >
-          Clear All
+          {t("cart.clear_all")}
         </button>
       </div>
 
@@ -395,7 +398,7 @@ export function CartPage({
                             className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
                             style={{ backgroundColor: getColorHex(selectedColor) }}
                           />
-                          <span>Color: {selectedColor}</span>
+                          <span>{t("cart.color")}: {selectedColor}</span>
                         </div>
                       )}
 
@@ -404,7 +407,7 @@ export function CartPage({
                         <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
                           ₹{unitPrice.toLocaleString("en-IN")}
                           <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">
-                            /pc
+                            /{t("product.per_pc")}
                           </span>
                         </span>
                         {firstTierPrice > unitPrice && (
@@ -414,7 +417,7 @@ export function CartPage({
                         )}
                         {lineSavings > 0 && (
                           <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
-                            Saved ₹{lineSavings.toLocaleString("en-IN")}
+                            {t("cart.saved")} ₹{lineSavings.toLocaleString("en-IN")}
                           </span>
                         )}
                       </div>
@@ -455,10 +458,19 @@ export function CartPage({
                       <div className="p-2 rounded-xl bg-sky-50 dark:bg-orange-950/30 border border-sky-100 dark:border-orange-500/30 text-[11px] font-semibold text-sky-800 dark:text-orange-200 flex items-center space-x-1.5">
                         <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                         <span>
-                          Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
-                          <strong>
-                            ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
-                          </strong>
+                          {isHindi ? (
+                            <>
+                              ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/पीस दर के लिए{" "}
+                              <strong>{nextTier.piecesNeeded} और</strong> जोड़ें
+                            </>
+                          ) : (
+                            <>
+                              Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
+                              <strong>
+                                ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
+                              </strong>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -476,10 +488,10 @@ export function CartPage({
               </div>
               <div>
                 <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                  Customer &amp; Delivery Destination
+                  {t("cart.customer_title")}
                 </h2>
                 <p className="text-[11px] text-slate-400 dark:text-slate-400">
-                  Required for invoice generation &amp; wholesale dispatch verification
+                  {t("cart.customer_sub")}
                 </p>
               </div>
             </div>
@@ -507,7 +519,7 @@ export function CartPage({
               {/* Full Name */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Full Name <span className="text-rose-500">*</span>
+                  {t("cart.full_name")} <span className="text-rose-500">*</span>
                 </label>
                 <div
                   className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
@@ -521,7 +533,7 @@ export function CartPage({
                     type="text"
                     value={customer.name}
                     onChange={(e) => handleCustomerChange("name", e.target.value)}
-                    placeholder="Shop / Business Owner Name"
+                    placeholder={t("cart.full_name_placeholder")}
                     className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
@@ -536,7 +548,7 @@ export function CartPage({
               {/* Phone Number */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Mobile Number <span className="text-rose-500">*</span>
+                  {t("cart.phone")} <span className="text-rose-500">*</span>
                 </label>
                 <div
                   className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
@@ -554,7 +566,7 @@ export function CartPage({
                     value={customer.phone}
                     maxLength={10}
                     onChange={(e) => handleCustomerChange("phone", e.target.value)}
-                    placeholder="10-digit mobile number"
+                    placeholder={t("cart.phone_placeholder")}
                     className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
@@ -569,7 +581,7 @@ export function CartPage({
               {/* Delivery Address */}
               <div className="sm:col-span-2 space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Delivery Address <span className="text-rose-500">*</span>
+                  {t("cart.address")} <span className="text-rose-500">*</span>
                 </label>
                 <div
                   className={`flex items-start space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
@@ -583,7 +595,7 @@ export function CartPage({
                     rows={2}
                     value={customer.address}
                     onChange={(e) => handleCustomerChange("address", e.target.value)}
-                    placeholder="Shop / House No., Market / Area, City, State"
+                    placeholder={t("cart.address_placeholder")}
                     className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
                   />
                 </div>
@@ -598,7 +610,7 @@ export function CartPage({
               {/* PIN Code */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Postal PIN Code <span className="text-rose-500">*</span>
+                  {t("cart.pincode")} <span className="text-rose-500">*</span>
                 </label>
                 <div
                   className={`flex items-center space-x-2 px-3 py-2.5 rounded-xl border bg-slate-50/70 dark:bg-slate-800/60 transition-colors ${
@@ -613,7 +625,7 @@ export function CartPage({
                     maxLength={6}
                     value={customer.pincode}
                     onChange={(e) => handleCustomerChange("pincode", e.target.value)}
-                    placeholder="6-digit PIN code"
+                    placeholder={t("cart.pincode_placeholder")}
                     className="w-full text-xs font-medium text-slate-800 dark:text-white bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
@@ -632,16 +644,16 @@ export function CartPage({
         <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-6 bg-white dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
           <div>
             <h2 className="font-extrabold text-base text-slate-900 dark:text-white">
-              Estimated Order Summary
+              {t("cart.order_summary")}
             </h2>
             <p className="text-[11px] text-slate-400 dark:text-slate-400">
-              Display estimate. Official total verified by server upon placement.
+              {t("cart.order_summary_sub")}
             </p>
           </div>
 
           <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex justify-between">
-              <span>Items Subtotal</span>
+              <span>{t("cart.items_subtotal")}</span>
               <span className="font-bold text-slate-900 dark:text-white">
                 ₹{displaySubtotal.toLocaleString("en-IN")}
               </span>
@@ -649,22 +661,22 @@ export function CartPage({
 
             {displaySavings > 0 && (
               <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
-                <span>Wholesale Margin Savings</span>
+                <span>{t("cart.margin_savings")}</span>
                 <span>-₹{displaySavings.toLocaleString("en-IN")}</span>
               </div>
             )}
 
             <div className="flex justify-between">
-              <span>Shipping</span>
+              <span>{t("cart.shipping")}</span>
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                {displayShipping === 0 ? "FREE" : `₹${displayShipping}`}
+                {displayShipping === 0 ? t("cart.free") : `₹${displayShipping}`}
               </span>
             </div>
           </div>
 
           <div className="flex justify-between items-baseline pt-1">
             <span className="font-black text-sm text-slate-900 dark:text-white">
-              Estimated Total
+              {t("cart.estimated_total")}
             </span>
             <span className="text-xl font-black text-slate-900 dark:text-white">
               ₹{displayTotal.toLocaleString("en-IN")}
@@ -676,7 +688,7 @@ export function CartPage({
             {!user && (
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex flex-col items-center">
                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5 self-start">
-                  Security Check <span className="text-rose-500">*</span>
+                  {t("cart.security_check")} <span className="text-rose-500">*</span>
                 </p>
                 <TurnstileWidget
                   onVerify={(token) => setTurnstileToken(token)}
@@ -696,12 +708,12 @@ export function CartPage({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Order with Server...</span>
+                  <span>{t("cart.verifying")}</span>
                 </>
               ) : (
                 <>
                   <MessageCircle className="w-4.5 h-4.5" />
-                  <span>Checkout via WhatsApp</span>
+                  <span>{t("cart.checkout_whatsapp")}</span>
                 </>
               )}
             </button>

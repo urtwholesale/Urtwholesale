@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { ShoppingBag, ArrowLeft, Sun, Moon } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Sun, Moon, Languages } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 import { SearchDropdown } from "./SearchDropdown";
 
 interface TopBarProps {
@@ -8,15 +9,6 @@ interface TopBarProps {
   onOpenMenu?: () => void;
   popularSearches?: string[];
 }
-
-const DESKTOP_NAV_ITEMS = [
-  { label: "Home", to: "/" },
-  { label: "Marketplace", to: "/marketplace" },
-  { label: "Urbanrat", to: "/urbanrat" },
-  { label: "Categories", to: "/categories" },
-  { label: "Account", to: "/account" },
-  { label: "Menu", to: "/menu", isMenuAction: true },
-];
 
 export function TopBar({
   cartCount = 0,
@@ -27,6 +19,16 @@ export function TopBar({
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
   const { isDark, toggleTheme } = useTheme();
+  const { isHindi, toggleLanguage, t } = useLanguage();
+
+  const desktopNavItems = [
+    { label: t("nav.home", "Home"), to: "/" },
+    { label: t("nav.marketplace", "Marketplace"), to: "/marketplace" },
+    { label: t("nav.urbanrat", "Urbanrat"), to: "/urbanrat" },
+    { label: t("nav.categories", "Categories"), to: "/categories" },
+    { label: t("nav.account", "Account"), to: "/account" },
+    { label: t("nav.menu", "Menu"), to: "/menu", isMenuAction: true },
+  ];
 
   function handleBack() {
     if (window.history.state && window.history.state.idx > 0) {
@@ -78,7 +80,7 @@ export function TopBar({
             aria-label="Desktop Navigation"
             className="flex items-center space-x-1 p-1 rounded-full bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xs"
           >
-            {DESKTOP_NAV_ITEMS.map((item) =>
+            {desktopNavItems.map((item) =>
               item.isMenuAction ? (
                 <button
                   key={item.label}
@@ -108,10 +110,24 @@ export function TopBar({
           </nav>
         </div>
 
-        {/* ── Right Zone: Search Dropdown, Theme Toggle & Cart Droplet ── */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0 z-20">
+        {/* ── Right Zone: Search Dropdown, Language Toggle, Theme Toggle & Cart Droplet ── */}
+        <div className="flex items-center space-x-1 sm:space-x-2 shrink-0 z-20">
           {/* Integrated Flat Glass Search with Attached Dropdown */}
           <SearchDropdown popularSearches={popularSearches} />
+
+          {/* Language Switcher Pill */}
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            aria-label={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
+            title={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
+            className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border border-slate-200/70 dark:border-slate-700/70 cursor-pointer shadow-2xs"
+          >
+            <Languages className="w-3.5 h-3.5 text-cyan-600 dark:text-orange-400 stroke-[2.2]" />
+            <span className="text-[11px] sm:text-xs font-black tracking-wide text-slate-900 dark:text-white">
+              {isHindi ? "EN" : "हिन्दी"}
+            </span>
+          </button>
 
           {/* Theme Toggle Button */}
           <button

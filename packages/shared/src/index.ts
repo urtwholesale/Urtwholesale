@@ -19,7 +19,23 @@ export type {
   CustomerLifetimeStats,
   OrderNoticeCounts,
 } from "./types/order";
-export type { StoreSettings, Banner, StorePage } from "./types/storeSettings";
+export type {
+  StoreSettings,
+  Banner,
+  StorePage,
+  MarqueeAnnouncement,
+  MarqueeAnnouncementInput,
+} from "./types/storeSettings";
+export type {
+  DealershipTierMargin,
+  DealershipTierMarginInput,
+  DealershipItemShowcase,
+  DealershipItemShowcaseInput,
+  DealershipBenefitComparison,
+  DealershipBenefitComparisonInput,
+  DealershipArticle,
+  DealershipArticleInput,
+} from "./types/dealership";
 export type { Profile } from "./types/profile";
 export type { PriceTier } from "./types/pricing";
 export type { Review, ReviewStatus } from "./types/review";
@@ -69,6 +85,13 @@ export {
   isValidClaimStatus,
   isValidClaimType,
 } from "./types/return";
+
+export {
+  RETURN_EVIDENCE_URL_TTL_SECONDS,
+  RETURN_EVIDENCE_BUCKET,
+  type StorageSignedUrlClient,
+  getReturnEvidenceSignedUrl,
+} from "./returns";
 
 export {
   getUnitPrice,
@@ -187,6 +210,25 @@ export {
   sanitizeText,
   printHtmlSafely,
 } from "./sanitize";
+
+export {
+  verifyAdminAuthorization,
+  type AdminAuthContext,
+} from "./adminAuth";
+
+export {
+  CATEGORY_IMAGE_MAP,
+  getCategoryVisualPath,
+  isCategorySlug,
+} from "./categoryImages";
+
+export {
+  getProductHighlightSpec,
+  getProductTopBadge,
+  resolveColorHex,
+  COLOR_HEX_MAP,
+} from "./productSpecs";
+
 
 
 

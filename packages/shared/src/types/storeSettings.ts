@@ -47,3 +47,22 @@ export interface StorePage {
   created_at: string;
   updated_at: string;
 }
+
+export interface MarqueeAnnouncement {
+  id: string;
+  badge: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  link_url?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type MarqueeAnnouncementInput = Omit<
+  MarqueeAnnouncement,
+  "id" | "created_at" | "updated_at"
+>;
+

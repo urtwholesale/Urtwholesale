@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router";
 import { CustomerAuth } from "../features/auth/CustomerAuth";
-import {
-  fetchCustomerOrders,
-  fetchAllStorePages,
-} from "../services/storeService";
+import { fetchCustomerOrders, fetchAllStorePages } from "../services/storeService";
 import { useSettings } from "../context/SettingsContext";
+import { useLanguage } from "../context/LanguageContext";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import type { Order, StorePage } from "@urbanrat/shared";
@@ -18,10 +17,14 @@ import {
   FileText,
   Clock,
   Phone,
+  TrendingUp,
+  Sparkles,
+  ChevronRight,
 } from "lucide-react";
 
 export function MenuPage() {
   const { settings, whatsappNumber } = useSettings();
+  const { t, isHindi } = useLanguage();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -81,10 +84,12 @@ export function MenuPage() {
     <div className="space-y-6 animate-in fade-in duration-300 pb-16">
       <div>
         <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-          Account &amp; Menu
+          {isHindi ? "खाता एवं मेनू" : "Account & Menu"}
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Profile, order status, WhatsApp support, and wholesale policies
+          {isHindi
+            ? "प्रोफ़ाइल, ऑर्डर स्थिति, व्हाट्सएप सपोर्ट एवं थोक नीतियां"
+            : "Profile, order status, WhatsApp support, and wholesale policies"}
         </p>
       </div>
 
@@ -105,15 +110,17 @@ export function MenuPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-extrabold text-slate-800 dark:text-white">
-                    My Orders
+                    {t("nav.orders")}
                   </h2>
                   <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                    Track recent orders &amp; wholesale dispatches
+                    {isHindi
+                      ? "हाल के ऑर्डर्स एवं थोक प्रेषण ट्रैक करें"
+                      : "Track recent orders & wholesale dispatches"}
                   </p>
                 </div>
               </div>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                {orders.length} {orders.length === 1 ? "order" : "orders"}
+                {orders.length} {orders.length === 1 ? (isHindi ? "ऑर्डर" : "order") : (isHindi ? "ऑर्डर्स" : "orders")}
               </span>
             </div>
 
@@ -183,8 +190,12 @@ export function MenuPage() {
             ) : (
               <EmptyState
                 icon={<Package className="w-7 h-7 text-slate-400 dark:text-slate-500" />}
-                title="No orders placed yet"
-                description="Your past wholesale orders and tracking info will be visible here once you checkout."
+                title={isHindi ? "अभी तक कोई ऑर्डर नहीं है" : "No orders placed yet"}
+                description={
+                  isHindi
+                    ? "चेकआउट करने के बाद आपके पिछले थोक ऑर्डर और ट्रैकिंग विवरण यहां दिखाई देंगे।"
+                    : "Your past wholesale orders and tracking info will be visible here once you checkout."
+                }
               />
             )}
           </section>
@@ -192,6 +203,44 @@ export function MenuPage() {
 
         {/* ── Right Column: Helpdesk & Policies ── */}
         <div className="lg:col-span-5 xl:col-span-5 space-y-6 lg:sticky lg:top-6">
+          {/* ── 2.5. Official Wholesale Dealership & Profits Card ── */}
+          <section className="overflow-hidden rounded-3xl bg-linear-to-br from-brand-dark via-brand to-cyan-500 text-white p-5 sm:p-6 shadow-md space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
+                  <Sparkles className="w-3 h-3" />
+                  <span>{isHindi ? "अधिकृत डीलर नेटवर्क" : "Authorized Dealer Network"}</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  {t("dealership.nav_title")}
+                </h3>
+                <p className="text-xs text-cyan-100 leading-relaxed">
+                  {isHindi
+                    ? "45% से 120%+ रिटेल मार्जिन कमाएं। 10 पीस के न्यूनतम MOQ और 1-साल की वारंटी रिप्लेसमेंट के साथ सीधे फैक्ट्री से खरीदें।"
+                    : "Earn 45% to 120%+ retail margins. Buy at unfiltered factory cost with low 10 pcs MOQs and 1-to-1 warranty swaps."}
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center shrink-0">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-white/20">
+              <Link
+                to="/dealership"
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-white text-slate-900 font-black text-xs shadow-xs hover:bg-slate-50 transition"
+              >
+                <span>{isHindi ? "व्यापार कैसे काम करता है" : "How It Works & Profits"}</span>
+                <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              </Link>
+              <Link
+                to="/dealers"
+                className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold text-xs transition"
+              >
+                <span>{isHindi ? "आवेदन करें (4 घंटे KYC)" : "Apply (4H KYC)"}</span>
+              </Link>
+            </div>
+          </section>
           {/* ── 3. Contact on WhatsApp (Only shown if whatsappNumber is configured) ── */}
           {whatsappNumber && (
             <section className="overflow-hidden rounded-3xl bg-linear-to-br from-emerald-600 to-teal-700 text-white p-5 sm:p-6 shadow-md">

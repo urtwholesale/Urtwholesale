@@ -27,6 +27,8 @@ import {
 import { triggerHaptic } from "../utils/haptics";
 import { getCategoryThemeImage } from "../utils/categoryTheme";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
+import { translateCategoryName } from "../locales/categoryTranslations";
 
 interface MarketplacePageProps {
   onAddToCart: (product: Product) => void;
@@ -47,6 +49,7 @@ export function MarketplacePage({
   brandOnly = false,
 }: MarketplacePageProps) {
   const { isDark } = useTheme();
+  const { isHindi, t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -381,84 +384,94 @@ export function MarketplacePage({
     (priceBracketIndex !== 0 ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0;
 
-  // Reusable square category cards rail with dual-theme 3D studio support
+  // Reusable category rail with boAt-style clean transparent floating cutouts and large visibility
   const categoryChips = (
-    <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
-      {/* "All Products" Square Card */}
+    <div className="flex items-start space-x-4 sm:space-x-6 overflow-x-auto scrollbar-none no-scrollbar py-2 px-1">
+      {/* "All Products" Card */}
       <button
         ref={selectedCategory === "all" ? activeCategoryButtonRef : null}
         type="button"
         onClick={() => handleCategoryChange("all")}
-        className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
-          selectedCategory === "all"
-            ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-            : "border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md shadow-xs opacity-95 hover:opacity-100"
-        }`}
+        className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
       >
-        {/* Full-Bleed Themed Studio Image (Light / Dark Adaptive) */}
-        <img
-          src={getCategoryThemeImage("all", isDark)}
-          alt="All Products"
-          className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-          decoding="async"
-        />
+        <div
+          className={`relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
+            selectedCategory === "all"
+              ? "scale-105 drop-shadow-[0_4px_12px_rgba(10,130,168,0.35)] dark:drop-shadow-[0_4px_12px_rgba(249,115,22,0.45)]"
+              : "drop-shadow-xs group-hover:drop-shadow-md"
+          }`}
+        >
+          <img
+            src={getCategoryThemeImage("all", isDark)}
+            alt={t("footer.all_products", "All Products")}
+            className="w-full h-full object-contain transition-all duration-300"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
-        {/* Active Glowing Highlight Bar at Top */}
+        <span
+          className={`mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors ${
+            selectedCategory === "all"
+              ? "text-brand-dark dark:text-orange-400 font-black"
+              : "text-slate-800 dark:text-slate-200 group-hover:text-brand-dark dark:group-hover:text-brand-light"
+          }`}
+        >
+          {t("footer.all_products", "All Products")}
+        </span>
+
         {selectedCategory === "all" && (
           <div
-            className="absolute top-1 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
+            className="w-8 h-1 rounded-full mt-1.5 shadow-xs"
             style={{ background: "var(--brand-gradient)" }}
           />
         )}
-
-        {/* Clean Caption Gradient */}
-        <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent flex items-center justify-center space-x-1 transition-colors">
-          <Layers className="w-2.5 h-2.5 text-orange-500 shrink-0" />
-          <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block truncate">
-            All Products
-          </span>
-        </div>
       </button>
 
       {/* Parent Category Cards */}
       {categories.map((cat) => {
         const isSelected = selectedCategory === cat.slug;
+        const displayName = translateCategoryName(cat.name, isHindi);
         return (
           <button
             key={cat.id}
             ref={isSelected ? activeCategoryButtonRef : null}
             type="button"
             onClick={() => handleCategoryChange(cat.slug)}
-            className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
-              isSelected
-                ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                : "border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
-            }`}
+            className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
           >
-            {/* Category Themed Studio Image (Light / Dark Adaptive) */}
-            <img
-              src={getCategoryThemeImage(cat, isDark)}
-              alt={cat.name}
-              className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-              decoding="async"
-            />
+            <div
+              className={`relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
+                isSelected
+                  ? "scale-105 drop-shadow-[0_4px_12px_rgba(10,130,168,0.35)] dark:drop-shadow-[0_4px_12px_rgba(249,115,22,0.45)]"
+                  : "drop-shadow-xs group-hover:drop-shadow-md"
+              }`}
+            >
+              <img
+                src={getCategoryThemeImage(cat, isDark)}
+                alt={displayName}
+                className="w-full h-full object-contain transition-all duration-300"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
 
-            {/* Active Glowing Highlight Bar at Top */}
+            <span
+              className={`mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors ${
+                isSelected
+                  ? "text-brand-dark dark:text-orange-400 font-black"
+                  : "text-slate-800 dark:text-slate-200 group-hover:text-brand-dark dark:group-hover:text-brand-light"
+              }`}
+            >
+              {displayName}
+            </span>
+
             {isSelected && (
               <div
-                className="absolute top-1 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
+                className="w-8 h-1 rounded-full mt-1.5 shadow-xs"
                 style={{ background: "var(--brand-gradient)" }}
               />
             )}
-
-            {/* Clean Caption Gradient */}
-            <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
-              <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block line-clamp-2">
-                {cat.name}
-              </span>
-            </div>
           </button>
         );
       })}
@@ -478,7 +491,7 @@ export function MarketplacePage({
             <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none no-scrollbar pt-1.5 border-t border-slate-200/60 dark:border-slate-800 animate-in fade-in slide-in-from-top-1 duration-200">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 mr-1 flex items-center space-x-1">
                 <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light" />
-                <span className="hidden sm:inline">Subcategories:</span>
+                <span className="hidden sm:inline">{t("marketplace.subcategories", "Subcategories:")}</span>
               </span>
 
               {/* "All in Category" pill */}
@@ -499,12 +512,15 @@ export function MarketplacePage({
                     : {}
                 }
               >
-                All {activeParent ? activeParent.name : "Subcategories"}
+                {activeParent
+                  ? `${t("marketplace.all_in_category", "All in Category")} (${translateCategoryName(activeParent.name, isHindi)})`
+                  : t("marketplace.all_subcategories", "All Subcategories")}
               </button>
 
               {/* Subcategory individual pills */}
               {subCategories.map((sub) => {
                 const isSelected = selectedSubCategory === sub.slug;
+                const subDisplayName = translateCategoryName(sub.name, isHindi);
                 return (
                   <button
                     key={sub.id}
@@ -534,7 +550,7 @@ export function MarketplacePage({
                         className="w-3 h-3 rounded-full object-cover shrink-0"
                       />
                     )}
-                    <span>{sub.name}</span>
+                    <span>{subDisplayName}</span>
                   </button>
                 );
               })}
@@ -547,7 +563,11 @@ export function MarketplacePage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
-            <span>{brandOnly ? "Urbanrat Original Collection" : "Marketplace"}</span>
+            <span>
+              {brandOnly
+                ? t("marketplace.urbanrat_title", "Urbanrat Original Collection")
+                : t("marketplace.title", "Marketplace")}
+            </span>
             {brandOnly && (
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-light/20 dark:bg-orange-500/20 text-brand-dark dark:text-brand-light">
                 Official
@@ -556,18 +576,21 @@ export function MarketplacePage({
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {brandOnly
-              ? "Signature high-spec mobile electronics engineered by Urbanrat"
+              ? t("marketplace.urbanrat_sub", "Signature high-spec mobile electronics engineered by Urbanrat")
               : activeSubCategory
-              ? `Filtered by subcategory: ${activeSubCategory.name}`
+              ? `${t("marketplace.subcategories", "Subcategories:")} ${translateCategoryName(activeSubCategory.name, isHindi)}`
               : activeParent
-              ? `Browsing ${activeParent.name} & subcategories`
-              : "Direct factory inventory of accessories & components"}
+              ? `${translateCategoryName(activeParent.name, isHindi)}`
+              : t("marketplace.sub", "Direct factory inventory of accessories & components")}
           </p>
         </div>
 
         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-          Showing <span className="font-bold text-slate-900 dark:text-white">{products.length}</span> of{" "}
-          <span className="font-bold text-slate-900 dark:text-white">{totalCount}</span> items
+          {t("marketplace.showing", "Showing")}{" "}
+          <span className="font-bold text-slate-900 dark:text-white">{products.length}</span>{" "}
+          {t("marketplace.of", "of")}{" "}
+          <span className="font-bold text-slate-900 dark:text-white">{totalCount}</span>{" "}
+          {t("marketplace.items", "items")}
         </div>
       </div>
 
@@ -580,7 +603,7 @@ export function MarketplacePage({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search products by model, specs or SKU..."
+            placeholder={t("marketplace.search_placeholder", "Search products by model, specs or SKU...")}
             className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-2xl focus:outline-none focus:border-brand-dark dark:focus:border-brand-light shadow-2xs transition"
           />
         </div>
@@ -611,14 +634,14 @@ export function MarketplacePage({
             >
               <option value="all">
                 {selectedCategory === "all"
-                  ? "All Subcategories"
-                  : `All ${activeParent?.name || "Subcategories"}`}
+                  ? t("marketplace.all_subcategories", "All Subcategories")
+                  : `${t("marketplace.all_in_category", "All in Category")} (${translateCategoryName(activeParent?.name || "Subcategories", isHindi)})`}
               </option>
 
               {selectedCategory !== "all" && activeParent ? (
                 subCategories.map((sub) => (
                   <option key={sub.id} value={sub.slug}>
-                    {sub.name}
+                    {translateCategoryName(sub.name, isHindi)}
                   </option>
                 ))
               ) : (
@@ -626,10 +649,10 @@ export function MarketplacePage({
                   const children = allCategories.filter((c) => c.parent_id === parent.id);
                   if (children.length === 0) return null;
                   return (
-                    <optgroup key={parent.id} label={parent.name}>
+                    <optgroup key={parent.id} label={translateCategoryName(parent.name, isHindi)}>
                       {children.map((sub) => (
                         <option key={sub.id} value={sub.slug}>
-                          {sub.name}
+                          {translateCategoryName(sub.name, isHindi)}
                         </option>
                       ))}
                     </optgroup>
@@ -653,10 +676,10 @@ export function MarketplacePage({
               aria-label="Sort products"
               className="w-full pl-8 pr-8 py-2.5 text-xs bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl focus:outline-none focus:border-brand-dark dark:focus:border-brand-light shadow-2xs appearance-none font-semibold cursor-pointer"
             >
-              <option value="featured">Featured (Mixed)</option>
-              <option value="newest">Newest First</option>
-              <option value="price_asc">Price: Low</option>
-              <option value="price_desc">Price: High</option>
+              <option value="featured">{t("marketplace.sort_featured", "Featured (Mixed)")}</option>
+              <option value="newest">{t("marketplace.sort_newest", "Newest First")}</option>
+              <option value="price_asc">{t("marketplace.sort_price_asc", "Price: Low to High")}</option>
+              <option value="price_desc">{t("marketplace.sort_price_desc", "Price: High to Low")}</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
@@ -674,7 +697,13 @@ export function MarketplacePage({
             >
               {PRICE_BRACKETS.map((b, idx) => (
                 <option key={idx} value={idx}>
-                  {b.label}
+                  {idx === 0
+                    ? t("marketplace.price_all", "All Prices")
+                    : idx === 1
+                    ? t("marketplace.price_under_299", "Under ₹299")
+                    : idx === 4
+                    ? t("marketplace.price_1000_plus", "₹1,000+")
+                    : b.label}
                 </option>
               ))}
             </select>
@@ -843,7 +872,7 @@ export function MarketplacePage({
               {loadingMore && (
                 <div className="flex items-center space-x-2 text-xs font-bold text-slate-500 dark:text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin text-brand-dark dark:text-cyan-400" />
-                  <span>Loading more products...</span>
+                  <span>{t("marketplace.loading_more", "Loading more wholesale products...")}</span>
                 </div>
               )}
             </div>
@@ -852,16 +881,21 @@ export function MarketplacePage({
           {/* End of Catalog Indicator */}
           {products.length >= totalCount && totalCount > 0 && !loading && (
             <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 select-none">
-              Showing all {totalCount.toLocaleString("en-IN")} products
+              {isHindi ? "सभी" : "Showing all"} {totalCount.toLocaleString("en-IN")}{" "}
+              {isHindi ? "उत्पाद दिखाए गए" : "products"}
             </div>
           )}
         </div>
       ) : (
         <EmptyState
           icon={<Sparkles className="w-8 h-8 text-brand-dark" />}
-          title="No products match your filters"
-          description="Try broadening your search keywords or resetting price and category filters."
-          actionText="Reset All Filters"
+          title={t("marketplace.no_products", "No products match your filters")}
+          description={
+            isHindi
+              ? "कृपया अपने खोज शब्द बदलें अथवा मूल्य और श्रेणी फ़िल्टर रीसेट करें।"
+              : "Try broadening your search keywords or resetting price and category filters."
+          }
+          actionText={t("marketplace.reset_all", "Reset All Filters")}
           onAction={handleResetFilters}
         />
       )}
@@ -875,7 +909,7 @@ export function MarketplacePage({
           className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-slate-900 text-white shadow-xl hover:bg-slate-800 active:scale-95 transition-all cursor-pointer border border-slate-700/60"
         >
           <SlidersHorizontal className="w-4 h-4 stroke-[2.2] text-brand-light" />
-          <span className="text-xs font-bold tracking-wide">Filter</span>
+          <span className="text-xs font-bold tracking-wide">{t("marketplace.filters", "Filter")}</span>
           {activeFilterCount > 0 && (
             <span
               className="min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-black text-slate-950 flex items-center justify-center shadow-xs"
@@ -904,10 +938,10 @@ export function MarketplacePage({
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
-                  Search &amp; Filters
+                  {t("marketplace.filters", "Search & Filters")}
                 </h3>
                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  {totalCount} products matching
+                  {totalCount} {isHindi ? "उत्पाद मिले" : "products matching"}
                 </p>
               </div>
 
@@ -918,7 +952,7 @@ export function MarketplacePage({
                     onClick={handleResetFilters}
                     className="text-xs font-bold text-rose-500 hover:text-rose-600 transition cursor-pointer px-2 py-1"
                   >
-                    Reset
+                    {t("marketplace.reset_all", "Reset")}
                   </button>
                 )}
                 <button
@@ -933,14 +967,16 @@ export function MarketplacePage({
 
             {/* 1. Search Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Search</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {isHindi ? "खोजें" : "Search"}
+              </label>
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Model, specs, or SKU..."
+                  placeholder={t("marketplace.search_placeholder", "Model, specs, or SKU...")}
                   className="w-full pl-10 pr-9 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-2xl focus:outline-none focus:border-brand-dark dark:focus:border-brand-light transition"
                 />
                 {searchQuery && (
@@ -961,7 +997,10 @@ export function MarketplacePage({
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                     <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-teal-300" />
-                    <span>Subcategories ({activeParent ? activeParent.name : "All"})</span>
+                    <span>
+                      {t("marketplace.subcategories", "Subcategories:")} (
+                      {translateCategoryName(activeParent ? activeParent.name : "All", isHindi)})
+                    </span>
                   </label>
                   {selectedSubCategory && (
                     <button
@@ -969,7 +1008,7 @@ export function MarketplacePage({
                       onClick={() => handleSubCategoryChange(null)}
                       className="text-[11px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer"
                     >
-                      Clear
+                      {t("marketplace.clear_filters", "Clear")}
                     </button>
                   )}
                 </div>
@@ -983,7 +1022,9 @@ export function MarketplacePage({
                         : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >
-                    All {activeParent ? activeParent.name : "Subcategories"}
+                    {activeParent
+                      ? `${t("marketplace.all_in_category", "All in Category")} (${translateCategoryName(activeParent.name, isHindi)})`
+                      : t("marketplace.all_subcategories", "All Subcategories")}
                   </button>
                   {subCategories.map((sub) => {
                     const isSelected = selectedSubCategory === sub.slug;
@@ -1009,7 +1050,7 @@ export function MarketplacePage({
                             : {}
                         }
                       >
-                        {sub.name}
+                        {translateCategoryName(sub.name, isHindi)}
                       </button>
                     );
                   })}
@@ -1019,13 +1060,15 @@ export function MarketplacePage({
 
             {/* 3. Sort Options */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Sort By</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {isHindi ? "क्रमबद्ध करें" : "Sort By"}
+              </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: "featured", label: "Featured" },
-                  { id: "newest", label: "Newest" },
-                  { id: "price_asc", label: "Price ↑" },
-                  { id: "price_desc", label: "Price ↓" },
+                  { id: "featured", label: isHindi ? "खास" : "Featured" },
+                  { id: "newest", label: isHindi ? "नवीनतम" : "Newest" },
+                  { id: "price_asc", label: isHindi ? "कीमत ↑" : "Price ↑" },
+                  { id: "price_desc", label: isHindi ? "कीमत ↓" : "Price ↓" },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -1048,9 +1091,11 @@ export function MarketplacePage({
               </div>
             </div>
 
-            {/* 3. Price Bracket */}
+            {/* 4. Price Bracket */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Price Range</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {isHindi ? "कीमत दायरा" : "Price Range"}
+              </label>
               <div className="flex flex-wrap gap-2">
                 {PRICE_BRACKETS.map((b, idx) => (
                   <button
@@ -1068,7 +1113,13 @@ export function MarketplacePage({
                         : {}
                     }
                   >
-                    {b.label}
+                    {idx === 0
+                      ? t("marketplace.price_all", "All Prices")
+                      : idx === 1
+                      ? t("marketplace.price_under_299", "Under ₹299")
+                      : idx === 4
+                      ? t("marketplace.price_1000_plus", "₹1,000+")
+                      : b.label}
                   </button>
                 ))}
               </div>
@@ -1084,7 +1135,7 @@ export function MarketplacePage({
                   background: "linear-gradient(to bottom, #5ADBE5, #0A82A8)",
                 }}
               >
-                Show {totalCount} Products
+                {isHindi ? `उत्पाद देखें (${totalCount})` : `Show ${totalCount} Products`}
               </button>
             </div>
           </div>

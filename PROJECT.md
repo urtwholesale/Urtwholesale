@@ -30,7 +30,7 @@ urbanrat-store/
 │   │   │   ├── logo.png               # Official Urbanrat bunny logo
 │   │   │   └── hero-accessories.jpg
 │   │   ├── src/
-│   │   │   ├── components/            # Reusable UI (Two-tier TopBar, NavigationDock, ProductCard, ErrorState, etc.)
+│   │   │   ├── components/            # Reusable UI (Two-tier TopBar, NavigationDock, WholesaleMarquee, Footer, TurnstileWidget, ProductCard, ErrorState, etc.)
 │   │   │   ├── context/               # Global contexts (SettingsContext for store_settings)
 │   │   │   ├── features/auth/         # Customer authentication & profile modal (CustomerAuth)
 │   │   │   ├── lib/                   # Supabase client instantiation
@@ -43,6 +43,7 @@ urbanrat-store/
 │   │   ├── index.html                 # Configured with favicon.ico, logo.png & apple-touch-icon
 │   │   ├── package.json
 │   │   ├── tsconfig.json
+│   │   ├── vercel.json                # Production deployment configuration & security headers for store.urbanrat.in
 │   │   └── vite.config.ts             # Includes social crawler Open Graph tag injector
 │   │
 │   └── admin/                         # Protected Merchant Admin Panel (Vite + React 19)
@@ -72,6 +73,7 @@ urbanrat-store/
 │       ├── index.html
 │       ├── package.json
 │       ├── tsconfig.json
+│       ├── vercel.json                # Production deployment configuration & security headers for admin.urbanrat.in
 │       └── vite.config.ts
 │
 ├── packages/
@@ -89,16 +91,21 @@ urbanrat-store/
 │       │   │   ├── review.ts          # Product review and rating models
 │       │   │   ├── stockMovement.ts   # Stock audit trail models
 │       │   │   └── storeSettings.ts   # B2B settings, banners, and policy pages
+│       │   ├── adminAuth.ts           # Admin authorization logic & AAL2 MFA enforcement checks
+│       │   ├── adminAuth.test.ts      # Unit tests for AAL1 rejection, AAL2 approval, role validation & safe rollout
 │       │   ├── keywords.ts            # Keyword normalization, deduplication & validation engine (normalizeKeywords)
 │       │   ├── keywords.test.ts       # Unit tests covering normalization, trimming, limits & separators
 │       │   ├── pricing.ts             # B2B volume pricing calculator & tier matching
 │       │   ├── pricing.test.ts        # Unit test suite for pricing engine
+│       │   ├── returns.ts             # Private return-evidence signed URL helpers & TTL constants
+│       │   ├── returns.test.ts        # Unit test suite for returns domain, claim guards & signed URL TTL
 │       │   └── index.ts               # Barrel export
 │       ├── package.json
 │       └── tsconfig.json
 │
 ├── supabase/
 │   ├── functions/
+│   │   ├── checkout-gate/             # Deno Edge Function for Turnstile bot-gated guest checkout
 │   │   └── order-og/                  # Deno Edge Function for dynamic WhatsApp link previews
 │   ├── migrations/
 │   │   ├── 001_init.sql               # Core tables, RLS, functions, triggers, and storage
@@ -125,9 +132,25 @@ urbanrat-store/
 │   │   ├── 022_review_approval_system.sql # Rating threshold trigger (>=4 auto-approve, <4 admin moderation)
 │   │   ├── 023_diverse_new_arrivals.sql # Window-partitioned round-robin category product selection RPC
 │   │   ├── 024_security_hardening.sql # Role immutability, products_public view, stock isolation, order bounds & RPC privilege revocation
-│   │   └── 025_security_gaps_closure.sql # Tracking tokens, execute revokes, bounded search, safe MFA rollout & anti-abuse
+│   │   ├── 025_security_gaps_closure.sql # Tracking tokens, execute revokes, bounded search, safe MFA rollout & anti-abuse (superseded by 026a/b)
+│   │   ├── 026a_storefront_additive.sql # Stored generated in_stock, products_public view, public_tokens, guest order RPC, checkout rate limits
+│   │   ├── 026b_storefront_tightening.sql # Overload drops, column SELECT on products, sensitive table revokes, anon allowlist
+│   │   ├── 026_rollback.sql           # Emergency rollback migration restoring table-wide SELECT on products
+│   │   ├── 027_admin_mfa_enforcement.sql # Safe TOTP MFA audit RPC, JSONB is_admin() hardening, reversible enforcement commands
+│   │   ├── 028_marquee_announcements.sql # Continuous marquee announcements table, RLS policies, trigger & default wholesale seeds
+│   │   └── 029_dealership_program.sql # Dynamic Dealership Program: margins, branded vs copy showcase, differentiation & articles
 │   └── seed.sql                       # 12 categories, 18 subcategories, products & volume tiers
 │
+├── scripts/                           # Penetration testing & database verification scripts
+│   ├── run_rest_pentest.js            # Automated 15-probe PostgREST RLS penetration test runner
+│   ├── audit_database_security.js     # Schema and function privilege auditing script
+│   ├── check_anon_functions.sql       # Diagnostic SQL for functions executable by anon role
+│   └── rls_penetration_test.sql       # Direct SQL RLS penetration and isolation probe suite
+│
+├── .github/
+│   └── workflows/
+│       └── gitleaks.yml               # Automated secret scanning CI workflow on push & PR (fetch-depth: 0)
+├── .gitleaks.toml                     # Gitleaks rule configuration allowlisting .env.example placeholders
 ├── .env.example                       # Template for Supabase credentials
 ├── AGENT_RULES.md                     # Core UI/UX and architectural constraints
 ├── package.json                       # Monorepo root scripts & dev dependencies
@@ -234,8 +257,8 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 3. **B2B Wholesale Volume Pricing & Catalog Stock Display**:
    - Volume tier discounts configured per product (e.g. 10–49 units, 50–99 units, 100+ units).
    - Interactive tiered savings preview directly on product pages and in the cart.
-   - **Catalog Stock Isolation**: PostgreSQL view `public.products_public` (with `security_invoker = on`) and table-level column restrictions in `024_security_hardening.sql` revoke anon access to raw `stock`, costs, and supplier fields. Storefront client code (`storeService.ts`) selects safe columns and receives an `in_stock` boolean flag, preventing warehouse inventory scraping and business intelligence leakage.
-   - Server-side verification via Supabase Postgres RPC prevents client-side price tampering.
+   - **Catalog Stock Isolation & Stored Generated `in_stock` Column**: Rather than calculating stock availability on-the-fly via functions or exposing raw counts, `in_stock` is implemented as an indexed stored generated column on `public.products` (`in_stock boolean GENERATED ALWAYS AS (stock > 0) STORED`, added in `026a_storefront_additive.sql`, superseding the initial view-level helper in `024_security_hardening.sql`). Both the storefront catalog view `public.products_public` (with `security_invoker = on`) and column-level SELECT grants in `026b_storefront_tightening.sql` expose `in_stock` while revoking `anon` access to internal warehouse stock counts (`stock`), cost prices, and supplier data. Storefront client queries (`storeService.ts`) retrieve `PRODUCT_SAFE_COLUMNS` including `in_stock`, completely eliminating warehouse inventory intelligence leakage.
+   - Server-side verification via Supabase Postgres RPCs (`create_verified_order` for authenticated checkouts, and service-role-only `create_verified_order_guest` via the `checkout-gate` Edge Function for guests) prevents client-side price tampering.
 
 4. **Real-Time Instant Search**:
    - Debounced search modal with live query against Supabase PostgreSQL.
@@ -411,7 +434,13 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 | `022_review_approval_system.sql` | Review rating approval automation | Review approval workflow with `auto_moderate_review` trigger function enforcing automatic approval for $\ge 4$ stars and admin moderation for $< 4$ stars. |
 | `023_diverse_new_arrivals.sql` | Category-diverse new arrivals showcase | Window-partitioned recursive CTE function `get_new_arrivals_by_category(items_per_category)` ensuring home page new arrivals represent all product families. |
 | `024_security_hardening.sql` | Comprehensive Security Hardening & Least Privilege | Strict role immutability trigger (`check_profile_role_update`), `handle_new_user` role lockdown (hardcodes `'customer'`), storefront `products_public` view with `security_invoker = on` and `product_is_in_stock` helper, direct anon SELECT revoked on `products.stock`, hardened `create_verified_order` (quantity bounds, active status, duplicate line rejection), `create_return_request` path validation (`auth.uid() || '/'`), server-side bounds on `search_products_v2` (60-char query cap, 50-row limit), `get_order_by_id` phone masking and `admin_note` stripping, and enforced `is_admin()` checks and `SET search_path = public, pg_temp` across all admin/bulk/stats functions with EXECUTE revoked from PUBLIC/anon. |
-| `025_security_gaps_closure.sql` | Evidence Audit Security Gaps Closure | Unguessable `public_token` on `orders` and `dealer_applications`, token-gated `get_order_by_id` & `get_dealer_application_by_code`, explicit EXECUTE revokes from PUBLIC/anon on all functions with `ALTER DEFAULT PRIVILEGES` lockdown, bounds on legacy `search_products` (60 chars, 50 rows), safe TOTP MFA rollout via `enforce_admin_mfa` and `is_admin()`, storage bucket enumeration prevention (listing restricted to admins & folder owners), content-based review moderation with spam/injection filtering, removal of synthetic banner ratings, and `rate_limits` tracking with honeypot bot trap and automated inventory release for stale pending orders (`release_stale_pending_orders`). |
+| `025_security_gaps_closure.sql` | Evidence Audit Security Gaps Closure (Superseded/Extended) | Initial proposal for unguessable `public_token` on `orders` and `dealer_applications`, token-gated `get_order_by_id` & `get_dealer_application_by_code`, bounds on legacy `search_products` (60 chars, 50 rows), safe TOTP MFA rollout via `enforce_admin_mfa` and `is_admin()`, storage bucket enumeration prevention, content-based review moderation, and rate limits tracking with honeypot bot trap. *(Note: Tracking token generation, order lookup signatures, and guest RPCs were superseded and extended by the authoritative migrations `026a_storefront_additive.sql` and `026b_storefront_tightening.sql`)*. |
+| `026a_storefront_additive.sql` | Two-Phase Storefront Hardening (Phase 1: Additive) | Authoritative stored generated column `products.in_stock` (`stock > 0`), safe storefront catalog view `public.products_public` (with embedded price tiers and `security_invoker = on`), admin view `public.products_admin`, authoritative 128-bit `public_token` on `orders` and `dealer_applications` with unique indexes, `order_events.customer_visible` column & RLS filter, authoritative token-gated `get_order_by_id(text, text)` with minimal guest masking and `get_dealer_application_by_code(text, text)`, service-role-only `create_verified_order_guest` RPC, table-backed `checkout_rate_limits` sliding window counter, and `max_order_qty` store setting. |
+| `026b_storefront_tightening.sql` | Two-Phase Storefront Hardening (Phase 2: Tightening) | Drops legacy single-param `get_order_by_id(text)` and 3-param `create_verified_order(jsonb, jsonb, text)` to eliminate PostgREST overload ambiguity (PGRST203); revokes table-wide `SELECT` on `products` from `anon` while granting column-level `SELECT` on 27 safe columns matching `products_public`; revokes direct `SELECT` on `orders`, `order_events`, `dealer_applications`, `dealer_events`, and `addresses` from `anon`; permanently drops insecure `customer_addresses` view; tightens `reviews` RLS and `auto_moderate_review`; and restricts `anon` execute privileges to an explicit allowlist. |
+| `026_rollback.sql` | Storefront Hardening Emergency Rollback | Emergency recovery script for 026a/026b that restores table-wide `SELECT` on `products`, `orders`, and sensitive tables, reverts view definitions, and restores legacy single-arg `get_order_by_id(text)` while preserving existing `public_token` column values to prevent data loss. *(Not applied)*. |
+| `027_admin_mfa_enforcement.sql` | Admin Multi-Factor Authentication (MFA) Safe Rollout & Enforcement | Administrative audit RPC `public.admin_get_mfa_enrollment_status()` for inspecting cross-admin TOTP verification status before enforcement; hardened `public.is_admin()` handling JSONB boolean and string variants of `enforce_admin_mfa`; includes explicit, commented-out reversible statements to enable (`true`) or roll back (`false`) strict AAL2 enforcement. *(Pending manual execution after all admins enroll)*. |
+| `028_marquee_announcements.sql` | Continuous Marquee Announcements & Dynamic Offers | Database table `public.marquee_announcements` with RLS policies, `set_updated_at` trigger, public read access, admin management access, and 8 seed wholesale promotional announcements. |
+| `029_dealership_program.sql` | Dealership Program Dynamic Content & Differentiation | Database tables for `public.dealership_tier_margins`, `public.dealership_item_showcase` (Branded vs Copy image comparisons), `public.dealership_benefits_comparison` (Authorized Dealer vs Normal Customer benefits), and `public.dealership_articles` (Branded & Copy dealership guide articles) with RLS policies, `set_updated_at` triggers, public read access, and admin full write access. Pre-seeded with production-grade data. |
 
 #### Referenced Migrations Not Found in Repository
 | Migration Reference | Status | Details & Resolution |
@@ -437,21 +466,32 @@ Verified (date: 2026-11-02): `handle_new_user()` hardcodes `role = 'customer'` (
 ### Security Requirements (verify each before launch)
 
 #### Authentication & authorization
-- [ ] Admin accounts use TOTP MFA; `is_admin()` requires `role = 'admin'` and an MFA-verified session. *(Enforcement flag in DB; all admins must enroll via Settings before enabling enforce_admin_mfa)*.
-- [ ] Admin Google sign-in is allowed only for pre-created admin profiles. *(Post-login check signs out non-admins in App.tsx; pre-login OAuth / Auth hook rejection is planned)*.
+- [ ] Admin accounts use TOTP MFA; `is_admin()` requires `role = 'admin'` and an MFA-verified session (`aal2`).
+  - **Prerequisite / Audit Step**: Open Admin Settings (`SettingsEditor.tsx`) to inspect the **Admin MFA Rollout & Enrollment Audit** card, or run `SELECT * FROM public.admin_get_mfa_enrollment_status();` in the Supabase SQL editor. Confirm that `unenrolledCount = 0` and every administrator has `has_mfa = true`.
+  - **Enforcement Activation**: Execute migration `027_admin_mfa_enforcement.sql`, then activate the database enforcement flag:
+    ```sql
+    UPDATE public.store_settings SET value = 'true'::jsonb, updated_at = now() WHERE key = 'enforce_admin_mfa';
+    ```
+  - **Verification**: Sign in as an administrator. At `aal1` (pre-TOTP), admin RPCs and tables are rejected (`is_admin() = false`). Upon entering the 6-digit TOTP code (`aal2`), full administrator privileges are granted (`is_admin() = true`). Tested in `packages/shared/src/adminAuth.test.ts`.
+  - **Emergency Rollback Plan**: If an administrator is locked out or enrollment needs to be paused, run the reversal command in the Supabase SQL editor:
+    ```sql
+    UPDATE public.store_settings SET value = 'false'::jsonb, updated_at = now() WHERE key = 'enforce_admin_mfa';
+    ```
+    This immediately reverts `public.is_admin()` to safe rollout mode without service interruption or schema rollback.
+- [x] Admin authentication strictly enforces master credentials with TOTP MFA; third-party Google OAuth entry point removed from Admin Login to eliminate external OAuth vulnerability surface. *(Verified on 2026-11-03: Touchpoint 41, AdminLogin.tsx)*
 - [x] `role` can never be set from signup metadata or by the user's own profile update. *(Verified on 2026-11-02: `024_security_hardening.sql:38-91`)*
 - [x] Changing the admin password requires the current password. *(Verified on 2026-11-02: `SettingsEditor.tsx:260-280`)*
 
 #### Database
-- [x] RLS enabled on every table; no `using (true)` policies on sensitive tables. *(Verified on 2026-11-02: `001_init.sql` through `025_security_gaps_closure.sql`)*
-- [x] Every `SECURITY DEFINER` function sets `search_path`, checks `is_admin()` or `auth.uid()` first, and has EXECUTE revoked from `public`/`anon` unless it is intentionally public. *(Verified on 2026-11-02: `024_security_hardening.sql`, `025_security_gaps_closure.sql`)*
-- [x] The storefront reads products through a view that excludes stock quantities, cost and supplier fields. *(Verified on 2026-11-02: `products_public` view & `PRODUCT_SAFE_COLUMNS` in `storeService.ts:61`)*
-- [x] Order inputs are validated server-side (quantity bounds, active products, line limits). *(Verified on 2026-11-02: `024_security_hardening.sql:185-320` in `create_verified_order`)*
+- [x] RLS enabled on every table; no `using (true)` policies on sensitive tables. *(Verified on 2026-11-03: `001_init.sql` through `026b_storefront_tightening.sql`)*
+- [x] Every `SECURITY DEFINER` function sets `search_path`, checks `is_admin()` or `auth.uid()` first, and has EXECUTE revoked from `public`/`anon` unless it is intentionally public. *(Verified on 2026-11-03: `024_security_hardening.sql`, `026a_storefront_additive.sql`, `026b_storefront_tightening.sql`)*
+- [x] The storefront reads products through stored generated `in_stock` boolean and `products_public` view excluding warehouse stock quantities, cost, and supplier fields. *(Verified on 2026-11-03: `026a_storefront_additive.sql`, `026b_storefront_tightening.sql`, `PRODUCT_SAFE_COLUMNS` in `storeService.ts:61`)*
+- [x] Order inputs are validated server-side (quantity bounds, active products, line limits). *(Verified on 2026-11-03: `024_security_hardening.sql`, `026a_storefront_additive.sql:185-509` in `create_verified_order`, and `create_verified_order_guest`)*
 
 #### Public endpoints
-- [x] Guest order tracking requires an unguessable token; responses are minimal and masked. *(Verified on 2026-11-02: `orders.public_token` & `get_order_by_id` in `025_security_gaps_closure.sql`, `OrderPage.tsx:48-95`)*
-- [x] Guest checkout, dealer form, reviews and search logging are rate-limited, length-capped and CAPTCHA/honeypot-protected. *(Verified on 2026-11-02: `rate_limits`, honeypot, unconfirmed order quota in `025_security_gaps_closure.sql`)*
-- [x] Review moderation is content-based, and no ratings are generated or scaled. *(Verified on 2026-11-02: `auto_moderate_review` in `025_security_gaps_closure.sql`, `HeroStackedCarousel.tsx:20-175`)*
+- [x] Guest order tracking requires an unguessable token; responses are minimal and masked. *(Verified on 2026-11-03: `orders.public_token` & `get_order_by_id` in `026a_storefront_additive.sql`, `OrderPage.tsx:48-95`)*
+- [x] Guest checkout, dealer form, reviews and search logging are rate-limited, length-capped and CAPTCHA/honeypot-protected. *(Verified on 2026-11-03: `checkout-gate` Edge Function, Cloudflare Turnstile, `checkout_rate_limits`, honeypot in `026a/b`)*
+- [x] Review moderation is content-based, and no ratings are generated or scaled. *(Verified on 2026-11-03: `auto_moderate_review` in `026b_storefront_tightening.sql`, `HeroStackedCarousel.tsx:20-175`)*
 
 #### Frontend
 - [x] All interpolated values in invoices, packing slips and OG tags are HTML-escaped; print views do not run in the admin origin. *(Verified on 2026-11-02: `order-og/index.ts:18-80`, `printHtmlSafely` in `OrderDetailModal.tsx:264, 377`)*
@@ -459,12 +499,12 @@ Verified (date: 2026-11-02): `handle_new_user()` hardcodes `role = 'customer'` (
 
 #### Storage
 - [x] Bucket writes are admin-only (except per-user `avatars` and `return-evidence` folders); MIME and size limits set; broad listing blocked. *(Verified on 2026-11-02: `025_security_gaps_closure.sql`)*
-- [ ] Return-evidence signed URLs expire in 15 minutes or less.
+- [x] Return-evidence signed URLs expire in 15 minutes or less. *(Verified on 2026-11-04: Capped at `RETURN_EVIDENCE_URL_TTL_SECONDS = 900` via centralized `getReturnEvidenceSignedUrl` in `packages/shared/src/returns.ts:47`, called on-demand in `apps/store/src/services/returnService.ts:202` and `apps/admin/src/lib/adminService.ts:2865`)*
 
 #### Deployment
-- [ ] Admin and storefront are on separate subdomains; security headers set in `vercel.json`.
+- [x] Admin and storefront are on separate subdomains; security headers set in `vercel.json`. *(Verified on 2026-11-04: Created production configs `apps/store/vercel.json` for store.urbanrat.in and `apps/admin/vercel.json` for admin.urbanrat.in with strict CSP, HSTS, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy, and frame-ancestors 'none')*
 - [ ] Supabase redirect allowlist lists exact URLs only, with no wildcards.
-- [ ] Gitleaks/secret scanning runs in CI.
+- [x] Gitleaks/secret scanning runs in CI. *(Verified on 2026-11-04: Workflow `.github/workflows/gitleaks.yml` configured on push & PR with fetch-depth: 0, custom `.gitleaks.toml` allowlisting only `.env.example`, scanned 110 commits with 0 leaks found)*
 
 ---
 
@@ -481,7 +521,7 @@ Verified (date: 2026-11-02): `handle_new_user()` hardcodes `role = 'customer'` (
 | **Icons** | Lucide React | 1.16 | Cohesive modern icon system |
 | **Backend & DB** | Supabase JS | 2.106 | Realtime PostgreSQL, RLS security, and storage |
 | **Monorepo Manager** | npm workspaces | 10+ / 11+ | Clean multi-package dependency management |
-| **Testing** | Vitest | 5.0 | Complete test suite across shared pricing, order verification, validation, keyword normalization, catalog image parsing, returns, HTML sanitization, and catalog parser (223 tests across 14 suites as of 2026-11-02) |
+| **Testing** | Vitest | 5.0 | Complete test suite across shared pricing, order verification, validation, keyword normalization, catalog image parsing, returns domain & signed URL TTL, HTML sanitization, admin MFA authorization, catalog parser, marquee announcements, dealership domain, and English & Hindi translations (257 tests across 18 suites as of 2026-11-04) |
 
 ---
 
@@ -540,12 +580,13 @@ Serves the storefront and admin from one origin. Both apps then share the same b
 1. **Import Git Repository**: Select the Git repository.
 2. **Framework Preset**: Select **`Vite`**.
 3. **Root Directory**: `.` (monorepo root).
-4. **Build Command**: `npm run build` *(executes store & admin builds and merges dist artifacts into `dist/` and `dist/admin/`)*.
+4. **Build Command**: `npm run build` *(executes store & admin builds and merges dist artifacts into `dist/`, `dist/sjain/`, and `dist/admin/`)*.
 5. **Output Directory**: `dist`.
 6. **Environment Variables**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 7. **Routing (`vercel.json`)**:
-   - `/admin/:path*` → `/admin/index.html` (Admin deep links)
-   - `/admin` → `/admin/index.html` (Admin entry point)
+   - `/sjain/:path*` → `/sjain/index.html` (Admin deep links)
+   - `/sjain` → `/sjain/index.html` (Admin entry point)
+   - `/admin` → Redirects to `/sjain`
    - `/(.*)` → `/index.html` (Storefront SPA fallback)
 
 ### Option B: Standalone Multi-Project Deployment (Recommended)
@@ -588,4 +629,15 @@ The complete technical implementation history, schema migration milestones, and 
     - `order-og`: Server-side Open Graph social crawler preview generator for WhatsApp, Facebook, and Twitter crawlers with sanitized order tags, performing HTTP 302 redirects to client SPA tracking routes for real browsers.
   - **Client Applications Hardening**: Dual checkout path in `apps/store` (authenticated customers directly invoke `create_verified_order`, guest customers route through `checkout-gate`), Cloudflare Turnstile challenge widget (`TurnstileWidget.tsx`), Google OAuth button removal from Admin Login (`apps/admin`) enforcing master credentials + TOTP MFA, and referrer policy protection.
   - **Automated Penetration Suite**: 15/15 automated REST penetration tests (`scripts/run_rest_pentest.js`) verified and passing with 100% security compliance against live Supabase backend.
+- **Touchpoint 42 (Wholesale Continuous Marquee, Dealership Program, Hindi Localization, `/sjain` Admin Path & Hero Category Visual Linking)**:
+  - **Wholesale Marquee (`WholesaleMarquee.tsx`)**: Full-width edge-to-edge seamless marquee displaying real-time wholesale offers and trust badges, backed by Supabase `marquee_announcements` with admin panel controls (`MarqueeManager.tsx`).
+  - **Dealership Program & Differentiation (`DealershipProgramPage.tsx` & `DealershipManager.tsx`)**: Interactive margins and tiers table, comparison tree of URT Authorized Dealer vs. Normal Retailer, branded vs. copy item visual showcase, and dual articles backed by `dealership_*` tables.
+  - **Hindi Language Localization (`LanguageContext.tsx`)**: Full multi-language support (English / Hindi) with dictionary fallback, persistent user preference, and one-click toggle across top bar, drawer, and footer.
+  - **Storefront Footer (`Footer.tsx`)**: Trust badges, express wholesale ordering link, contact information, and directory columns with mobile dock clearance.
+  - **Admin Panel URL Path (`/sjain`)**: Configured Vite base and Vercel routing to serve admin application under `/sjain` with automatic redirect from `/admin`.
+  - **Hero Category Linking & Visual Picker (`ContentEditor.tsx` & `HeroStackedCarousel.tsx`)**:
+    - **Category Routing**: Dropdown to connect any hero banner directly to a specific category route (`/marketplace?category=${slug}`).
+    - **Official 3D Studio Visuals**: 1-click buttons to apply high-res dark or light 3D tech renders (`/categories/dark/${slug}.jpg` and `/categories/light/${slug}.jpg`).
+    - **Category Product Image Gallery**: Live thumbnail picker fetching products from the selected category to link high-res product photos directly to the banner.
+    - **Storefront Carousel Sync**: Dynamically renders custom CTA text (`activeCard.ctaText`) and category deep links.
 

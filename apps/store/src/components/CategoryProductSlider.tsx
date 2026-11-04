@@ -2,14 +2,25 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import type { Product } from "@urbanrat/shared";
 import {
+  getProductHighlightSpec,
+  getProductTopBadge,
+  resolveColorHex,
+} from "@urbanrat/shared";
+import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
   Plus,
   Check,
+  Star,
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
 import { recordRecentlyViewed } from "../services/recentViews";
+import { useLanguage } from "../context/LanguageContext";
+import {
+  translateSpecHighlight,
+  translateBadgeText,
+} from "../locales/categoryTranslations";
 import { m, AnimatePresence } from "../lib/motion";
 import { ProductCard } from "./ProductCard";
 
@@ -132,6 +143,7 @@ export function CategoryProductSlider({
   onAddToCart,
   isLoading = false,
 }: CategoryProductSliderProps) {
+  const { isHindi, t } = useLanguage();
   // Mobile single card slide index
   const [currentIndex, setCurrentIndex] = useState(0);
   // Responsive products per row: 3 for tablet, 4 for laptop, 5 for desktop
@@ -248,6 +260,21 @@ export function CategoryProductSlider({
     ? Math.round(((currentProduct.mrp - bestPrice) / currentProduct.mrp) * 100)
     : 0;
 
+  const rawHighlightSpec = getProductHighlightSpec(currentProduct);
+  const highlightSpec = translateSpecHighlight(rawHighlightSpec, isHindi);
+
+  const rawTopBadge = getProductTopBadge(currentProduct, discountPercent);
+  const topBadge = {
+    icon: rawTopBadge.icon,
+    text: translateBadgeText(rawTopBadge.text, isHindi),
+  };
+  const colorList =
+    currentProduct.colors && currentProduct.colors.length > 0
+      ? currentProduct.colors
+      : ["Black", "Slate"];
+  const displaySwatches = colorList.slice(0, 2);
+  const extraCount = Math.max(0, colorList.length - 2);
+
   function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -284,6 +311,12 @@ export function CategoryProductSlider({
               {title}
             </h2>
 
+            {badgeTag && (
+              <span className="hidden sm:inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                {badgeTag}
+              </span>
+            )}
+
             {/* "See more" button positioned directly adjacent to the category title */}
             {seeMoreUrl && (
               <Link
@@ -294,7 +327,7 @@ export function CategoryProductSlider({
                   boxShadow: "var(--brand-shadow)",
                 }}
               >
-                <span>See more</span>
+                <span>{t("home.see_more", "See more")}</span>
                 <ArrowRight className="w-3 h-3 stroke-[2.5]" />
               </Link>
             )}
@@ -420,128 +453,137 @@ export function CategoryProductSlider({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: -direction * 50, scale: 0.98 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative bg-white dark:bg-[#0D131F] rounded-3xl border ${currentTheme.cardBorder} ${currentTheme.cardGlow} transition-colors flex flex-col justify-between overflow-hidden`}
+              className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-lg transition-colors flex flex-col justify-between overflow-hidden"
             >
-              {/* Top Image Spotlight - Container-sized with zero margins */}
-              <Link
-                to={`/product/${currentProduct.slug}`}
-                onClick={() => recordRecentlyViewed(currentProduct)}
-                className="block relative aspect-square sm:aspect-4/3 w-full overflow-hidden bg-slate-100 dark:bg-slate-900 group"
-              >
-                <img
-                  src={
-                    currentProduct.images[0] ||
-                    "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600"
-                  }
-                  alt={currentProduct.name}
-                  loading="eager"
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                />
+              {/* Top Image Spotlight */}
+              <div className="relative aspect-square w-full overflow-hidden bg-slate-50 dark:bg-slate-800/40 shrink-0">
+                <Link
+                  to={`/product/${currentProduct.slug}`}
+                  onClick={() => recordRecentlyViewed(currentProduct)}
+                  className="block w-full h-full relative"
+                >
+                  <img
+                    src={
+                      currentProduct.images[0] ||
+                      "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600"
+                    }
+                    alt={currentProduct.name}
+                    loading="eager"
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  />
+                </Link>
 
-                {/* Gradient Vignette at Top & Bottom */}
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
-
-                {/* Custom Category Theme Badge (Top Left) */}
-                <div className="absolute top-2.5 left-2.5 inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/75 backdrop-blur-md text-white border border-white/20 shadow-xs">
-                  <span>{badgeTag}</span>
+                {/* boAt Signature Top Left Badge Tag */}
+                <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider bg-black/90 text-white shadow-xs flex items-center space-x-1">
+                  <span>{topBadge.icon}</span>
+                  <span>{topBadge.text}</span>
                 </div>
 
-                {/* Discount Badge (Top Right) */}
-                {discountPercent > 0 && (
+                {/* Urbanrat Original Brand Logo (Top Right) */}
+                {currentProduct.is_urbanrat_brand && (
                   <div
-                    className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-xs tracking-wider"
-                    style={{
-                      background: "linear-gradient(135deg, #FF6B6B 0%, #E83A59 100%)",
-                    }}
+                    title="Urbanrat Original Brand"
+                    className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-white/80 dark:border-slate-700/80 shadow-xs flex items-center justify-center p-1"
                   >
-                    {discountPercent}% OFF
+                    <img
+                      src="/logo.png"
+                      alt="Urbanrat"
+                      className="w-full h-full rounded-full object-contain"
+                    />
                   </div>
                 )}
-              </Link>
+              </div>
+
+              {/* ── Signature boAt Yellow/Gold Feature Spec Ribbon (Flush with Image) ── */}
+              <div className="w-full bg-[#FFC700] dark:bg-[#FDB913] px-3 py-1.5 flex items-center justify-between text-slate-950 shrink-0 select-none">
+                <span className="text-[11px] font-black uppercase tracking-tight text-slate-950 truncate max-w-[70%]">
+                  {highlightSpec}
+                </span>
+                <div className="inline-flex items-center space-x-0.5 bg-white text-slate-950 px-1.5 py-0.5 rounded-md text-[10px] font-black shadow-2xs shrink-0">
+                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-500" />
+                  <span>{(currentProduct.rating_avg || 4.8).toFixed(1)}</span>
+                </div>
+              </div>
 
               {/* Product Details */}
-              <div className="p-3.5 space-y-2.5">
+              <div className="p-3.5 space-y-2 flex flex-col flex-1 justify-between">
                 <Link
                   to={`/product/${currentProduct.slug}`}
                   onClick={() => recordRecentlyViewed(currentProduct)}
                   className="block hover:text-brand-dark dark:hover:text-orange-400 transition-colors"
                 >
-                  <h3 className="font-extrabold text-slate-900 dark:text-white text-sm leading-snug line-clamp-2">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-sm leading-snug line-clamp-1">
                     {currentProduct.name}
                   </h3>
                 </Link>
 
-                {/* Price & Free Shipping Row */}
-                <div className="flex items-baseline justify-between flex-wrap gap-1">
-                  <div className="flex items-baseline space-x-1.5">
+                {/* Price & boAt-style Color Swatches Row */}
+                <div className="flex items-center justify-between gap-1 pt-0.5">
+                  <div className="flex items-baseline space-x-1 min-w-0">
                     {hasBulkDeals && (
-                      <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
                         From
                       </span>
                     )}
-                    <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                    <span className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                       ₹{bestPrice.toLocaleString("en-IN")}
                     </span>
-                    {currentProduct.mrp && currentProduct.mrp > bestPrice && (
-                      <span className="text-xs text-slate-400 line-through">
-                        ₹{currentProduct.mrp.toLocaleString("en-IN")}
+                  </div>
+
+                  {/* Color Swatches Pill (●● +3) */}
+                  <div
+                    className="flex items-center shrink-0"
+                    title={colorList.join(", ")}
+                  >
+                    <div className="flex items-center -space-x-1">
+                      {displaySwatches.map((col, idx) => (
+                        <span
+                          key={idx}
+                          className="w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-900 shadow-2xs inline-block"
+                          style={{ backgroundColor: resolveColorHex(col) }}
+                        />
+                      ))}
+                    </div>
+                    {extraCount > 0 && (
+                      <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 ml-1">
+                        +{extraCount}
                       </span>
                     )}
                   </div>
-
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    Free Shipping
-                  </span>
                 </div>
 
-                {/* Bulk Tier Quick-Preview (Wholesale Highlight) */}
-                {tiers.length > 0 && (
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 dark:text-slate-400 font-semibold">
-                      Wholesale Tiers:
+                {/* Strikethrough MRP + Green Discount % */}
+                <div className="flex items-baseline space-x-1.5 text-[11px]">
+                  {currentProduct.mrp && currentProduct.mrp > bestPrice && (
+                    <span className="text-slate-400 dark:text-slate-500 line-through">
+                      ₹{currentProduct.mrp.toLocaleString("en-IN")}
                     </span>
-                    <div className="flex items-center space-x-1.5 font-bold text-slate-700 dark:text-slate-300">
-                      {tiers.slice(0, 2).map((tier, idx) => (
-                        <span
-                          key={idx}
-                          className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-[10px] border border-slate-200 dark:border-slate-700 shadow-2xs"
-                        >
-                          {tier.min_qty}+ pcs: ₹{tier.unit_price}
-                        </span>
-                      ))}
-                      {tiers.length > 2 && (
-                        <span className="text-[10px] text-brand-dark dark:text-orange-400">
-                          +{tiers.length - 2} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  )}
+                  {discountPercent > 0 && (
+                    <span className="font-black text-emerald-600 dark:text-emerald-400">
+                      {discountPercent}% {t("product.off", "off")}
+                    </span>
+                  )}
+                </div>
 
-                {/* Action Buttons Row */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
-                  <Link
-                    to={`/product/${currentProduct.slug}`}
-                    onClick={() => recordRecentlyViewed(currentProduct)}
-                    className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-brand-dark dark:hover:text-orange-400 flex items-center space-x-1 transition"
-                  >
-                    <span>View Details</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                {/* Wholesale MOQ & Quick Add Button Row */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 mt-auto">
+                  <span className="text-[10px] font-bold text-brand-dark dark:text-orange-400 bg-cyan-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded border border-cyan-100 dark:border-orange-500/20">
+                    {t("product.moq", "MOQ")}: {currentProduct.min_order_qty || 10} {t("product.pcs", "pcs")}
+                  </span>
 
-                  {/* Morphing Add to Cart Button */}
                   <button
                     type="button"
                     onClick={handleAdd}
                     aria-label={
                       isAdded
-                        ? `Added ${currentProduct.name} to cart`
-                        : `Add ${currentProduct.name} to cart`
+                        ? `${t("product.added", "Added")} ${currentProduct.name}`
+                        : `${t("product.add", "Add")} ${currentProduct.name}`
                     }
-                    className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-black text-white cursor-pointer transition-all duration-300 shadow-sm active:scale-95 ${
+                    className={`relative h-7.5 px-3 rounded-full flex items-center space-x-1 text-[11px] font-black text-white cursor-pointer transition-all duration-300 shrink-0 ${
                       isAdded
                         ? "bg-emerald-600 shadow-[0_4px_16px_rgba(16,185,129,0.5)] ring-2 ring-emerald-300"
-                        : "hover:shadow-md"
+                        : "hover:opacity-95 active:scale-95 shadow-2xs"
                     }`}
                     style={
                       isAdded
@@ -554,13 +596,13 @@ export function CategoryProductSlider({
                   >
                     {isAdded ? (
                       <>
-                        <Check className="w-4 h-4 stroke-3" />
-                        <span>Added</span>
+                        <Check className="w-3.5 h-3.5 stroke-3" />
+                        <span>{t("product.added", "Added")}</span>
                       </>
                     ) : (
                       <>
-                        <Plus className="w-4 h-4 stroke-2" />
-                        <span>Add to Cart</span>
+                        <Plus className="w-3.5 h-3.5 stroke-2.5" />
+                        <span>{t("product.add", "Add")}</span>
                       </>
                     )}
                   </button>

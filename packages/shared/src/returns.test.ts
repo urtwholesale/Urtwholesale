@@ -15,6 +15,12 @@ import {
   isValidClaimStatus,
   isValidClaimType,
 } from "./types/return";
+import {
+  RETURN_EVIDENCE_URL_TTL_SECONDS,
+  RETURN_EVIDENCE_BUCKET,
+  getReturnEvidenceSignedUrl,
+  type StorageSignedUrlClient,
+} from "./returns";
 
 describe("Returns Domain Validation & Constants", () => {
   describe("RETURN_TYPES", () => {
@@ -142,6 +148,150 @@ describe("Returns Domain Validation & Constants", () => {
       for (const ct of CLAIM_TYPES) {
         expect(CLAIM_TYPE_LABELS[ct]).toBeDefined();
       }
+    });
+  });
+
+  describe("Return Evidence Signed URL Helper (getReturnEvidenceSignedUrl)", () => {
+    it("defines RETURN_EVIDENCE_URL_TTL_SECONDS as exactly 900 seconds (15 minutes)", () => {
+      expect(RETURN_EVIDENCE_URL_TTL_SECONDS).toBe(900);
+      expect(RETURN_EVIDENCE_BUCKET).toBe("return-evidence");
+    });
+
+    it("generates signed URL with default 900s TTL using private return-evidence bucket", async () => {
+      let capturedBucket = "";
+      let capturedPath = "";
+      let capturedTtl = 0;
+
+      const mockStorage: StorageSignedUrlClient = {
+        from: (bucket: string) => {
+          capturedBucket = bucket;
+          return {
+            createSignedUrl: async (path: string, expiresIn: number) => {
+              capturedPath = path;
+              capturedTtl = expiresIn;
+              return { data: { signedUrl: `https://storage.example.com/${bucket}/${path}?token=abc` }, error: null };
+            },
+          };
+        },
+      };
+
+      const result = await getReturnEvidenceSignedUrl(
+        mockStorage,
+        "user-123/returns/RET-001/evidence.webp"
+      );
+
+      expect(capturedBucket).toBe("return-evidence");
+      expect(capturedPath).toBe("user-123/returns/RET-001/evidence.webp");
+      expect(capturedTtl).toBe(900);
+      expect(result).toBe("https://storage.example.com/return-evidence/user-123/returns/RET-001/evidence.webp?token=abc");
+    });
+
+    it("strictly caps requested TTL to 900 seconds when caller requests 3600 seconds", async () => {
+      let capturedTtl = 0;
+
+      const mockStorage: StorageSignedUrlClient = {
+        from: () => ({
+          createSignedUrl: async (_path: string, expiresIn: number) => {
+            capturedTtl = expiresIn;
+            return { data: { signedUrl: "https://signed.url" }, error: null };
+          },
+        }),
+      };
+
+      await getReturnEvidenceSignedUrl(mockStorage, "user-1/file.jpg", 3600);
+      expect(capturedTtl).toBe(900);
+
+      await getReturnEvidenceSignedUrl(mockStorage, "user-1/file.jpg", 86400);
+      expect(capturedTtl).toBe(900);
+    });
+
+    it("allows shorter TTL if requested (e.g. 300 seconds) but clamps non-positive values to 1", async () => {
+      let capturedTtl = 0;
+
+      const mockStorage: StorageSignedUrlClient = {
+        from: () => ({
+          createSignedUrl: async (_path: string, expiresIn: number) => {
+            capturedTtl = expiresIn;
+            return { data: { signedUrl: "https://signed.url" }, error: null };
+          },
+        }),
+      };
+
+      await getReturnEvidenceSignedUrl(mockStorage, "user-1/file.jpg", 300);
+      expect(capturedTtl).toBe(300);
+
+      await getReturnEvidenceSignedUrl(mockStorage, "user-1/file.jpg", 0);
+      expect(capturedTtl).toBe(1);
+
+      await getReturnEvidenceSignedUrl(mockStorage, "user-1/file.jpg", -50);
+      expect(capturedTtl).toBe(1);
+    });
+
+    it("returns pre-existing full URLs immediately without invoking storage signing", async () => {
+      let called = false;
+      const mockStorage: StorageSignedUrlClient = {
+        from: () => {
+          called = true;
+          return {
+            createSignedUrl: async () => ({ data: null, error: null }),
+          };
+        },
+      };
+
+      const httpUrl = "https://images.example.com/mock-evidence.png";
+      const resHttp = await getReturnEvidenceSignedUrl(mockStorage, httpUrl);
+      expect(resHttp).toBe(httpUrl);
+      expect(called).toBe(false);
+
+      const dataUrl = "data:image/png;base64,iVBORw0KGgo=";
+      const resData = await getReturnEvidenceSignedUrl(mockStorage, dataUrl);
+      expect(resData).toBe(dataUrl);
+      expect(called).toBe(false);
+    });
+
+    it("returns empty string for empty or non-string paths without calling storage", async () => {
+      let called = false;
+      const mockStorage: StorageSignedUrlClient = {
+        from: () => {
+          called = true;
+          return {
+            createSignedUrl: async () => ({ data: null, error: null }),
+          };
+        },
+      };
+
+      expect(await getReturnEvidenceSignedUrl(mockStorage, "")).toBe("");
+      expect(await getReturnEvidenceSignedUrl(mockStorage, "   ")).toBe("");
+      expect(await getReturnEvidenceSignedUrl(mockStorage, null as any)).toBe("");
+      expect(await getReturnEvidenceSignedUrl(mockStorage, undefined as any)).toBe("");
+      expect(called).toBe(false);
+    });
+
+    it("handles storage API error gracefully and returns empty string", async () => {
+      const mockStorage: StorageSignedUrlClient = {
+        from: () => ({
+          createSignedUrl: async () => ({
+            data: null,
+            error: { message: "Object not found in bucket", statusCode: 404 },
+          }),
+        }),
+      };
+
+      const res = await getReturnEvidenceSignedUrl(mockStorage, "missing.png");
+      expect(res).toBe("");
+    });
+
+    it("handles thrown storage exception gracefully without crashing", async () => {
+      const mockStorage: StorageSignedUrlClient = {
+        from: () => ({
+          createSignedUrl: async () => {
+            throw new Error("Network timeout while contacting storage gateway");
+          },
+        }),
+      };
+
+      const res = await getReturnEvidenceSignedUrl(mockStorage, "timeout.png");
+      expect(res).toBe("");
     });
   });
 });

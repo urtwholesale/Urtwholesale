@@ -1,0 +1,12 @@
+# Gitleaks Configuration — Urbanrat Wholesale
+# Automated secret scanning rule customization
+
+title = "Urbanrat Wholesale Gitleaks Configuration"
+
+[allowlist]
+description = "Allowlist .env.example template placeholders"
+paths = [
+  '''^\.env\.example$''',
+  '''(^|/)\.env\.example$''',
+]
+

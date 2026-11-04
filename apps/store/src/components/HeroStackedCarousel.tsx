@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { m } from "../lib/motion";
 import { triggerHaptic } from "../utils/haptics";
 import { useTheme } from "../context/ThemeContext";
+import { CursorPhobicElement, CursorPhobicWords } from "./CursorPhobicElement";
 import type { Banner } from "@urbanrat/shared";
 import {
   ChevronLeft,
@@ -420,79 +421,139 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 lg:gap-12 w-full max-w-7xl mx-auto overflow-visible">
         {/* ── Left Column: Cinematic Headline & Premiere Gear Controls (Desktop View) ── */}
         <div className="hidden lg:flex flex-col justify-center flex-1 space-y-6 max-w-xl pl-2">
-          {/* Top Pill Badge */}
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 backdrop-blur-md border border-slate-700/60 dark:border-white/10 text-[11px] font-bold text-white shadow-xs w-fit">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="tracking-wider uppercase text-slate-200">
-              {activeCard?.tagline || "PREMIERES 2026 · URBANRAT CINEMATIC GEAR"}
-            </span>
-          </div>
+          {/* Top Pill Badge (Cursor-Phobic Repulsion) */}
+          <CursorPhobicElement
+            as="div"
+            repulsionRadius={140}
+            maxDisplacement={16}
+            maxTilt={4}
+            className="w-fit"
+          >
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 backdrop-blur-md border border-slate-700/60 dark:border-white/10 text-[11px] font-bold text-white shadow-xs w-fit">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="tracking-wider uppercase text-slate-200">
+                {activeCard?.tagline || "PREMIERES 2026 · URBANRAT CINEMATIC GEAR"}
+              </span>
+            </div>
+          </CursorPhobicElement>
 
-          {/* Main Headline */}
+          {/* Main Headline (Every Word Parts and Diverges from Cursor) */}
           <div className="space-y-1">
             <h1 className="text-4xl xl:text-5xl 2xl:text-6xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[1.05] transition-all duration-300">
-              <div className="tracking-tight">{activeCard?.headlineFirst || "MAJOR GEAR"}</div>
-              <div className="text-red-500 dark:text-red-500 drop-shadow-[0_0_24px_rgba(239,68,68,0.55)]">
-                {activeCard?.headlineHighlight || "OF PREMIERES"}
+              <div className="tracking-tight">
+                <CursorPhobicWords
+                  text={activeCard?.headlineFirst || "MAJOR GEAR"}
+                  repulsionRadius={170}
+                  maxDisplacement={28}
+                  maxTilt={8}
+                />
               </div>
-              <div className="tracking-tight">{activeCard?.headlineSecond || "2026"}</div>
+              <div className="text-red-500 dark:text-red-500 drop-shadow-[0_0_24px_rgba(239,68,68,0.55)]">
+                <CursorPhobicWords
+                  text={activeCard?.headlineHighlight || "OF PREMIERES"}
+                  repulsionRadius={170}
+                  maxDisplacement={32}
+                  maxTilt={8}
+                />
+              </div>
+              <div className="tracking-tight">
+                <CursorPhobicWords
+                  text={activeCard?.headlineSecond || "2026"}
+                  repulsionRadius={170}
+                  maxDisplacement={28}
+                  maxTilt={8}
+                />
+              </div>
             </h1>
           </div>
 
-          {/* Subtitle / Paragraph */}
-          <p className="text-sm xl:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg font-medium min-h-12 transition-all duration-300">
+          {/* Subtitle / Paragraph (Smooth Magnetic Spring Divergence) */}
+          <CursorPhobicElement
+            as="p"
+            repulsionRadius={160}
+            maxDisplacement={16}
+            maxTilt={3}
+            className="text-sm xl:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg font-medium min-h-12 transition-all duration-300"
+          >
             {activeCard?.description ||
               "Next-generation mobile & computer accessories engineered for supreme speed, diamond-grade protection, and 65W GaN ultra-fast charging."}
-          </p>
+          </CursorPhobicElement>
 
-          {/* 3 Highlight Chips */}
+          {/* 3 Highlight Chips (Each chip repels away from cursor) */}
           <div className="flex items-center space-x-2.5 flex-wrap gap-y-2 text-xs font-bold transition-all duration-300">
             {(activeCard?.highlights || [
               { icon: "Zap", text: "65W GaN Core" },
               { icon: "ShieldCheck", text: "9H Sapphire Armor" },
               { icon: "Star", text: "4.9 Rated" },
             ]).map((h, i) => (
-              <div
+              <CursorPhobicElement
                 key={i}
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs"
+                as="div"
+                repulsionRadius={140}
+                maxDisplacement={18}
+                maxTilt={6}
+                className="inline-block"
               >
-                {h.icon === "Zap" && <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                {h.icon === "ShieldCheck" && <ShieldCheck className="w-3.5 h-3.5 text-cyan-500" />}
-                {h.icon === "Flame" && <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />}
-                {h.icon === "Sparkles" && <Sparkles className="w-3.5 h-3.5 text-cyan-400" />}
-                {h.icon === "Star" && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
-                <span>{h.text}</span>
-              </div>
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs">
+                  {h.icon === "Zap" && <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+                  {h.icon === "ShieldCheck" && <ShieldCheck className="w-3.5 h-3.5 text-cyan-500" />}
+                  {h.icon === "Flame" && <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />}
+                  {h.icon === "Sparkles" && <Sparkles className="w-3.5 h-3.5 text-cyan-400" />}
+                  {h.icon === "Star" && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
+                  <span>{h.text}</span>
+                </div>
+              </CursorPhobicElement>
             ))}
           </div>
 
-          {/* Controls & CTA Row */}
+          {/* Controls & CTA Row (Interactive Cursor Divergence) */}
           <div className="flex items-center space-x-4 pt-2">
-            <Link
-              to={activeCard?.ctaLink || "/urbanrat"}
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-linear-to-r from-red-600 via-rose-600 to-orange-600 shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:shadow-[0_0_32px_rgba(239,68,68,0.7)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+            <CursorPhobicElement
+              as="div"
+              repulsionRadius={150}
+              maxDisplacement={14}
+              maxTilt={4}
             >
-              <span>Receive Premiere Gear</span>
-              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-            </Link>
+              <Link
+                to={activeCard?.ctaLink || "/urbanrat"}
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-linear-to-r from-red-600 via-rose-600 to-orange-600 shadow-[0_0_24px_rgba(239,68,68,0.5)] hover:shadow-[0_0_32px_rgba(239,68,68,0.7)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+              >
+                <span>{activeCard?.ctaText || "Receive Premiere Gear"}</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              </Link>
+            </CursorPhobicElement>
 
-            <button
-              type="button"
-              onClick={prevSlide}
-              aria-label="Previous slide"
-              className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            <CursorPhobicElement
+              as="div"
+              repulsionRadius={130}
+              maxDisplacement={12}
+              maxTilt={4}
             >
-              <ChevronLeft className="w-4 h-4 stroke-[2.4]" />
-            </button>
+              <button
+                type="button"
+                onClick={prevSlide}
+                aria-label="Previous slide"
+                className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4 stroke-[2.4]" />
+              </button>
+            </CursorPhobicElement>
 
-            <button
-              type="button"
-              onClick={nextSlide}
-              aria-label="Next slide"
-              className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            <CursorPhobicElement
+              as="div"
+              repulsionRadius={130}
+              maxDisplacement={12}
+              maxTilt={4}
             >
-              <ChevronRight className="w-4 h-4 stroke-[2.4]" />
-            </button>
+              <button
+                type="button"
+                onClick={nextSlide}
+                aria-label="Next slide"
+                className="w-10 h-10 rounded-full bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4 stroke-[2.4]" />
+              </button>
+            </CursorPhobicElement>
 
             <span className="font-mono text-sm font-extrabold text-slate-400 dark:text-slate-500 tabular-nums select-none">
               {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
@@ -549,50 +610,68 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
                   }}
                   className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-70 sm:w-82.5 md:w-87.5 lg:w-80 xl:w-86 h-95 sm:h-110 md:h-116.25 lg:h-115 xl:h-120 rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 ${
                     isCenter
-                      ? "shadow-[0_20px_45px_rgba(15,23,42,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/90 dark:ring-white/15 bg-slate-50 dark:bg-slate-950"
-                      : "shadow-md hover:opacity-80 transition-opacity bg-slate-50 dark:bg-slate-950"
+                      ? "shadow-[0_20px_45px_rgba(15,23,42,0.15)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/90 dark:ring-white/15 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-xl"
+                      : "shadow-md hover:opacity-80 transition-opacity bg-slate-50/70 dark:bg-slate-950/70"
                   }`}
                 >
-                  {/* Card Background Image */}
-                  <img
-                    src={cardImgSrc}
-                    alt={card.title}
-                    className="w-full h-full object-cover rounded-3xl transition-transform duration-700"
-                    loading={isCenter ? "eager" : "lazy"}
-                    decoding="async"
-                  />
-
-                  {/* Gradient Vignette Overlay for High Legibility (Dual Theme) */}
-                  <div className="absolute inset-0 bg-linear-to-t from-white/95 via-transparent to-white/15 dark:from-black/95 dark:via-black/35 dark:to-black/15 pointer-events-none transition-colors" />
-
-                  {/* ── Top Pill Badge (e.g. URBANRAT PRO) ── */}
-                  <div
-                    className={`absolute top-4 left-4 z-20 transition-opacity duration-300 ${
-                      isCenter ? "opacity-100" : "opacity-40"
-                    }`}
+                  {/* Cursor-Phobic Repulsion & 3D Tilt for Hero Card */}
+                  <CursorPhobicElement
+                    as="div"
+                    repulsionRadius={isCenter ? 340 : 200}
+                    maxDisplacement={isCenter ? 36 : 14}
+                    maxTilt={isCenter ? 9 : 3}
+                    scaleOnRepel={isCenter ? 1.02 : 1}
+                    className="w-full h-full relative"
                   >
-                    <span className="inline-flex items-center px-3 py-1 rounded-xl bg-white/90 dark:bg-black/75 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-white shadow-sm">
-                      {card.badge}
-                    </span>
-                  </div>
+                    {/* Card Background Hero Image (With Secondary Parallax Cursor Repulsion) */}
+                    <CursorPhobicElement
+                      as="div"
+                      repulsionRadius={isCenter ? 280 : 180}
+                      maxDisplacement={isCenter ? 24 : 8}
+                      maxTilt={isCenter ? 5 : 0}
+                      className="w-full h-full"
+                    >
+                      <img
+                        src={cardImgSrc}
+                        alt={card.title}
+                        className="w-full h-full object-cover rounded-3xl transition-transform duration-700"
+                        loading={isCenter ? "eager" : "lazy"}
+                        decoding="async"
+                      />
+                    </CursorPhobicElement>
 
-                  {/* ── Minimalist Premium Title Capsule (Only on front card) ── */}
-                  <Link
-                    to={card.ctaLink}
-                    onClick={(e) => {
-                      if (!isCenter) {
-                        e.preventDefault();
-                        goToSlide(idx);
-                      }
-                    }}
-                    className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-white/95 dark:bg-[#070B12]/92 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-2xl py-2.5 sm:py-3 px-3.5 sm:px-4 shadow-xl dark:shadow-2xl flex items-center justify-center text-center hover:bg-white dark:hover:bg-[#0d131f] hover:scale-[1.01] active:scale-98 transition-all duration-300 cursor-pointer ${
-                      isCenter ? "opacity-100" : "opacity-0 pointer-events-none"
-                    }`}
-                  >
-                    <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate max-w-full">
-                      {card.title}
-                    </h3>
-                  </Link>
+                    {/* Gradient Vignette Overlay for High Legibility (Dual Theme) */}
+                    <div className="absolute inset-0 bg-linear-to-t from-white/95 via-transparent to-white/15 dark:from-black/95 dark:via-black/35 dark:to-black/15 pointer-events-none transition-colors" />
+
+                    {/* ── Top Pill Badge (e.g. URBANRAT PRO) ── */}
+                    <div
+                      className={`absolute top-4 left-4 z-20 transition-opacity duration-300 ${
+                        isCenter ? "opacity-100" : "opacity-40"
+                      }`}
+                    >
+                      <span className="inline-flex items-center px-3 py-1 rounded-xl bg-white/90 dark:bg-black/75 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-900 dark:text-white shadow-sm">
+                        {card.badge}
+                      </span>
+                    </div>
+
+                    {/* ── Minimalist Premium Title Capsule (Only on front card) ── */}
+                    <Link
+                      to={card.ctaLink}
+                      onClick={(e) => {
+                        if (!isCenter) {
+                          e.preventDefault();
+                          goToSlide(idx);
+                        }
+                      }}
+                      className={`absolute bottom-3.5 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 bg-white/95 dark:bg-[#070B12]/92 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-2xl py-2.5 sm:py-3 px-3.5 sm:px-4 shadow-xl dark:shadow-2xl flex items-center justify-center text-center hover:bg-white dark:hover:bg-[#0d131f] hover:scale-[1.01] active:scale-98 transition-all duration-300 cursor-pointer ${
+                        isCenter ? "opacity-100" : "opacity-0 pointer-events-none"
+                      }`}
+                    >
+                      <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate max-w-full">
+                        {card.title}
+                      </h3>
+                    </Link>
+                  </CursorPhobicElement>
                 </m.div>
               );
             })}
@@ -619,15 +698,15 @@ export function HeroStackedCarousel({ dbBanners = [] }: HeroStackedCarouselProps
         </div>
       </div>
 
-      {/* ── Mobile Active Card Title & Full Description (Shown outside image on Mobile) ── */}
+      {/* ── Mobile Active Card Title & Full Description (With Touch/Cursor Repulsion) ── */}
       {activeCard && (
         <div className="lg:hidden px-4 pt-3 text-center space-y-1.5 animate-in fade-in duration-200">
-          <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+          <CursorPhobicElement as="h2" repulsionRadius={140} maxDisplacement={14} maxTilt={4} className="text-base font-black text-slate-900 dark:text-white tracking-tight">
             {activeCard.title}
-          </h2>
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto font-medium">
+          </CursorPhobicElement>
+          <CursorPhobicElement as="p" repulsionRadius={130} maxDisplacement={10} className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto font-medium">
             {activeCard.description}
-          </p>
+          </CursorPhobicElement>
         </div>
       )}
 

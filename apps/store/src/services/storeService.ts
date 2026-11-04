@@ -10,7 +10,12 @@ import type {
   CustomerDetails,
   StoreSettings,
   Banner,
+  MarqueeAnnouncement,
   StorePage,
+  DealershipTierMargin,
+  DealershipItemShowcase,
+  DealershipBenefitComparison,
+  DealershipArticle,
   PriceTier,
   Address,
   Review,
@@ -837,6 +842,103 @@ export async function getBanners(placement?: string): Promise<Banner[]> {
 }
 
 export const fetchBanners = getBanners;
+
+/**
+ * Fetch active continuous marquee announcements from Supabase
+ */
+export async function fetchActiveMarqueeAnnouncements(): Promise<MarqueeAnnouncement[]> {
+  ensureConfigured();
+
+  const { data, error } = await supabase
+    .from("marquee_announcements")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    // Graceful fallback if table not yet migrated or network issue
+    console.warn("fetchActiveMarqueeAnnouncements:", error.message);
+    return [];
+  }
+
+  return (data as MarqueeAnnouncement[]) || [];
+}
+
+/**
+ * Fetch active dealership tier margins from Supabase
+ */
+export async function fetchDealershipMargins(): Promise<DealershipTierMargin[]> {
+  ensureConfigured();
+  const { data, error } = await supabase
+    .from("dealership_tier_margins")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.warn("fetchDealershipMargins fallback:", error.message);
+    return [];
+  }
+  return (data as DealershipTierMargin[]) || [];
+}
+
+/**
+ * Fetch active dealership branded vs copy item showcases from Supabase
+ */
+export async function fetchDealershipShowcases(): Promise<DealershipItemShowcase[]> {
+  ensureConfigured();
+  const { data, error } = await supabase
+    .from("dealership_item_showcase")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.warn("fetchDealershipShowcases fallback:", error.message);
+    return [];
+  }
+  return (data as DealershipItemShowcase[]) || [];
+}
+
+/**
+ * Fetch dealership vs normal person benefits comparison from Supabase
+ */
+export async function fetchDealershipBenefits(): Promise<DealershipBenefitComparison[]> {
+  ensureConfigured();
+  const { data, error } = await supabase
+    .from("dealership_benefits_comparison")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.warn("fetchDealershipBenefits fallback:", error.message);
+    return [];
+  }
+  return (data as DealershipBenefitComparison[]) || [];
+}
+
+/**
+ * Fetch active dealership articles (Branded vs Copy) from Supabase
+ */
+export async function fetchDealershipArticles(): Promise<DealershipArticle[]> {
+  ensureConfigured();
+  const { data, error } = await supabase
+    .from("dealership_articles")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.warn("fetchDealershipArticles fallback:", error.message);
+    return [];
+  }
+  return (data as DealershipArticle[]) || [];
+}
 
 // In-memory cache for store_settings per app load
 let cachedSettings: StoreSettings | null = null;

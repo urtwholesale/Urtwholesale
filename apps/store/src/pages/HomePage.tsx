@@ -3,6 +3,8 @@ import { Link } from "react-router";
 import { CategoryChipsSkeleton } from "../components/Skeletons";
 import { ErrorState } from "../components/ErrorState";
 import { HeroStackedCarousel } from "../components/HeroStackedCarousel";
+import { CursorPhobicDots } from "../components/CursorPhobicDots";
+import { WholesaleMarquee } from "../components/WholesaleMarquee";
 import { CategoryProductSlider } from "../components/CategoryProductSlider";
 import {
   fetchCategories,
@@ -12,19 +14,18 @@ import {
 } from "../services/storeService";
 import { getRecentlyViewed } from "../services/recentViews";
 import { getCategoryThemeImage } from "../utils/categoryTheme";
+import { translateCategoryName } from "../locales/categoryTranslations";
 import { useTheme } from "../context/ThemeContext";
 import { useSettings } from "../context/SettingsContext";
+import { useLanguage } from "../context/LanguageContext";
 import type { Product, Category, Banner } from "@urbanrat/shared";
 import {
-  ShieldCheck,
-  Truck,
   ArrowRight,
   Zap,
   Flame,
   Award,
   Volume2,
   Clock,
-  Layers,
 } from "lucide-react";
 
 interface HomePageProps {
@@ -34,6 +35,7 @@ interface HomePageProps {
 export function HomePage({ onAddToCart }: HomePageProps) {
   const { isDark } = useTheme();
   const { settings } = useSettings();
+  const { t, isHindi } = useLanguage();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -147,104 +149,89 @@ export function HomePage({ onAddToCart }: HomePageProps) {
   }
 
   return (
-    <div className="space-y-8 sm:space-y-12 animate-in fade-in duration-300 pb-16">
-      {/* ── 1. Hero 3D Stacked Offer Cards Carousel ── */}
-      {loading ? (
-        <div className="h-102.5 sm:h-117.5 md:h-125 flex items-center justify-center">
-          <div className="w-70 sm:w-82.5 md:w-87.5 h-95 sm:h-110 md:h-116.25 rounded-3xl bg-slate-100 dark:bg-slate-800/60 animate-pulse border border-slate-200/60 dark:border-slate-800 shadow-xl" />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <HeroStackedCarousel
-            dbBanners={allBanners.filter((b) => b.placement === "home_hero")}
-          />
+    <div className="relative animate-in fade-in duration-300 pb-16">
+      <div className="space-y-8 sm:space-y-12">
+        {/* ── 1. Hero 3D Stacked Offer Cards Carousel (With Dots Matrix till Marquee) ── */}
+        <div className="relative">
+          {/* ── Cursor-Phobic Dots Matrix: From top of screen strictly down to the marquee line ── */}
+          <div className="absolute -top-24 sm:-top-28 md:-top-32 left-1/2 -translate-x-1/2 w-screen bottom-0 pointer-events-none overflow-hidden z-0">
+            <CursorPhobicDots className="w-full h-full" />
+          </div>
 
-          {/* Wholesale Trust Signals Bar */}
-          {settings?.value_badges && settings.value_badges.length > 0 && (
-            <div className="py-3 px-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800/80 shadow-2xs grid grid-cols-2 sm:grid-cols-3 gap-3 text-slate-600 dark:text-slate-400 text-xs max-w-4xl mx-auto">
-              {settings.value_badges.map((badge, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center space-x-2 ${
-                    idx > 1 ? "hidden sm:flex" : ""
-                  }`}
-                >
-                  {badge.icon === "Truck" ? (
-                    <Truck className="w-4 h-4 text-brand-dark dark:text-orange-400 shrink-0" />
-                  ) : badge.icon === "Zap" ? (
-                    <Zap className="w-4 h-4 text-brand-dark dark:text-orange-400 shrink-0" />
-                  ) : (
-                    <ShieldCheck className="w-4 h-4 text-brand-dark dark:text-orange-400 shrink-0" />
-                  )}
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {badge.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="relative z-10">
+            {loading ? (
+              <div className="h-102.5 sm:h-117.5 md:h-125 flex items-center justify-center">
+                <div className="w-70 sm:w-82.5 md:w-87.5 h-95 sm:h-110 md:h-116.25 rounded-3xl bg-slate-100 dark:bg-slate-800/60 animate-pulse border border-slate-200/60 dark:border-slate-800 shadow-xl" />
+              </div>
+            ) : (
+              <HeroStackedCarousel
+                dbBanners={allBanners.filter((b) => b.placement === "home_hero")}
+              />
+            )}
+          </div>
         </div>
-      )}
 
-      {/* ── 2. Horizontal Browse by Category Rail (Square Studio Cards) ── */}
-      <section className="space-y-2.5">
+        {/* ── Wholesale Continuous Live Offers & Trust Signals Marquee (Boundary Line) ── */}
+        <WholesaleMarquee settings={settings} />
+
+        {/* ── 2. boAt Lifestyle Category Section Rail (Circular Icon Tiles - Clean Background, No Dots) ── */}
+      <section className="space-y-3">
         <div className="flex items-center justify-between px-0.5">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-            Browse by Category
+          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+            {t("home.all_categories", "Browse by Category")}
           </h2>
           <Link
             to="/categories"
             className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1"
           >
-            <span>All Categories</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>{t("nav.categories", "All Categories")}</span>
+            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
           </Link>
         </div>
 
         {loading ? (
-          <CategoryChipsSkeleton count={6} />
+          <CategoryChipsSkeleton count={8} />
         ) : categories.length > 0 ? (
-          <div className="w-full rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-slate-900/65 backdrop-blur-md border border-slate-200/80 dark:border-white/10 p-2.5 sm:p-3.5 shadow-xs transition-colors">
-            <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
-              {/* "All Products" Card */}
+          <div className="w-full overflow-x-auto scrollbar-none no-scrollbar py-2 px-0.5">
+            <div className="flex items-start space-x-4 sm:space-x-6 md:space-x-8 min-w-max">
+              {/* "All Products" Circle Tile */}
               <Link
                 to="/marketplace"
-                className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
+                className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
               >
-                <img
-                  src={getCategoryThemeImage("all", isDark)}
-                  alt="All Products"
-                  className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent flex items-center justify-center space-x-1 transition-colors">
-                  <Layers className="w-2.5 h-2.5 text-orange-500 shrink-0" />
-                  <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block truncate">
-                    All Products
-                  </span>
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                  <img
+                    src={getCategoryThemeImage("all", isDark)}
+                    alt={t("footer.all_products", "All Products")}
+                    className="w-full h-full object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
+                <span className="mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-brand-dark dark:group-hover:text-brand-light leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors">
+                  {t("footer.all_products", "All Products")}
+                </span>
               </Link>
 
-              {/* Parent Category Cards */}
+              {/* boAt Circular Category Tiles (Clean Transparent, High Visibility) */}
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
                   to={`/marketplace?category=${cat.slug}`}
-                  className="group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
+                  className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
                 >
-                  <img
-                    src={getCategoryThemeImage(cat, isDark)}
-                    alt={cat.name}
-                    className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
-                    <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block line-clamp-2">
-                      {cat.name}
-                    </span>
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                    <img
+                      src={getCategoryThemeImage(cat, isDark)}
+                      alt={cat.name}
+                      className="w-full h-full object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
+                  <span className="mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-brand-dark dark:group-hover:text-brand-light leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors">
+                    {translateCategoryName(cat.name, isHindi)}
+                  </span>
                 </Link>
               ))}
             </div>
@@ -254,9 +241,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 3. Bestsellers Slider (Single Card View, Gold/Amber Theme) ── */}
       <CategoryProductSlider
-        title="Bestsellers"
-        subtitle="Top-selling wholesale products with high retail margins"
-        badgeTag="🏆 #1 Bestseller"
+        title={t("home.featured", "Bestsellers")}
+        subtitle={t("home.featured_sub", "Top-selling wholesale products with high retail margins")}
+        badgeTag={isHindi ? "🏆 नंबर 1 बेस्टसेलर" : "🏆 #1 Bestseller"}
         icon={<Award className="w-4 h-4 stroke-[2.2]" />}
         products={featuredProducts}
         seeMoreUrl="/marketplace?bestseller=1"
@@ -267,9 +254,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 4. Cables & Cords Slider (Single Card View, Cyan Theme) ── */}
       <CategoryProductSlider
-        title="Cables & Cords"
-        subtitle="100W PD fast charging & reinforced ballistic braided cords"
-        badgeTag="⚡ 100W PD & Fast Sync"
+        title={t("home.cables", "Cables & Cords")}
+        subtitle={t("home.cables_sub", "100W PD fast charging & reinforced ballistic braided cords")}
+        badgeTag={isHindi ? "⚡ 100W फ़ास्ट चार्जिंग" : "⚡ 100W PD & Fast Sync"}
         icon={<Zap className="w-4 h-4 stroke-[2.2]" />}
         products={cableProducts}
         seeMoreUrl={
@@ -316,7 +303,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
                   boxShadow: "var(--brand-shadow)",
                 }}
               >
-                <span>{brandBanner.cta_text || "Explore Collection"}</span>
+                <span>{brandBanner.cta_text || t("home.explore_collection", "Explore Collection")}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -326,9 +313,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 6. Speakers & Audio Slider (Single Card View, Violet Theme) ── */}
       <CategoryProductSlider
-        title="Speakers & Audio"
-        subtitle="Hi-Fi acoustic drivers, deep bass & Bluetooth wireless audio"
-        badgeTag="🔊 Studio Audio"
+        title={t("home.speakers", "Speakers & Audio")}
+        subtitle={t("home.speakers_sub", "Hi-Fi acoustic drivers, deep bass & Bluetooth wireless audio")}
+        badgeTag={isHindi ? "🔊 स्टूडियो ऑडियो" : "🔊 Studio Audio"}
         icon={<Volume2 className="w-4 h-4 stroke-[2.2]" />}
         products={speakerProducts}
         seeMoreUrl={
@@ -343,9 +330,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 7. New Arrivals Slider (Single Card View, Rose Theme) ── */}
       <CategoryProductSlider
-        title="New Arrivals"
-        subtitle="Freshly stocked wholesale accessories across every category & collection"
-        badgeTag="🔥 Fresh Factory Drop"
+        title={t("home.new_arrivals", "New Arrivals")}
+        subtitle={t("home.new_arrivals_sub", "Freshly stocked wholesale accessories across every category & collection")}
+        badgeTag={isHindi ? "🔥 नया स्टॉक उपलब्ध" : "🔥 Fresh Factory Drop"}
         icon={<Flame className="w-4 h-4 stroke-[2.2]" />}
         products={newArrivals}
         seeMoreUrl="/marketplace?sort=newest"
@@ -357,9 +344,9 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       {/* ── 8. Recently Viewed Slider (Single Card View, Obsidian/Slate Theme) ── */}
       {recentlyViewed.length > 0 && (
         <CategoryProductSlider
-          title="Recently Viewed"
-          subtitle="Quickly re-check wholesale items you previously inspected"
-          badgeTag="👁️ Recently Viewed"
+          title={t("home.recently_viewed", "Recently Viewed")}
+          subtitle={t("home.recently_viewed_sub", "Quickly re-check wholesale items you previously inspected")}
+          badgeTag={isHindi ? "👁️ हाल ही में देखा" : "👁️ Recently Viewed"}
           icon={<Clock className="w-4 h-4 stroke-[2.2]" />}
           products={recentlyViewed}
           seeMoreUrl="/marketplace"
@@ -368,6 +355,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           isLoading={loading}
         />
       )}
+      </div>
     </div>
   );
 }

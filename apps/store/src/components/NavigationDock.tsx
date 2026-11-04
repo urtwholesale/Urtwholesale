@@ -1,6 +1,7 @@
 import { NavLink } from "react-router";
 import { Home, ShoppingBag, LayoutGrid, Menu } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
+import { useLanguage } from "../context/LanguageContext";
 
 interface NavigationDockProps {
   onOpenMenu?: () => void;
@@ -11,6 +12,8 @@ export function NavigationDock({
   onOpenMenu,
   isMenuOpen = false,
 }: NavigationDockProps = {}) {
+  const { t } = useLanguage();
+
   return (
     <div className="md:hidden fixed z-40 dock-bottom-offset left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-90 transition-all duration-300">
       {/* ── Frosted Glass Capsule Dock ── */}
@@ -22,7 +25,7 @@ export function NavigationDock({
         <NavLink
           to="/"
           end
-          aria-label="Home"
+          aria-label={t("nav.home")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
@@ -54,7 +57,7 @@ export function NavigationDock({
         {/* 2. Marketplace */}
         <NavLink
           to="/marketplace"
-          aria-label="Marketplace"
+          aria-label={t("nav.marketplace")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
@@ -86,7 +89,7 @@ export function NavigationDock({
         {/* 3. Center Urbanrat Logo Button — Unified with Dock Buttons */}
         <NavLink
           to="/urbanrat"
-          aria-label="Urbanrat Flagship Collection"
+          aria-label={t("nav.urbanrat")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
@@ -120,7 +123,7 @@ export function NavigationDock({
         {/* 4. Categories */}
         <NavLink
           to="/categories"
-          aria-label="Categories"
+          aria-label={t("nav.categories")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
             `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
@@ -156,7 +159,7 @@ export function NavigationDock({
             triggerHaptic("selection");
             onOpenMenu?.();
           }}
-          aria-label="Open Navigation Menu"
+          aria-label={t("nav.menu")}
           className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
             isMenuOpen
               ? "text-white scale-105"

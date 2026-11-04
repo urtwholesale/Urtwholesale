@@ -4,6 +4,7 @@ import { fetchCustomerOrders } from "../services/storeService";
 import { fetchOrderReturnsMap } from "../services/returnService";
 import { useSettings } from "../context/SettingsContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { triggerHaptic } from "../utils/haptics";
 import { printOrderInvoice } from "../utils/invoiceGenerator";
 import { ReturnRequestModal } from "../components/ReturnRequestModal";
@@ -39,6 +40,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const { user } = useAuth();
+  const { t, isHindi } = useLanguage();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -358,14 +360,14 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
       {/* ── Breadcrumbs ── */}
       <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
         <Link to="/" className="hover:text-slate-800 dark:hover:text-white transition">
-          Home
+          {t("nav.home")}
         </Link>
         <span>&gt;</span>
         <Link to="/account" className="hover:text-slate-800 dark:hover:text-white transition">
-          My Account
+          {t("nav.account")}
         </Link>
         <span>&gt;</span>
-        <span className="text-slate-800 dark:text-slate-100 font-bold">My Orders</span>
+        <span className="text-slate-800 dark:text-slate-100 font-bold">{t("nav.orders")}</span>
       </nav>
 
       {/* ── Desktop Two-Column Layout ── */}
@@ -375,7 +377,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
             <h2 className="font-black text-sm uppercase tracking-wider text-slate-900 dark:text-white flex items-center space-x-2">
               <Filter className="w-4 h-4 text-brand-dark dark:text-brand-light" />
-              <span>Filters</span>
+              <span>{t("marketplace.filters")}</span>
             </h2>
             {hasActiveFilters && (
               <button
@@ -383,7 +385,7 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
                 onClick={clearAllFilters}
                 className="text-[11px] font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
               >
-                Clear all
+                {isHindi ? "सभी हटाएं" : "Clear all"}
               </button>
             )}
           </div>
@@ -391,15 +393,15 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
           {/* Status Filter */}
           <div>
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">
-              Order Status
+              {isHindi ? "ऑर्डर स्थिति" : "Order Status"}
             </h3>
             <div className="space-y-2">
               {[
-                { id: "all", label: "All Orders" },
-                { id: "in_progress", label: "On the way / In Progress" },
-                { id: "delivered", label: "Delivered" },
-                { id: "cancelled", label: "Cancelled" },
-                { id: "returned", label: "Returned / Replaced" },
+                { id: "all", label: isHindi ? "सभी ऑर्डर्स" : "All Orders" },
+                { id: "in_progress", label: isHindi ? "रास्ते में / प्रक्रियाधीन" : "On the way / In Progress" },
+                { id: "delivered", label: isHindi ? "डिलीवर हो गया" : "Delivered" },
+                { id: "cancelled", label: isHindi ? "रद्द किए गए" : "Cancelled" },
+                { id: "returned", label: isHindi ? "रिटर्न किए गए" : "Returned / Replaced" },
               ].map((opt) => (
                 <label
                   key={opt.id}

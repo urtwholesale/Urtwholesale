@@ -1,9 +1,13 @@
 import { supabase } from "../lib/supabase";
-import type {
-  ReturnRequest,
-  CreateReturnRequestInput,
+import {
+  type ReturnRequest,
+  type CreateReturnRequestInput,
+  RETURN_EVIDENCE_URL_TTL_SECONDS,
+  getReturnEvidenceSignedUrl,
 } from "@urbanrat/shared";
 import { compressImage } from "../utils/imageCompressor";
+
+export { RETURN_EVIDENCE_URL_TTL_SECONDS };
 
 export class ReturnServiceError extends Error {
   constructor(
@@ -191,32 +195,15 @@ export async function uploadReturnEvidence(
 }
 
 /**
- * Generates a temporary signed URL to view private return evidence
+ * Generates an on-demand temporary signed URL to view private return evidence.
+ * Strictly capped at RETURN_EVIDENCE_URL_TTL_SECONDS (900s = 15 minutes).
+ * Generated on demand when the customer views the return, never stored in DB or cached.
  */
-export async function getReturnEvidenceUrl(filePath: string): Promise<string> {
-  if (!filePath) return "";
-  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
-    return filePath;
-  }
-
-  try {
-    const { data, error } = await supabase.storage
-      .from("return-evidence")
-      .createSignedUrl(filePath, 3600); // 1-hour signed URL
-
-    if (!error && data?.signedUrl) {
-      return data.signedUrl;
-    }
-  } catch (err) {
-    console.error("Failed to create signed URL:", err);
-  }
-
-  // Fallback to public URL format if signed URL failed
-  const { data } = supabase.storage
-    .from("return-evidence")
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
+export async function getReturnEvidenceUrl(
+  filePath: string,
+  expiresIn: number = RETURN_EVIDENCE_URL_TTL_SECONDS
+): Promise<string> {
+  return getReturnEvidenceSignedUrl(supabase.storage, filePath, expiresIn);
 }
 
 /**

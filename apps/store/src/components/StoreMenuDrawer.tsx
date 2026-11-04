@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useSettings } from "../context/SettingsContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 import { CustomerAuth } from "../features/auth/CustomerAuth";
 import {
   X,
@@ -26,6 +27,8 @@ import {
   RotateCcw,
   Sun,
   Moon,
+  TrendingUp,
+  Languages,
 } from "lucide-react";
 
 interface StoreMenuDrawerProps {
@@ -43,6 +46,7 @@ export function StoreMenuDrawer({
   const { settings, whatsappNumber } = useSettings();
   const { user, profile, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { isHindi, toggleLanguage, t } = useLanguage();
 
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -103,7 +107,7 @@ export function StoreMenuDrawer({
               className="flex items-center space-x-2 text-xs font-bold text-brand-dark dark:text-brand-light hover:underline cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Menu</span>
+              <span>{isHindi ? "मेनू पर वापस जाएं" : "Back to Menu"}</span>
             </button>
           ) : (
             <div className="flex items-center space-x-3">
@@ -117,7 +121,7 @@ export function StoreMenuDrawer({
                   {settings?.store_info?.name || "URT Wholesale"}
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                  Menu &amp; Navigation
+                  {isHindi ? "मेनू एवं नेविगेशन" : "Menu & Navigation"}
                 </p>
               </div>
             </div>
@@ -168,19 +172,23 @@ export function StoreMenuDrawer({
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                       {user
-                        ? profile?.full_name || user.email || "Wholesale Customer"
-                        : "Guest Visitor"}
+                        ? profile?.full_name || user.email || (isHindi ? "थोक ग्राहक" : "Wholesale Customer")
+                        : (isHindi ? "अतिथि ग्राहक" : "Guest Visitor")}
                     </p>
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center space-x-1">
                       {user ? (
                         <>
                           <ShieldCheck className="w-3 h-3 text-emerald-600 inline" />
                           <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                            Verified Wholesale Account
+                            {isHindi ? "सत्यापित थोक खाता" : "Verified Wholesale Account"}
                           </span>
                         </>
                       ) : (
-                        <span>Sign in for wholesale pricing &amp; order history</span>
+                        <span>
+                          {isHindi
+                            ? "थोक मूल्य और ऑर्डर विवरण के लिए लॉगिन करें"
+                            : "Sign in for wholesale pricing & order history"}
+                        </span>
                       )}
                     </p>
                   </div>
@@ -192,7 +200,7 @@ export function StoreMenuDrawer({
                     onClick={() => handleNavigate("/account")}
                     className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-brand-dark dark:text-brand-light bg-sky-50 dark:bg-orange-500/15 hover:bg-sky-100 dark:hover:bg-orange-500/25 transition cursor-pointer shrink-0 border border-sky-100 dark:border-orange-500/30"
                   >
-                    Account
+                    {t("nav.account")}
                   </button>
                 ) : (
                   <button
@@ -203,7 +211,7 @@ export function StoreMenuDrawer({
                       background: "var(--brand-gradient)",
                     }}
                   >
-                    Login
+                    {isHindi ? "लॉगिन" : "Login"}
                   </button>
                 )}
               </div>
@@ -216,10 +224,14 @@ export function StoreMenuDrawer({
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                      {isDark ? "Dark Theme Active" : "Light Theme Active"}
+                      {isDark
+                        ? (isHindi ? "डार्क थीम सक्रिय" : "Dark Theme Active")
+                        : (isHindi ? "लाइट थीम सक्रिय" : "Light Theme Active")}
                     </span>
                     <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                      {isDark ? "Black & Gradient Orange" : "Blue & White"}
+                      {isDark
+                        ? (isHindi ? "काला एवं ग्रेडिएंट ऑरेंज" : "Black & Gradient Orange")
+                        : (isHindi ? "नीला एवं सफ़ेद" : "Blue & White")}
                     </span>
                   </div>
                 </div>
@@ -231,14 +243,43 @@ export function StoreMenuDrawer({
                     background: "var(--brand-gradient)",
                   }}
                 >
-                  {isDark ? "Light Mode" : "Dark Mode"}
+                  {isDark
+                    ? (isHindi ? "लाइट मोड" : "Light Mode")
+                    : (isHindi ? "डार्क मोड" : "Dark Mode")}
+                </button>
+              </div>
+
+              {/* ── Language Switcher Option in Drawer ── */}
+              <div className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/80 p-3 flex items-center justify-between shadow-2xs">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-700/80 text-cyan-600 dark:text-orange-400 flex items-center justify-center border border-slate-100 dark:border-slate-600 shadow-2xs">
+                    <Languages className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
+                      {isHindi ? "भाषा: हिन्दी" : "Language: English"}
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      {isHindi ? "English में बदलने के लिए टैप करें" : "Tap to switch to Hindi"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-white shadow-xs transition active:scale-95 cursor-pointer"
+                  style={{
+                    background: "var(--brand-gradient)",
+                  }}
+                >
+                  {isHindi ? "English" : "हिन्दी"}
                 </button>
               </div>
 
               {/* ── Menu Section 1: Store Navigation ── */}
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 pb-1">
-                  Storefront Navigation
+                  {t("menu.title", "Storefront Navigation")}
                 </p>
 
                 <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-700/80 divide-y divide-slate-100 dark:divide-slate-700/80 overflow-hidden shadow-2xs">
@@ -256,10 +297,10 @@ export function StoreMenuDrawer({
                           </div>
                           <div>
                             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                              My Account
+                              {t("menu.account")}
                             </span>
                             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                              Profile, business info &amp; security
+                              {isHindi ? "प्रोफ़ाइल एवं सुरक्षा" : "Profile, business info & security"}
                             </span>
                           </div>
                         </div>
@@ -277,10 +318,10 @@ export function StoreMenuDrawer({
                           </div>
                           <div>
                             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                              Saved Addresses
+                              {t("menu.addresses")}
                             </span>
                             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                              Manage shops &amp; warehouse addresses
+                              {isHindi ? "दुकान एवं गोदाम के पते" : "Manage shops & warehouse addresses"}
                             </span>
                           </div>
                         </div>
@@ -298,10 +339,10 @@ export function StoreMenuDrawer({
                           </div>
                           <div>
                             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                              Returns &amp; Replacements
+                              {t("menu.returns")}
                             </span>
                             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                              Track claims, warranty &amp; refunds
+                              {isHindi ? "वारंटी क्लेम एवं रिप्लेसमेंट" : "Track claims, warranty & refunds"}
                             </span>
                           </div>
                         </div>
@@ -321,7 +362,7 @@ export function StoreMenuDrawer({
                         <Home className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        Home
+                        {t("nav.home", "Home")}
                       </span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
@@ -339,10 +380,10 @@ export function StoreMenuDrawer({
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                          Marketplace
+                          {t("nav.marketplace", "Marketplace")}
                         </span>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          Bulk accessories &amp; volume deals
+                          {isHindi ? "थोक एक्सेसरीज एवं वॉल्यूम डील्स" : "Bulk accessories & volume deals"}
                         </span>
                       </div>
                     </div>
@@ -363,10 +404,10 @@ export function StoreMenuDrawer({
                       />
                       <div>
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                          Urbanrat Original
+                          {t("menu.urbanrat", "Urbanrat Original")}
                         </span>
                         <span className="text-[10px] text-brand-dark dark:text-brand-light font-semibold">
-                          Flagship private-label collection
+                          {isHindi ? "फ्लैगशिप ब्रांडेड कलेक्शन" : "Flagship private-label collection"}
                         </span>
                       </div>
                     </div>
@@ -384,7 +425,7 @@ export function StoreMenuDrawer({
                         <LayoutGrid className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        All Categories
+                        {t("nav.categories", "All Categories")}
                       </span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
@@ -401,13 +442,13 @@ export function StoreMenuDrawer({
                         <ShoppingCart className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        Shopping Cart
+                        {t("nav.cart", "Shopping Cart")}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       {cartCount > 0 && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-brand-dark dark:bg-brand text-white">
-                          {cartCount} items
+                          {cartCount} {t("marketplace.items")}
                         </span>
                       )}
                       <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
@@ -426,10 +467,10 @@ export function StoreMenuDrawer({
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                          My Orders &amp; Invoices
+                          {t("nav.orders", "My Orders & Invoices")}
                         </span>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          Track dispatches &amp; downloads
+                          {isHindi ? "ऑर्डर ट्रैकिंग एवं बिल डाउनलोड" : "Track dispatches & downloads"}
                         </span>
                       </div>
                     </div>
@@ -441,7 +482,7 @@ export function StoreMenuDrawer({
               {/* ── Menu Section 2: Wholesale Support & Policies ── */}
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 pb-1">
-                  Support &amp; Wholesale Information
+                  {isHindi ? "सपोर्ट एवं नीतियां" : "Support & Wholesale Information"}
                 </p>
 
                 <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-700/80 divide-y divide-slate-100 dark:divide-slate-700/80 overflow-hidden shadow-2xs">
@@ -458,17 +499,46 @@ export function StoreMenuDrawer({
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
-                          WhatsApp Wholesale Desk
+                          {t("footer.whatsapp_desk")}
                         </span>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          Direct chat with depot manager
+                          {isHindi ? "डिपो मैनेजर से सीधा चैट" : "Direct chat with depot manager"}
                         </span>
                       </div>
                     </div>
                     <ExternalLink className="w-3.5 h-3.5 text-slate-300 dark:text-slate-500" />
                   </a>
 
-                  {/* Authorized Dealer Network */}
+                  {/* Dealership Program & Profits Guide */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate("/dealership")}
+                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left cursor-pointer group bg-brand-light/5 dark:bg-orange-500/5"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-brand-light/20 dark:bg-orange-500/20 text-brand-dark dark:text-brand-light flex items-center justify-center group-hover:bg-brand-dark group-hover:text-white transition">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                            {t("dealership.nav_title")}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
+                            {isHindi ? "45%–120% मुनाफा" : "45%–120% Margins"}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                          {isHindi
+                            ? "व्यापार कैसे काम करता है, मुनाफा और लाभ विवरण"
+                            : "How it works, retail ROI & profit breakdown"}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-300 transition" />
+                  </button>
+
+                  {/* Authorized Dealer Application */}
                   <button
                     type="button"
                     onClick={() => handleNavigate("/dealers")}
@@ -481,14 +551,16 @@ export function StoreMenuDrawer({
                       <div>
                         <div className="flex items-center space-x-1.5">
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                            Authorized Dealer Network
+                            {t("dealership.apply_btn")}
                           </span>
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-100 dark:bg-orange-950/40 text-brand-dark dark:text-brand-light">
-                            Apply
+                            {isHindi ? "त्वरित KYC" : "Quick KYC"}
                           </span>
                         </div>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          Wholesale tier application &amp; credit terms
+                          {isHindi
+                            ? "थोक डीलरशिप आवेदन एवं क्रेडिट नियम"
+                            : "Wholesale tier application & credit terms"}
                         </span>
                       </div>
                     </div>
@@ -506,7 +578,7 @@ export function StoreMenuDrawer({
                         <Info className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        About Urbanrat Labs
+                        {t("footer.about_us")}
                       </span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
@@ -523,7 +595,7 @@ export function StoreMenuDrawer({
                         <FileText className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        Terms &amp; Wholesale Policy
+                        {t("footer.wholesale_terms")}
                       </span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
@@ -540,7 +612,7 @@ export function StoreMenuDrawer({
                         <Shield className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        Privacy Policy
+                        {t("footer.privacy_policy")}
                       </span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-500" />
@@ -550,10 +622,10 @@ export function StoreMenuDrawer({
                 {/* ── Quick Store Policies Strip ── */}
                 <div className="pt-2 px-1 flex flex-wrap gap-1.5 justify-center">
                   {[
-                    { label: "Shipping Policy", to: "/shipping" },
-                    { label: "Returns Policy", to: "/returns-policy" },
-                    { label: "1-Yr Warranty", to: "/warranty" },
-                    { label: "Contact Us", to: "/contact" },
+                    { label: t("footer.shipping_policy"), to: "/shipping" },
+                    { label: t("footer.return_policy"), to: "/returns-policy" },
+                    { label: t("footer.warranty_terms"), to: "/warranty" },
+                    { label: t("footer.contact_support"), to: "/contact" },
                   ].map((item) => (
                     <button
                       key={item.to}
@@ -577,7 +649,11 @@ export function StoreMenuDrawer({
                     className="w-full py-3 px-4 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center justify-center space-x-2 border border-rose-200 dark:border-rose-800/60 transition active:scale-[0.99] cursor-pointer disabled:opacity-50"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>{signingOut ? "Logging Out..." : "Log Out of Account"}</span>
+                    <span>
+                      {signingOut
+                        ? (isHindi ? "लॉग आउट हो रहे हैं..." : "Logging Out...")
+                        : (isHindi ? "खाते से लॉग आउट करें" : "Log Out of Account")}
+                    </span>
                   </button>
                 ) : (
                   <button
@@ -589,7 +665,11 @@ export function StoreMenuDrawer({
                     }}
                   >
                     <LogIn className="w-4 h-4" />
-                    <span>Log In / Create Wholesale Account</span>
+                    <span>
+                      {isHindi
+                        ? "लॉग इन करें / थोक खाता बनाएं"
+                        : "Log In / Create Wholesale Account"}
+                    </span>
                   </button>
                 )}
               </div>

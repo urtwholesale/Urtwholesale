@@ -10,6 +10,8 @@ import {
   Check,
 } from "lucide-react";
 import { triggerHaptic } from "../utils/haptics";
+import { useLanguage } from "../context/LanguageContext";
+import { translateCategoryName } from "../locales/categoryTranslations";
 
 interface ProductCatalogNavProps {
   currentProduct: Product;
@@ -30,6 +32,9 @@ export function ProductCatalogNav({
 }: ProductCatalogNavProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalFilter, setModalFilter] = useState("");
+  const { t, isHindi } = useLanguage();
+
+  const localizedCategoryName = translateCategoryName(categoryName, isHindi);
 
   const activeRailRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
@@ -83,11 +88,11 @@ export function ProductCatalogNav({
         <button
           type="button"
           onClick={onBack}
-          aria-label="Go Back"
+          aria-label={t("nav.back")}
           className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer shrink-0"
         >
           <ArrowLeft className="w-3.5 h-3.5 stroke-[2.2]" />
-          <span className="hidden sm:inline">Back</span>
+          <span className="hidden sm:inline">{t("nav.back")}</span>
         </button>
 
         {/* Center Wing: Quick-Switch Hub */}
@@ -104,11 +109,11 @@ export function ProductCatalogNav({
             <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light shrink-0 group-hover:rotate-12 transition-transform" />
             <span className="text-[11px] sm:text-xs font-bold truncate">
               {currentIndex >= 0
-                ? `${currentIndex + 1}/${catalogProducts.length} • ${categoryName}`
-                : categoryName}
+                ? `${currentIndex + 1}/${catalogProducts.length} • ${localizedCategoryName}`
+                : localizedCategoryName}
             </span>
             <span className="text-[9px] text-slate-400 dark:text-slate-400 font-extrabold uppercase bg-white dark:bg-slate-900 px-1 rounded border border-slate-200 dark:border-slate-700 shrink-0 hidden sm:inline">
-              Switch ▾
+              {isHindi ? "बदलें ▾" : "Switch ▾"}
             </span>
           </button>
         </div>
@@ -192,10 +197,14 @@ export function ProductCatalogNav({
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                    Switch Product ({catalogProducts.length} in {categoryName})
+                    {isHindi
+                      ? `उत्पाद बदलें (${localizedCategoryName} में ${catalogProducts.length})`
+                      : `Switch Product (${catalogProducts.length} in ${categoryName})`}
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Select any model to change product directly on this page
+                    {isHindi
+                      ? "इस पेज पर सीधे उत्पाद बदलने के लिए कोई मॉडल चुनें"
+                      : "Select any model to change product directly on this page"}
                   </p>
                 </div>
               </div>
@@ -217,7 +226,11 @@ export function ProductCatalogNav({
                   type="text"
                   value={modalFilter}
                   onChange={(e) => setModalFilter(e.target.value)}
-                  placeholder={`Search in ${categoryName}...`}
+                  placeholder={
+                    isHindi
+                      ? `${localizedCategoryName} में खोजें...`
+                      : `Search in ${categoryName}...`
+                  }
                   className="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:border-brand-dark dark:focus:border-brand-light"
                   autoFocus
                 />
@@ -236,7 +249,7 @@ export function ProductCatalogNav({
               {allCategories.length > 0 && (
                 <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pt-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase shrink-0">
-                    Catalogs:
+                    {isHindi ? "कैटलॉग:" : "Catalogs:"}
                   </span>
                   {allCategories.map((cat) => {
                     const isCurrent = cat.id === currentProduct.category_id;
@@ -251,7 +264,7 @@ export function ProductCatalogNav({
                             : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                         }`}
                       >
-                        {cat.name}
+                        {translateCategoryName(cat.name, isHindi)}
                       </Link>
                     );
                   })}

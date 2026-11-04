@@ -311,14 +311,16 @@ export function DealerApplicationPage() {
           <span>Back</span>
         </button>
 
-        <Link
-          to="/page/dealer-terms"
-          onClick={() => triggerHaptic("selection")}
-          className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1"
-        >
-          <span>View Dealer Terms</span>
-          <ChevronRight className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center space-x-3">
+          <Link
+            to="/dealership"
+            onClick={() => triggerHaptic("selection")}
+            className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1"
+          >
+            <span>How Dealership Works &amp; Profits</span>
+            <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
 
       {/* ── Page Hero Card ── */}

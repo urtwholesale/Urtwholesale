@@ -7,6 +7,8 @@ import { EmptyState } from "../components/EmptyState";
 import { triggerHaptic } from "../utils/haptics";
 import { getCategoryThemeImage } from "../utils/categoryTheme";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
+import { translateCategoryName } from "../locales/categoryTranslations";
 import type { Category, Product } from "@urbanrat/shared";
 import {
   ArrowLeft,
@@ -23,6 +25,7 @@ const PAGE_SIZE = 24;
 
 export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
   const { isDark } = useTheme();
+  const { isHindi, t } = useLanguage();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeParentId, setActiveParentId] = useState<string>("");
@@ -176,10 +179,10 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Categories &amp; Catalog
+            {t("categories.page_title", "Categories & Catalog")}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Browse wholesale mobile electronics by department
+            {t("categories.page_desc", "Browse wholesale mobile electronics by department")}
           </p>
         </div>
 
@@ -190,7 +193,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
             }`}
             className="inline-flex items-center space-x-1 text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline self-start sm:self-auto cursor-pointer"
           >
-            <span>Open in Marketplace</span>
+            <span>{isHindi ? "मार्केटप्लेस में खोलें" : "Open in Marketplace"}</span>
             <span>&rarr;</span>
           </Link>
         )}
@@ -203,45 +206,54 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
           {/* ── Top Category Navigation Rail & Subcategories Bar (Symmetric Container, Aligned with Page Grid) ── */}
           <div className="w-full rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-slate-900/65 backdrop-blur-md border border-slate-200/80 dark:border-white/10 p-2.5 sm:p-3.5 shadow-xs transition-colors">
             <div className="w-full space-y-2">
-              {/* Horizontal Parent Categories Cards Rail */}
-              <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto scrollbar-none no-scrollbar py-0.5 px-0.5">
+              {/* Horizontal Parent Categories Cards Rail (boAt Clean Transparent Floating Cutouts) */}
+              <div className="flex items-start space-x-4 sm:space-x-6 overflow-x-auto scrollbar-none no-scrollbar py-2 px-1">
                 {parentCategories.map((parent) => {
                   const isActive = parent.id === activeParentId;
+                  const displayName = translateCategoryName(parent.name, isHindi);
                   return (
                     <button
                       key={parent.id}
                       ref={isActive ? activeCategoryButtonRef : null}
                       type="button"
                       onClick={() => handleSelectParent(parent.id)}
-                      className={`group relative shrink-0 w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 aspect-square rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-all select-none text-left bg-white dark:bg-slate-900 ${
-                        isActive
-                          ? "ring-2 ring-orange-500 shadow-[0_0_16px_rgba(249,115,22,0.4)] border-transparent"
-                          : "border border-slate-200/90 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-white/25 hover:shadow-md shadow-xs"
-                      }`}
+                      className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
                     >
-                      {/* Category Themed Studio Image (Light / Dark Adaptive) */}
-                      <img
-                        src={getCategoryThemeImage(parent, isDark)}
-                        alt={parent.name}
-                        className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        decoding="async"
-                      />
+                      {/* Category Themed Studio Image (No enclosing background, large product) */}
+                      <div
+                        className={`relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
+                          isActive
+                            ? "scale-105 drop-shadow-[0_4px_12px_rgba(10,130,168,0.35)] dark:drop-shadow-[0_4px_12px_rgba(249,115,22,0.45)]"
+                            : "drop-shadow-xs group-hover:drop-shadow-md"
+                        }`}
+                      >
+                        <img
+                          src={getCategoryThemeImage(parent, isDark)}
+                          alt={displayName}
+                          className="w-full h-full object-contain transition-all duration-300"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
 
-                      {/* Active Glowing Highlight Bar at Top */}
+                      {/* Clean boAt-style Caption below image */}
+                      <span
+                        className={`mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors ${
+                          isActive
+                            ? "text-brand-dark dark:text-orange-400 font-black"
+                            : "text-slate-800 dark:text-slate-200 group-hover:text-brand-dark dark:group-hover:text-brand-light"
+                        }`}
+                      >
+                        {displayName}
+                      </span>
+
+                      {/* Active Indicator Underline Pill */}
                       {isActive && (
                         <div
-                          className="absolute top-1 left-1.5 right-1.5 h-0.5 rounded-full z-10 shadow-xs"
+                          className="w-8 h-1 rounded-full mt-1.5 shadow-xs"
                           style={{ background: "var(--brand-gradient)" }}
                         />
                       )}
-
-                      {/* Clean Caption Gradient */}
-                      <div className="absolute inset-x-0 bottom-0 z-10 pt-5 pb-1 px-1 bg-linear-to-t from-white/95 via-white/80 to-transparent dark:from-slate-950/95 dark:via-slate-950/70 dark:to-transparent text-center transition-colors">
-                        <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-800 dark:text-white leading-[1.15] block line-clamp-2">
-                          {parent.name}
-                        </span>
-                      </div>
                     </button>
                   );
                 })}
@@ -252,7 +264,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                 <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto scrollbar-none no-scrollbar pt-1.5 border-t border-slate-100/90 dark:border-slate-800/80">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 shrink-0 mr-1 flex items-center space-x-1">
                     <Layers className="w-3.5 h-3.5 text-brand-dark dark:text-orange-400" />
-                    <span>Subcategories:</span>
+                    <span>{t("marketplace.subcategories", "Subcategories:")}</span>
                   </span>
 
                   {/* "All Products in Category" Pill */}
@@ -273,12 +285,15 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                         : {}
                     }
                   >
-                    All {activeParent ? activeParent.name : "Products"}
+                    {activeParent
+                      ? `${t("marketplace.all_in_category", "All in Category")} (${translateCategoryName(activeParent.name, isHindi)})`
+                      : t("marketplace.all_subcategories", "All Subcategories")}
                   </button>
 
                   {/* Individual Subcategory Pills */}
                   {subCategories.map((sub) => {
                     const isSelected = selectedSubCategory?.id === sub.id;
+                    const subDisplayName = translateCategoryName(sub.name, isHindi);
                     return (
                       <button
                         key={sub.id}
@@ -305,7 +320,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                             className="w-3.5 h-3.5 rounded-full object-cover shrink-0"
                           />
                         )}
-                        <span>{sub.name}</span>
+                        <span>{subDisplayName}</span>
                       </button>
                     );
                   })}
@@ -318,11 +333,15 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-1 pb-1 gap-1">
             <div className="flex items-center space-x-2">
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                {selectedSubCategory ? selectedSubCategory.name : activeParent?.name || "All Products"}
+                {selectedSubCategory
+                  ? translateCategoryName(selectedSubCategory.name, isHindi)
+                  : activeParent
+                  ? translateCategoryName(activeParent.name, isHindi)
+                  : t("footer.all_products", "All Products")}
               </h2>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 {totalCount > 0
-                  ? `(${totalCount.toLocaleString("en-IN")} products)`
+                  ? `(${totalCount.toLocaleString("en-IN")} ${t("marketplace.items", "products")})`
                   : ""}
               </span>
             </div>
@@ -334,7 +353,10 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                 className="inline-flex items-center space-x-1 text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline cursor-pointer self-start sm:self-auto"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>View All {activeParent?.name}</span>
+                <span>
+                  {isHindi ? "सभी देखें" : "View All"}{" "}
+                  {activeParent ? translateCategoryName(activeParent.name, isHindi) : ""}
+                </span>
               </button>
             )}
           </div>
@@ -363,7 +385,7 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
                   {loadingMore && (
                     <div className="flex items-center space-x-2 text-xs font-bold text-slate-500 dark:text-slate-400">
                       <Loader2 className="w-4 h-4 animate-spin text-brand-dark dark:text-cyan-400" />
-                      <span>Loading more products...</span>
+                      <span>{t("marketplace.loading_more", "Loading more products...")}</span>
                     </div>
                   )}
                 </div>
@@ -372,7 +394,8 @@ export function CategoriesPage({ onAddToCart }: CategoriesPageProps) {
               {/* End of Catalog Indicator */}
               {products.length >= totalCount && totalCount > 0 && (
                 <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 select-none">
-                  Showing all {totalCount.toLocaleString("en-IN")} products
+                  {isHindi ? "सभी" : "Showing all"} {totalCount.toLocaleString("en-IN")}{" "}
+                  {isHindi ? "उत्पाद दिखाए गए" : "products"}
                 </div>
               )}
             </div>

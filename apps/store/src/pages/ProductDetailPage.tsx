@@ -12,6 +12,8 @@ import {
 import { recordRecentlyViewed } from "../services/recentViews";
 import { ProductCatalogNav } from "../components/ProductCatalogNav";
 import { useSettings } from "../context/SettingsContext";
+import { useLanguage } from "../context/LanguageContext";
+import { translateCategoryName } from "../locales/categoryTranslations";
 import { supabase } from "../lib/supabase";
 import { ProductCard } from "../components/ProductCard";
 import { ProductDetailSkeleton } from "../components/Skeletons";
@@ -64,6 +66,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { settings, whatsappNumber } = useSettings();
+  const { t, isHindi } = useLanguage();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
@@ -565,7 +568,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           <div>
             <div className="flex items-center gap-2 mb-2 sm:hidden">
               <span className="text-[11px] font-mono text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-700 shadow-2xs">
-                SKU: {product.sku || "UR-ACCESSORY"}
+                {t("detail.sku")}: {product.sku || "UR-ACCESSORY"}
               </span>
             </div>
 
@@ -589,7 +592,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 </span>
                 <span className="text-xs text-slate-400 dark:text-slate-500">
                   ({totalRatingsCount}{" "}
-                  {totalRatingsCount === 1 ? "review" : "reviews"})
+                  {totalRatingsCount === 1 ? t("detail.review") : t("detail.reviews")})
                 </span>
               </div>
             )}
@@ -608,7 +611,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             {Boolean(product.warranty_months && product.warranty_months > 0) && (
               <div className="mt-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{product.warranty_months} Months Wholesale Warranty</span>
+                <span>{product.warranty_months} {t("detail.warranty_months")}</span>
               </div>
             )}
           </div>
@@ -620,11 +623,11 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 <div className="flex items-center space-x-2">
                   <Layers className="w-4 h-4 text-brand-dark dark:text-brand-light" />
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Tiered Volume Pricing
+                    {t("detail.tiered_pricing")}
                   </h3>
                 </div>
                 <span className="text-[10px] text-slate-400 font-semibold">
-                  Unit Price per Piece
+                  {t("detail.unit_price_per_piece")}
                 </span>
               </div>
 
@@ -668,17 +671,17 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                               : "text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white"
                           }`}
                         >
-                          {rangeStr} pcs
+                          {rangeStr} {t("product.pcs")}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
                           {savingsVsFirst > 0 && (
                             <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400">
-                              Save {savingsVsFirst}%
+                              {t("detail.save")} {savingsVsFirst}%
                             </span>
                           )}
                           {isActive && (
                             <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand-dark dark:bg-brand text-white shadow-2xs">
-                              Active
+                              {t("detail.active")}
                             </span>
                           )}
                         </div>
@@ -687,7 +690,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                       <div className="text-base font-black text-slate-900 dark:text-white tracking-tight">
                         ₹{tier.unit_price.toLocaleString("en-IN")}
                         <span className="text-[10px] text-slate-400 font-medium ml-0.5">
-                          /pc
+                          /{t("product.per_pc")}
                         </span>
                       </div>
                     </button>
@@ -703,7 +706,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 ₹{unitPrice.toLocaleString("en-IN")}
               </span>
-              <span className="text-xs text-slate-400 font-medium">/ unit</span>
+              <span className="text-xs text-slate-400 font-medium">/ {t("detail.unit")}</span>
 
               {product.mrp && product.mrp > unitPrice && (
                 <span className="text-sm text-slate-400 line-through">
@@ -720,7 +723,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 }`}
               />
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {isInStock ? "In Stock" : "Out of Stock"}
+                {isInStock ? t("product.in_stock") : t("product.out_of_stock")}
               </span>
             </div>
 
@@ -730,7 +733,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                     <Palette className="w-3.5 h-3.5 text-brand-dark dark:text-brand-light" />
-                    <span>Select Color:</span>
+                    <span>{t("detail.select_color")}</span>
                   </span>
                   {selectedColor && (
                     <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
@@ -774,8 +777,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Quantity (Min: {minQty}
-                  {step > 1 ? `, Step: ${step}` : ""})
+                  {t("detail.quantity")} ({t("detail.min")}: {minQty}
+                  {step > 1 ? `, ${t("detail.step")}: ${step}` : ""})
                 </span>
 
                 <QuantityInput
@@ -793,14 +796,14 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               {/* Live Line Total Math (clearly labeled as an estimate) */}
               <div className="flex items-center justify-between text-xs pt-1">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">
-                  Estimated Subtotal:
+                  {t("detail.estimated_subtotal")}
                 </span>
                 <div className="text-right">
                   <span className="text-slate-900 dark:text-white font-black text-sm">
                     ₹{estimatedLineTotal.toLocaleString("en-IN")}
                   </span>
                   <span className="ml-1 text-[10px] text-slate-400 font-normal">
-                    (estimated)
+                    {t("detail.estimated")}
                   </span>
                 </div>
               </div>
@@ -817,14 +820,23 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                     <div className="flex items-center space-x-1.5">
                       <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                       <span>
-                        Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
-                        <strong>
-                          ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
-                        </strong>
+                        {isHindi ? (
+                          <>
+                            ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/पीस दर के लिए{" "}
+                            <strong>{nextTier.piecesNeeded} और</strong> जोड़ें
+                          </>
+                        ) : (
+                          <>
+                            Add <strong>{nextTier.piecesNeeded} more</strong> to get{" "}
+                            <strong>
+                              ₹{nextTier.tier.unit_price.toLocaleString("en-IN")}/pc
+                            </strong>
+                          </>
+                        )}
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-brand-dark dark:text-brand-light underline underline-offset-2 opacity-80 group-hover:opacity-100 shrink-0 ml-2">
-                      Apply
+                      {isHindi ? "लागू करें" : "Apply"}
                     </span>
                   </button>
                 </div>
@@ -847,10 +859,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 {addedToast ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>Added to Cart!</span>
+                    <span>{t("detail.added_to_cart")}</span>
                   </>
                 ) : (
-                  <span>Add to Cart</span>
+                  <span>{t("detail.add_to_cart")}</span>
                 )}
               </button>
 
@@ -860,7 +872,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 disabled={!isInStock}
                 className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-900 dark:bg-slate-800 hover:bg-black dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50 border border-transparent dark:border-slate-700"
               >
-                Buy Now
+                {t("detail.buy_now")}
               </button>
             </div>
 
@@ -879,7 +891,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 className="w-full flex items-center justify-center space-x-2 py-3 px-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200/80 transition"
               >
                 <MessageCircle className="w-4 h-4 text-emerald-600" />
-                <span>Direct WhatsApp Inquiry / Bulk Quote</span>
+                <span>{t("detail.whatsapp_inquiry")}</span>
               </a>
             )}
           </div>
@@ -902,7 +914,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             return (
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-3">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  Specifications
+                  {t("detail.specifications")}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {displaySpecs.map(([key, val]) => (
@@ -927,7 +939,7 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           {product.description && (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-xs space-y-2.5">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Description
+                {t("detail.description")}
               </h3>
               <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line">
                 {product.description}
@@ -939,15 +951,15 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           <div className="grid grid-cols-3 gap-2 pt-2 text-center text-slate-600 dark:text-slate-300 text-[11px]">
             <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
               <Truck className="w-4 h-4 text-brand-dark dark:text-brand-light mx-auto mb-1" />
-              <span className="font-semibold">Fast Shipping</span>
+              <span className="font-semibold">{t("detail.fast_shipping")}</span>
             </div>
             <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
               <ShieldCheck className="w-4 h-4 text-brand-dark dark:text-brand-light mx-auto mb-1" />
-              <span className="font-semibold">QA Tested</span>
+              <span className="font-semibold">{t("detail.qa_tested")}</span>
             </div>
             <div className="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800">
               <RotateCcw className="w-4 h-4 text-brand-dark dark:text-brand-light mx-auto mb-1" />
-              <span className="font-semibold">DOA Guarantee</span>
+              <span className="font-semibold">{t("detail.doa_guarantee")}</span>
             </div>
           </div>
         </div>
@@ -958,10 +970,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-              Customer Reviews
+              {t("detail.customer_reviews")}
             </h2>
             <p className="text-xs text-slate-400">
-              Verified wholesale buyer feedback
+              {t("detail.verified_buyer_feedback")}
             </p>
           </div>
 
@@ -981,12 +993,12 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               {showReviewForm ? (
                 <>
                   <X className="w-3.5 h-3.5" />
-                  <span>Close</span>
+                  <span>{t("detail.close")}</span>
                 </>
               ) : (
                 <>
                   <PenLine className="w-3.5 h-3.5" />
-                  <span>Write a Review</span>
+                  <span>{t("detail.write_review")}</span>
                 </>
               )}
             </button>
@@ -1411,21 +1423,21 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                Similar Products
+                {t("detail.similar_products")}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {product.specs?.compatibility_group
                   ? `Compatible with ${product.specs.compatibility_group}`
                   : product.specs?.brand_compatibility
                   ? `For ${product.specs.brand_compatibility} devices`
-                  : "Matching category items in stock"}
+                  : (isHindi ? "स्टॉक में समान श्रेणी के उत्पाद" : "Matching category items in stock")}
               </p>
             </div>
             <Link
               to="/marketplace"
               className="text-xs font-bold text-brand-dark dark:text-orange-400 hover:underline"
             >
-              View All →
+              {t("detail.view_all")} →
             </Link>
           </div>
 
@@ -1449,23 +1461,29 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               <div className="flex items-center space-x-2">
                 <span className="inline-block w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                  Related Accessories
+                  {t("detail.related_accessories")}
                 </h2>
                 {displayCategoryName && (
                   <span className="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/50 dark:border-orange-900/40">
-                    {displayCategoryName}
+                    {translateCategoryName(displayCategoryName, isHindi)}
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                High-margin wholesale accessories from the {displayCategoryName} collection
+                {isHindi
+                  ? `${translateCategoryName(displayCategoryName, isHindi)} संग्रह से उच्च-मार्जिन थोक उत्पाद`
+                  : `High-margin wholesale accessories from the ${displayCategoryName} collection`}
               </p>
             </div>
             <Link
               to={categoryMarketplaceUrl}
               className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline inline-flex items-center space-x-1 group self-start sm:self-auto"
             >
-              <span>View All {displayCategoryName}</span>
+              <span>
+                {isHindi
+                  ? `${translateCategoryName(displayCategoryName, isHindi)} के सभी उत्पाद देखें`
+                  : `View All ${displayCategoryName}`}
+              </span>
               <span className="group-hover:translate-x-0.5 transition-transform">→</span>
             </Link>
           </div>
