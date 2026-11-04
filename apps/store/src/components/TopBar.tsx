@@ -41,8 +41,8 @@ export function TopBar({
 
   return (
     <header className="fixed md:relative top-0 left-0 right-0 z-40 w-full px-3 pt-2 pb-1 sm:px-4 md:px-6 md:py-3 max-w-7xl 2xl:max-w-[1780px] mx-auto transition-colors">
-      {/* ── Main Simple & Flat Glassmorphic Top Bar (Apple Store Aesthetic) ── */}
-      <div className="relative w-full rounded-2xl md:rounded-full bg-white/90 dark:bg-[#1D1D1F]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] px-3 sm:px-4 md:px-5 lg:px-6 h-14 sm:h-15 md:h-16 flex items-center justify-between shadow-[0_4px_24px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+      {/* ── Main Simple & Flat Glassmorphic Top Bar ── */}
+      <div className="relative w-full rounded-2xl md:rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 px-3 sm:px-4 md:px-5 lg:px-6 h-14 sm:h-15 md:h-16 flex items-center justify-between shadow-xs dark:shadow-md">
         
         {/* ── Left Zone: Back Button (Subpages) & Brand Logo Capsule ── */}
         <div className="flex items-center space-x-2 shrink-0 z-10">
@@ -60,7 +60,7 @@ export function TopBar({
           {/* Simple & Flat Brand Logo Link with Cursor-Phobic Repulsion */}
           <Link
             to="/"
-            className="group flex items-center space-x-2.5 py-1 px-2 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+            className="group flex items-center space-x-2.5 py-1 px-2 rounded-full hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
           >
             <CursorPhobicElement
               disabled={!isHome}
@@ -81,7 +81,7 @@ export function TopBar({
               maxDisplacement={16}
               maxTilt={3}
               as="span"
-              className="font-black text-sm sm:text-base tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-nowrap"
+              className="font-black text-sm sm:text-base tracking-tight text-slate-900 dark:text-white whitespace-nowrap"
             >
               URT Wholesale
             </CursorPhobicElement>
@@ -92,7 +92,7 @@ export function TopBar({
         <div className="hidden md:flex items-center justify-center z-10">
           <nav
             aria-label="Desktop Navigation"
-            className="flex items-center space-x-1 p-1 rounded-full bg-[#F5F5F7]/90 dark:bg-black/60 border border-black/[0.05] dark:border-white/[0.08] backdrop-blur-md"
+            className="flex items-center space-x-1 p-1 rounded-full bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xs"
           >
             {desktopNavItems.map((item) => (
               <CursorPhobicElement
@@ -107,7 +107,7 @@ export function TopBar({
                   <button
                     type="button"
                     onClick={() => onOpenMenu?.()}
-                    className="px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-[#1D1D1F] dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
+                    className="px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer active:scale-95"
                   >
                     {item.label}
                   </button>
@@ -118,8 +118,8 @@ export function TopBar({
                     className={({ isActive }) =>
                       `px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         isActive
-                          ? "bg-gradient-to-r from-[#FF1B6B] to-[#FF4500] text-white shadow-xs shadow-orange-500/25"
-                          : "text-slate-600 dark:text-slate-300 hover:text-[#1D1D1F] dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/10 active:scale-95"
+                          ? "bg-cyan-500 text-white shadow-xs"
+                          : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 active:scale-95"
                       }`
                     }
                   >
@@ -149,10 +149,10 @@ export function TopBar({
               onClick={toggleLanguage}
               aria-label={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
               title={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
-              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border border-black/[0.08] dark:border-white/[0.12] cursor-pointer shadow-2xs"
+              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border border-slate-200/70 dark:border-slate-700/70 cursor-pointer shadow-2xs"
             >
-              <Languages className="w-3.5 h-3.5 text-[#FF1B6B] dark:text-[#FF6B00] stroke-[2.2]" />
-              <span className="text-[11px] sm:text-xs font-black tracking-wide text-[#1D1D1F] dark:text-white">
+              <Languages className="w-3.5 h-3.5 text-cyan-600 dark:text-orange-400 stroke-[2.2]" />
+              <span className="text-[11px] sm:text-xs font-black tracking-wide text-slate-900 dark:text-white">
                 {isHindi ? "EN" : "हिन्दी"}
               </span>
             </button>
@@ -171,12 +171,12 @@ export function TopBar({
               onClick={toggleTheme}
               aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
               title={isDark ? "Switch to light theme" : "Switch to dark theme"}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-[#FFD60A] hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
             >
               {isDark ? (
-                <Sun className="w-4.5 h-4.5 stroke-[2] text-[#FFD60A] hover:rotate-45 transition-transform duration-300" />
+                <Sun className="w-4.5 h-4.5 stroke-[2] text-amber-400 hover:rotate-45 transition-transform duration-300" />
               ) : (
-                <Moon className="w-4.5 h-4.5 stroke-[2] text-slate-700 hover:text-[#FF1B6B] transition-colors" />
+                <Moon className="w-4.5 h-4.5 stroke-[2] text-slate-700 hover:text-cyan-600 transition-colors" />
               )}
             </button>
           </CursorPhobicElement>
@@ -197,7 +197,7 @@ export function TopBar({
               <ShoppingBag className="w-4.5 h-4.5 stroke-[2]" />
 
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-[#FF1B6B] to-[#FF4500] flex items-center justify-center shadow-xs shadow-orange-500/25">
+                <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white bg-cyan-500 flex items-center justify-center shadow-xs">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}

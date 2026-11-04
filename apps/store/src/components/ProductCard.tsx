@@ -75,7 +75,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
   }
 
   return (
-    <div className="group relative bg-white dark:bg-[#1D1D1F] rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_4px_24px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_40px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300 flex flex-col justify-between overflow-hidden">
+    <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden">
       {/* ── Top Image Container ── */}
       <div className="relative w-full aspect-square bg-slate-50 dark:bg-slate-800/40 shrink-0 overflow-hidden">
         <Link
@@ -95,8 +95,8 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
           />
         </Link>
 
-        {/* Apple/boAt Signature Top Left Badge Tag */}
-        <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider bg-black/85 dark:bg-white/90 text-white dark:text-black backdrop-blur-md shadow-xs flex items-center space-x-1">
+        {/* boAt Signature Top Left Badge Tag */}
+        <div className="pointer-events-none absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider bg-black/90 text-white shadow-xs flex items-center space-x-1">
           <span>{topBadge.icon}</span>
           <span>{topBadge.text}</span>
         </div>
@@ -105,7 +105,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
         {product.is_urbanrat_brand && (
           <div
             title="Urbanrat Original Brand"
-            className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-white/95 dark:bg-[#1D1D1F]/95 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-center p-1"
+            className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-white/80 dark:border-slate-700/80 shadow-xs flex items-center justify-center p-1"
           >
             <img
               src="/logo.png"
@@ -116,8 +116,8 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
         )}
       </div>
 
-      {/* ── Signature Feature Spec Ribbon (Flush with Image) ── */}
-      <div className="w-full bg-[#FFB800] dark:bg-[#FDB913] px-2.5 py-1 sm:py-1.5 flex items-center justify-between text-slate-950 shrink-0 select-none">
+      {/* ── Signature boAt Yellow/Gold Feature Spec Ribbon (Flush with Image) ── */}
+      <div className="w-full bg-[#FFC700] dark:bg-[#FDB913] px-2.5 py-1 sm:py-1.5 flex items-center justify-between text-slate-950 shrink-0 select-none">
         <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-tight text-slate-950 truncate max-w-[70%]">
           {highlightSpec}
         </span>
@@ -132,7 +132,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
         <Link
           to={`/product/${product.slug}`}
           onClick={handleCardClick}
-          className="block group-hover:text-[#FF4500] dark:group-hover:text-[#FF6B00] transition-colors"
+          className="block group-hover:text-brand-dark dark:group-hover:text-brand-light transition-colors"
         >
           <h3 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm line-clamp-1 leading-snug tracking-tight">
             {product.name}
@@ -161,7 +161,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
               {displaySwatches.map((col, idx) => (
                 <span
                   key={idx}
-                  className="w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#1D1D1F] shadow-2xs inline-block"
+                  className="w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-900 shadow-2xs inline-block"
                   style={{ backgroundColor: resolveColorHex(col) }}
                 />
               ))}
@@ -182,15 +182,15 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
             </span>
           )}
           {discountPercent > 0 && (
-            <span className="font-black text-[#34C759] dark:text-[#30D158]">
+            <span className="font-black text-emerald-600 dark:text-emerald-400">
               {discountPercent}% {t("product.off", "off")}
             </span>
           )}
         </div>
 
         {/* Wholesale MOQ & Quick Add Button Row */}
-        <div className="pt-2 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between gap-2 mt-auto">
-          <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-black/[0.04] dark:bg-white/[0.08] px-2 py-0.5 rounded-full border border-black/[0.05] dark:border-white/[0.08]">
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 mt-auto">
+          <span className="text-[10px] font-bold text-brand-dark dark:text-orange-400 bg-cyan-50 dark:bg-orange-950/40 px-1.5 py-0.5 rounded border border-cyan-100 dark:border-orange-500/20">
             {t("product.moq", "MOQ")}: {product.min_order_qty || 10} {t("product.pcs", "pcs")}
           </span>
 
@@ -204,7 +204,7 @@ export function ProductCard({ product, onAddToCart, onClick }: ProductCardProps)
             }
             className={`relative h-7 sm:h-7.5 px-2.5 sm:px-3 rounded-full flex items-center space-x-1 text-[11px] font-black text-white cursor-pointer transition-all duration-300 shrink-0 ${
               isAdded
-                ? "bg-[#34C759] dark:bg-[#30D158] shadow-[0_4px_16px_rgba(52,199,89,0.5)] ring-2 ring-emerald-300"
+                ? "bg-emerald-600 shadow-[0_4px_16px_rgba(16,185,129,0.5)] ring-2 ring-emerald-300"
                 : "hover:opacity-95 active:scale-95 shadow-2xs"
             }`}
             style={

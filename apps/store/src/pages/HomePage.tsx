@@ -174,43 +174,7 @@ export function HomePage({ onAddToCart }: HomePageProps) {
         {/* ── Wholesale Continuous Live Offers & Trust Signals Marquee (Boundary Line) ── */}
         <WholesaleMarquee settings={settings} />
 
-        {/* ── Apple Store Header Block (Inspired by Apple Store Reference) ── */}
-        <section className="pt-2 sm:pt-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-black/[0.05] dark:border-white/[0.08]">
-            <div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none">
-                <span className="bg-gradient-to-r from-[#FF1B6B] via-[#FF4500] to-[#FF8A00] bg-clip-text text-transparent">
-                  {isHindi ? "स्टोर" : "Store"}
-                </span>
-              </h1>
-              <p className="mt-2 text-sm sm:text-base md:text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight">
-                {isHindi
-                  ? "डायरेक्ट फ़ैक्टरी एक्सेसरीज़। सर्वोत्तम थोक मार्जिन।"
-                  : "Direct factory accessories with unmatched wholesale margins."}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm font-semibold">
-              <Link
-                to="/marketplace"
-                className="text-[#0071E3] dark:text-[#2997FF] hover:underline font-bold flex items-center space-x-0.5"
-              >
-                <span>{isHindi ? "पूरा कैटलॉग देखें" : "Explore Marketplace"}</span>
-                <span className="font-bold">›</span>
-              </Link>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <Link
-                to="/categories"
-                className="text-[#0071E3] dark:text-[#2997FF] hover:underline font-bold flex items-center space-x-0.5"
-              >
-                <span>{isHindi ? "सभी श्रेणियां" : "All Categories"}</span>
-                <span className="font-bold">›</span>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 2. Category Section Rail (Circular Icon Tiles - Clean Background, No Dots) ── */}
+        {/* ── 2. boAt Lifestyle Category Section Rail (Circular Icon Tiles - Clean Background, No Dots) ── */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-0.5">
           <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
@@ -218,10 +182,10 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           </h2>
           <Link
             to="/categories"
-            className="text-xs font-bold text-[#0071E3] dark:text-[#2997FF] hover:underline flex items-center space-x-1"
+            className="text-xs font-bold text-brand-dark dark:text-brand-light hover:underline flex items-center space-x-1"
           >
             <span>{t("nav.categories", "All Categories")}</span>
-            <span className="font-bold">›</span>
+            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
           </Link>
         </div>
 
@@ -277,7 +241,6 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 3. Bestsellers Slider (Single Card View, Gold/Amber Theme) ── */}
       <CategoryProductSlider
-        punchyPrefix={isHindi ? "नया आगमन." : "The latest."}
         title={t("home.featured", "Bestsellers")}
         subtitle={t("home.featured_sub", "Top-selling wholesale products with high retail margins")}
         badgeTag={isHindi ? "🏆 नंबर 1 बेस्टसेलर" : "🏆 #1 Bestseller"}
@@ -291,7 +254,6 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 4. Cables & Cords Slider (Single Card View, Cyan Theme) ── */}
       <CategoryProductSlider
-        punchyPrefix={isHindi ? "सुपरचार्ज्ड." : "Supercharged."}
         title={t("home.cables", "Cables & Cords")}
         subtitle={t("home.cables_sub", "100W PD fast charging & reinforced ballistic braided cords")}
         badgeTag={isHindi ? "⚡ 100W फ़ास्ट चार्जिंग" : "⚡ 100W PD & Fast Sync"}
@@ -351,7 +313,6 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 6. Speakers & Audio Slider (Single Card View, Violet Theme) ── */}
       <CategoryProductSlider
-        punchyPrefix={isHindi ? "स्टूडियो साउंड." : "Studio Sound."}
         title={t("home.speakers", "Speakers & Audio")}
         subtitle={t("home.speakers_sub", "Hi-Fi acoustic drivers, deep bass & Bluetooth wireless audio")}
         badgeTag={isHindi ? "🔊 स्टूडियो ऑडियो" : "🔊 Studio Audio"}
@@ -369,7 +330,6 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
       {/* ── 7. New Arrivals Slider (Single Card View, Rose Theme) ── */}
       <CategoryProductSlider
-        punchyPrefix={isHindi ? "ताज़ा स्टॉक." : "Fresh Drops."}
         title={t("home.new_arrivals", "New Arrivals")}
         subtitle={t("home.new_arrivals_sub", "Freshly stocked wholesale accessories across every category & collection")}
         badgeTag={isHindi ? "🔥 नया स्टॉक उपलब्ध" : "🔥 Fresh Factory Drop"}
@@ -384,7 +344,6 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       {/* ── 8. Recently Viewed Slider (Single Card View, Obsidian/Slate Theme) ── */}
       {recentlyViewed.length > 0 && (
         <CategoryProductSlider
-          punchyPrefix={isHindi ? "आपकी पसंद." : "For You."}
           title={t("home.recently_viewed", "Recently Viewed")}
           subtitle={t("home.recently_viewed_sub", "Quickly re-check wholesale items you previously inspected")}
           badgeTag={isHindi ? "👁️ हाल ही में देखा" : "👁️ Recently Viewed"}
