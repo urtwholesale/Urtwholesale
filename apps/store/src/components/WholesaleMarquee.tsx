@@ -320,7 +320,7 @@ export function WholesaleMarquee({
   return (
     <section
       aria-label="Live offers and wholesale benefits marquee"
-      className={`relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen max-w-[100vw] overflow-hidden rounded-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800/80 shadow-xs sm:shadow-sm py-3 sm:py-3.5 my-3 sm:my-4 transition-colors ${className}`}
+      className={`relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen max-w-[100vw] overflow-hidden rounded-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xs sm:shadow-sm py-3 sm:py-3.5 my-3 sm:my-4 transition-colors ${className}`}
     >
       {/* ── Gradient Edge Fade Masks for True Screen-Edge Blending ── */}
       <div
