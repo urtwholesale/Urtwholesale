@@ -246,18 +246,52 @@ REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC, anon;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public 
   REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon;
 
--- Re-grant execute ONLY on explicitly allowlisted public storefront functions
-GRANT EXECUTE ON FUNCTION public.product_is_in_stock(uuid) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.search_products_v2(text, integer, integer) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.search_products(text, integer) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_order_by_id(text, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.create_verified_order(jsonb, jsonb, text, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.submit_dealer_application(jsonb) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_dealer_application_by_code(text, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_category_descendant_ids(uuid) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_new_arrivals_by_category(integer) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_unit_price(uuid, integer) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.normalize_keywords_array(jsonb) TO anon, authenticated;
+-- Ensure keyword normalization function is present
+CREATE OR REPLACE FUNCTION public.normalize_keywords_array(p_raw jsonb)
+RETURNS text[]
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v_result text[] := '{}'::text[];
+  v_item text;
+  v_split text[];
+  v_tok text;
+  v_cleaned text;
+BEGIN
+  IF p_raw IS NULL OR jsonb_typeof(p_raw) = 'null' THEN
+    RETURN '{}'::text[];
+  END IF;
+
+  FOR v_item IN
+    SELECT jsonb_array_elements_text(
+      CASE
+        WHEN jsonb_typeof(p_raw) = 'array' THEN p_raw
+        WHEN jsonb_typeof(p_raw) = 'string' THEN jsonb_build_array(p_raw)
+        ELSE '[]'::jsonb
+      END
+    )
+  LOOP
+    v_split := regexp_split_to_array(v_item, '[,;|\n\r]+');
+    FOREACH v_tok IN ARRAY v_split
+    LOOP
+      v_cleaned := regexp_replace(lower(trim(v_tok)), '\s+', ' ', 'g');
+      IF length(v_cleaned) > 0 THEN
+        IF length(v_cleaned) > 50 THEN
+          v_cleaned := substring(v_cleaned from 1 for 50);
+        END IF;
+        IF NOT (v_cleaned = ANY(v_result)) THEN
+          IF array_length(v_result, 1) IS NULL OR array_length(v_result, 1) < 30 THEN
+            v_result := array_append(v_result, v_cleaned);
+          END IF;
+        END IF;
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  RETURN v_result;
+END;
+$$;
 
 -- ============================================================================
 -- 3. BOUND OLD search_products(q, max_rows)
@@ -453,6 +487,7 @@ END;
 $$;
 
 -- Update create_verified_order with rate limiting, honeypot, and 24-hr unconfirmed order cap
+DROP FUNCTION IF EXISTS public.create_verified_order(jsonb, jsonb, text, text);
 CREATE OR REPLACE FUNCTION public.create_verified_order(
   p_customer jsonb,
   p_items jsonb,
@@ -791,3 +826,21 @@ BEGIN
   RETURN v_count;
 END;
 $$;
+
+-- ============================================================================
+-- 8. STOREFRONT FUNCTION EXECUTION ALLOWLIST
+-- ============================================================================
+
+GRANT EXECUTE ON FUNCTION public.product_is_in_stock(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.search_products_v2(text, uuid[], numeric, numeric, boolean, text, integer, integer) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.search_products(text, integer) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_order_by_id(text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_verified_order(jsonb, jsonb, text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_dealer_application(jsonb) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_dealer_application_by_code(text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_category_descendant_ids(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_new_arrivals_by_category(integer) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_unit_price(uuid, integer) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.normalize_keywords_array(jsonb) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, text, integer, integer) TO anon, authenticated;
+

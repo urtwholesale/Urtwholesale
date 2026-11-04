@@ -1075,7 +1075,8 @@ create or replace function public.admin_adjust_stock(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_current_stock integer;
   v_new_stock integer;
@@ -1136,7 +1137,8 @@ CREATE OR REPLACE FUNCTION public.admin_bulk_adjust_stock(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_prod record;
   v_op_id uuid;
@@ -1257,7 +1259,8 @@ CREATE OR REPLACE FUNCTION public.admin_bulk_move_products(
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_count integer := 0;
   v_cat_exists boolean;
@@ -1325,7 +1328,8 @@ CREATE OR REPLACE FUNCTION public.admin_bulk_save_tiers(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_prod record;
   v_op_id uuid;
@@ -1537,7 +1541,8 @@ CREATE OR REPLACE FUNCTION public.admin_bulk_update_images(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_prod record;
   v_op_id uuid;
@@ -1694,7 +1699,8 @@ CREATE OR REPLACE FUNCTION public.admin_bulk_update_product_status(
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_count integer := 0;
 BEGIN
@@ -1729,7 +1735,8 @@ CREATE OR REPLACE FUNCTION public.admin_bulk_update_products(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_prod record;
   v_op_id uuid;
@@ -1951,7 +1958,8 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 BEGIN
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'forbidden';
@@ -2026,7 +2034,8 @@ create or replace function public.admin_dashboard_stats(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_days integer;
   v_prev_to date;
@@ -2139,7 +2148,8 @@ create or replace function public.admin_dealer_stats()
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_total bigint;
   v_new bigint;
@@ -2215,7 +2225,8 @@ create or replace function public.admin_delete_catalog_image(p_image_id uuid)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_url text;
   v_ref_count integer;
@@ -2263,7 +2274,8 @@ create or replace function public.admin_get_order_notice_counts()
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_delayed_pending integer := 0;
   v_low_stock_count integer := 0;
@@ -2313,7 +2325,8 @@ create or replace function public.admin_get_returns_pending_count()
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_requested_count integer := 0;
   v_received_count integer := 0;
@@ -2361,7 +2374,8 @@ CREATE OR REPLACE FUNCTION public.admin_list_product_ids(
 RETURNS TABLE (product_id uuid)
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_category_id uuid;
   v_include_descendants boolean;
@@ -2485,7 +2499,8 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_search text := NULLIF(TRIM(p_search), '');
 BEGIN
@@ -2659,7 +2674,8 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 begin
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'forbidden';
@@ -2692,7 +2708,8 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 begin
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'forbidden';
@@ -2725,7 +2742,8 @@ create or replace function public.admin_save_product_tiers(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_product record;
   v_tier record;
@@ -2831,7 +2849,8 @@ create or replace function public.admin_submit_catalog(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_item record;
   v_norm_keywords text[];
@@ -3007,7 +3026,8 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 begin
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'forbidden';
@@ -3085,7 +3105,8 @@ CREATE OR REPLACE FUNCTION public.admin_undo_bulk_operation(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 DECLARE
   v_op record;
   v_elem jsonb;
@@ -3247,7 +3268,8 @@ create or replace function public.admin_update_dealer_application(
 returns public.dealer_applications
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_app public.dealer_applications;
   v_updated_app public.dealer_applications;
@@ -3369,7 +3391,8 @@ create or replace function public.admin_update_order_shipping(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_order record;
 begin
@@ -3418,7 +3441,8 @@ create or replace function public.admin_update_order_status(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_order record;
   v_item record;
@@ -3529,7 +3553,8 @@ create or replace function public.admin_update_return_claim(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_return public.return_requests%rowtype;
   v_old_status text;
@@ -3631,7 +3656,8 @@ create or replace function public.admin_update_return_status(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_return record;
   v_ret_item record;
@@ -3782,7 +3808,8 @@ create or replace function public.get_return_stats(p_days integer default 30)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_days integer := coalesce(p_days, 30);
   v_start_date timestamptz;
@@ -3931,7 +3958,8 @@ create or replace function public.get_product_return_performance(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_days integer := coalesce(p_days, 30);
   v_start_date timestamptz;
@@ -4033,7 +4061,8 @@ create or replace function public.get_customer_lifetime_stats(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_stats jsonb;
   v_clean_phone text;
@@ -4067,7 +4096,8 @@ create or replace function public.refresh_search_vocabulary()
 returns integer
 language plpgsql
 security definer
-set search_path = public, pg_temp$$
+set search_path = public, pg_temp
+as $$
 declare
   v_inserted integer := 0;
 begin

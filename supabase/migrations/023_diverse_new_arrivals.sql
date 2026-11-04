@@ -25,7 +25,7 @@ as $$
   ),
   ranked_products as (
     select 
-      p.*,
+      p,
       ct.sort_order as cat_sort_order,
       row_number() over (
         partition by ct.root_parent_id 
@@ -35,13 +35,10 @@ as $$
     join cat_tree ct on p.category_id = ct.category_id
     where p.is_active = true
   )
-  select 
-    id, name, slug, description, category_id, price, mrp, stock,
-    min_order_quantity, images, is_active, is_featured, is_urbanrat_brand,
-    specs, created_at, updated_at
+  select (p).*
   from ranked_products
   where rn <= items_per_category
-  order by rn asc, cat_sort_order asc, created_at desc;
+  order by rn asc, cat_sort_order asc, (p).created_at desc;
 $$;
 
 -- Grant execution to public anon and authenticated users
