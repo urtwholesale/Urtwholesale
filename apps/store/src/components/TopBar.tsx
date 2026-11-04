@@ -3,6 +3,7 @@ import { ShoppingBag, ArrowLeft, Sun, Moon, Languages } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { SearchDropdown } from "./SearchDropdown";
+import { CursorPhobicElement } from "./CursorPhobicElement";
 
 interface TopBarProps {
   cartCount?: number;
@@ -56,57 +57,77 @@ export function TopBar({
             </button>
           )}
 
-          {/* Simple & Flat Brand Logo Link */}
+          {/* Simple & Flat Brand Logo Link with Cursor-Phobic Repulsion */}
           <Link
             to="/"
             className="group flex items-center space-x-2.5 py-1 px-2 rounded-full hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
           >
-            <div className="relative w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full overflow-hidden shrink-0">
+            <CursorPhobicElement
+              disabled={!isHome}
+              repulsionRadius={120}
+              maxDisplacement={14}
+              maxTilt={4}
+              className="relative w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full overflow-hidden shrink-0"
+            >
               <img
                 src="/logo.png"
                 alt="Urbanrat"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
               />
-            </div>
-            <span className="font-black text-sm sm:text-base tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+            </CursorPhobicElement>
+            <CursorPhobicElement
+              disabled={!isHome}
+              repulsionRadius={130}
+              maxDisplacement={16}
+              maxTilt={3}
+              as="span"
+              className="font-black text-sm sm:text-base tracking-tight text-slate-900 dark:text-white whitespace-nowrap"
+            >
               URT Wholesale
-            </span>
+            </CursorPhobicElement>
           </Link>
         </div>
 
-        {/* ── Center Zone: Flat Segmented Navigation Dock (Desktop View) ── */}
+        {/* ── Center Zone: Flat Segmented Navigation Dock (Desktop View) with Cursor-Phobic Repulsion ── */}
         <div className="hidden md:flex items-center justify-center z-10">
           <nav
             aria-label="Desktop Navigation"
             className="flex items-center space-x-1 p-1 rounded-full bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xs"
           >
-            {desktopNavItems.map((item) =>
-              item.isMenuAction ? (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => onOpenMenu?.()}
-                  className="px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer active:scale-95"
-                >
-                  {item.label}
-                </button>
-              ) : (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/"}
-                  className={({ isActive }) =>
-                    `px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-cyan-500 text-white shadow-xs"
-                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 active:scale-95"
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              )
-            )}
+            {desktopNavItems.map((item) => (
+              <CursorPhobicElement
+                key={item.label}
+                disabled={!isHome}
+                repulsionRadius={100}
+                maxDisplacement={12}
+                maxTilt={4}
+                className="inline-flex"
+              >
+                {item.isMenuAction ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenMenu?.()}
+                    className="px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer active:scale-95"
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    end={item.to === "/"}
+                    className={({ isActive }) =>
+                      `px-3.5 lg:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-cyan-500 text-white shadow-xs"
+                          : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 active:scale-95"
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                )}
+              </CursorPhobicElement>
+            ))}
           </nav>
         </div>
 
@@ -116,48 +137,72 @@ export function TopBar({
           <SearchDropdown popularSearches={popularSearches} />
 
           {/* Language Switcher Pill */}
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            aria-label={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
-            title={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
-            className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border border-slate-200/70 dark:border-slate-700/70 cursor-pointer shadow-2xs"
+          <CursorPhobicElement
+            disabled={!isHome}
+            repulsionRadius={110}
+            maxDisplacement={12}
+            maxTilt={4}
+            className="inline-flex"
           >
-            <Languages className="w-3.5 h-3.5 text-cyan-600 dark:text-orange-400 stroke-[2.2]" />
-            <span className="text-[11px] sm:text-xs font-black tracking-wide text-slate-900 dark:text-white">
-              {isHindi ? "EN" : "हिन्दी"}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              aria-label={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
+              title={isHindi ? "Switch to English" : "हिन्दी में बदलें"}
+              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all border border-slate-200/70 dark:border-slate-700/70 cursor-pointer shadow-2xs"
+            >
+              <Languages className="w-3.5 h-3.5 text-cyan-600 dark:text-orange-400 stroke-[2.2]" />
+              <span className="text-[11px] sm:text-xs font-black tracking-wide text-slate-900 dark:text-white">
+                {isHindi ? "EN" : "हिन्दी"}
+              </span>
+            </button>
+          </CursorPhobicElement>
 
           {/* Theme Toggle Button */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            title={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+          <CursorPhobicElement
+            disabled={!isHome}
+            repulsionRadius={110}
+            maxDisplacement={12}
+            maxTilt={4}
+            className="inline-flex"
           >
-            {isDark ? (
-              <Sun className="w-4.5 h-4.5 stroke-[2] text-amber-400 hover:rotate-45 transition-transform duration-300" />
-            ) : (
-              <Moon className="w-4.5 h-4.5 stroke-[2] text-slate-700 hover:text-cyan-600 transition-colors" />
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+              title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+            >
+              {isDark ? (
+                <Sun className="w-4.5 h-4.5 stroke-[2] text-amber-400 hover:rotate-45 transition-transform duration-300" />
+              ) : (
+                <Moon className="w-4.5 h-4.5 stroke-[2] text-slate-700 hover:text-cyan-600 transition-colors" />
+              )}
+            </button>
+          </CursorPhobicElement>
 
           {/* Cart Button with Flat Badge */}
-          <Link
-            to="/cart"
-            aria-label={`View cart with ${cartCount} items`}
-            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
+          <CursorPhobicElement
+            disabled={!isHome}
+            repulsionRadius={110}
+            maxDisplacement={12}
+            maxTilt={4}
+            className="inline-flex"
           >
-            <ShoppingBag className="w-4.5 h-4.5 stroke-[2]" />
+            <Link
+              to="/cart"
+              aria-label={`View cart with ${cartCount} items`}
+              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
+            >
+              <ShoppingBag className="w-4.5 h-4.5 stroke-[2]" />
 
-            {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white bg-cyan-500 flex items-center justify-center shadow-xs">
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
-            )}
-          </Link>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white bg-cyan-500 flex items-center justify-center shadow-xs">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </Link>
+          </CursorPhobicElement>
         </div>
       </div>
     </header>

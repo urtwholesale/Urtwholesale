@@ -153,8 +153,8 @@ export function HomePage({ onAddToCart }: HomePageProps) {
       <div className="space-y-8 sm:space-y-12">
         {/* ── 1. Hero 3D Stacked Offer Cards Carousel (With Dots Matrix till Marquee) ── */}
         <div className="relative">
-          {/* ── Cursor-Phobic Dots Matrix: From top of screen strictly down to the marquee line ── */}
-          <div className="absolute -top-24 sm:-top-28 md:-top-32 left-1/2 -translate-x-1/2 w-screen bottom-0 pointer-events-none overflow-hidden z-0">
+          {/* ── Cursor-Phobic Dots Matrix: From top of viewport & menu bar strictly down to the marquee line ── */}
+          <div className="absolute -top-28 sm:-top-32 md:-top-40 left-1/2 -translate-x-1/2 w-screen bottom-0 pointer-events-none overflow-hidden z-0">
             <CursorPhobicDots className="w-full h-full" />
           </div>
 

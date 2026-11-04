@@ -15,6 +15,7 @@ import {
 import { triggerHaptic } from "../utils/haptics";
 import { useLanguage } from "../context/LanguageContext";
 import { translateCategoryName } from "../locales/categoryTranslations";
+import { CursorPhobicElement } from "./CursorPhobicElement";
 import {
   Search,
   X,
@@ -61,6 +62,7 @@ export function SearchDropdown({
 }: SearchDropdownProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const isHome = location.pathname === "/";
   const { t, isHindi } = useLanguage();
 
   const [query, setQuery] = useState("");
@@ -697,54 +699,61 @@ export function SearchDropdown({
         className={`relative hidden md:block ${className}`}
       >
         {/* The Search Bar in TopBar */}
-        <div
-          className={`group relative flex items-center h-9 sm:h-10 px-3 rounded-full bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 text-slate-700 dark:text-slate-200 transition-all duration-200 ${
-            isOpen
-              ? "border-cyan-500 dark:border-cyan-400 bg-white dark:bg-slate-800 ring-2 ring-cyan-500/20 shadow-xs"
-              : "hover:bg-slate-100 dark:hover:bg-slate-800/80"
-          }`}
+        <CursorPhobicElement
+          disabled={!isHome || isOpen}
+          repulsionRadius={130}
+          maxDisplacement={14}
+          maxTilt={3}
         >
-          <Search className="w-4 h-4 stroke-[2.2] text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors shrink-0 mr-2" />
+          <div
+            className={`group relative flex items-center h-9 sm:h-10 px-3 rounded-full bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 text-slate-700 dark:text-slate-200 transition-all duration-200 ${
+              isOpen
+                ? "border-cyan-500 dark:border-cyan-400 bg-white dark:bg-slate-800 ring-2 ring-cyan-500/20 shadow-xs"
+                : "hover:bg-slate-100 dark:hover:bg-slate-800/80"
+            }`}
+          >
+            <Search className="w-4 h-4 stroke-[2.2] text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors shrink-0 mr-2" />
 
-          <input
-            ref={desktopInputRef}
-            type="text"
-            maxLength={60}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setIsOpen(true);
-            }}
-            onFocus={() => setIsOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder={t("nav.search_placeholder", "Search products, chargers, cables...")}
-            className="w-36 lg:w-48 xl:w-60 focus:w-48 focus:lg:w-64 focus:xl:w-80 bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all duration-300"
-          />
-
-          {searching && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-500 shrink-0 ml-1.5" />
-          )}
-
-          {query && !searching && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                desktopInputRef.current?.focus();
+            <input
+              ref={desktopInputRef}
+              type="text"
+              maxLength={60}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setIsOpen(true);
               }}
-              aria-label="Clear search"
-              className="w-5 h-5 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
+              onFocus={() => setIsOpen(true)}
+              onKeyDown={handleKeyDown}
+              placeholder={t("nav.search_placeholder", "Search products, chargers, cables...")}
+              className="w-36 lg:w-48 xl:w-60 focus:w-48 focus:lg:w-64 focus:xl:w-80 bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all duration-300"
+            />
 
-          {!query && !searching && (
-            <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 ml-1.5 rounded-md bg-white/70 dark:bg-slate-700/70 border border-slate-200/60 dark:border-slate-600/60 text-[10px] font-mono font-bold text-slate-400 dark:text-slate-300 shadow-2xs pointer-events-none">
-              ⌘K
-            </kbd>
-          )}
-        </div>
+            {searching && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-500 shrink-0 ml-1.5" />
+            )}
+
+            {query && !searching && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  desktopInputRef.current?.focus();
+                }}
+                aria-label="Clear search"
+                className="w-5 h-5 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+
+            {!query && !searching && (
+              <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 ml-1.5 rounded-md bg-white/70 dark:bg-slate-700/70 border border-slate-200/60 dark:border-slate-600/60 text-[10px] font-mono font-bold text-slate-400 dark:text-slate-300 shadow-2xs pointer-events-none">
+                ⌘K
+              </kbd>
+            )}
+          </div>
+        </CursorPhobicElement>
 
         {/* ── DROPDOWN SEARCH OPTIONS PANEL (Desktop) ── */}
         {isOpen && (
@@ -759,23 +768,31 @@ export function SearchDropdown({
        * ─────────────────────────────────────────────────────────────────── */}
       <div ref={mobileContainerRef} className="md:hidden">
         {/* Compact Flat Search Button */}
-        <button
-          type="button"
-          onClick={() => {
-            setIsMobileActive((prev) => !prev);
-            if (!isMobileActive) {
-              setTimeout(() => mobileInputRef.current?.focus(), 80);
-            }
-          }}
-          aria-label="Search accessories"
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer group"
+        <CursorPhobicElement
+          disabled={!isHome || isMobileActive}
+          repulsionRadius={110}
+          maxDisplacement={12}
+          maxTilt={4}
+          className="inline-flex"
         >
-          {isMobileActive ? (
-            <X className="w-4.5 h-4.5 stroke-[2.2] text-rose-500" />
-          ) : (
-            <Search className="w-4.5 h-4.5 stroke-[2.2] group-hover:scale-105 transition-transform" />
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileActive((prev) => !prev);
+              if (!isMobileActive) {
+                setTimeout(() => mobileInputRef.current?.focus(), 80);
+              }
+            }}
+            aria-label="Search accessories"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer group"
+          >
+            {isMobileActive ? (
+              <X className="w-4.5 h-4.5 stroke-[2.2] text-rose-500" />
+            ) : (
+              <Search className="w-4.5 h-4.5 stroke-[2.2] group-hover:scale-105 transition-transform" />
+            )}
+          </button>
+        </CursorPhobicElement>
 
         {/* Mobile Dropdown Search Options Drawer (Anchored beneath TopBar) */}
         {isMobileActive && (

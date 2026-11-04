@@ -75,6 +75,8 @@ export interface CursorPhobicElementProps {
   scaleOnRepel?: number;
   /** Direction invert (true = attract towards cursor, false = phobic repel away, default: false) */
   invert?: boolean;
+  /** Disable repulsion and smoothly return to rest position */
+  disabled?: boolean;
 }
 
 /**
@@ -94,6 +96,7 @@ export function CursorPhobicElement({
   as = "div",
   scaleOnRepel = 1,
   invert = false,
+  disabled = false,
 }: CursorPhobicElementProps) {
   const domRef = useRef<HTMLElement | null>(null);
 
@@ -214,13 +217,25 @@ export function CursorPhobicElement({
   }, [spring, friction, maxTilt, scaleOnRepel, prefersReducedMotion]);
 
   useEffect(() => {
+    if (disabled) {
+      const s = stateRef.current;
+      s.targetX = 0;
+      s.targetY = 0;
+      s.targetTiltX = 0;
+      s.targetTiltY = 0;
+      s.targetScale = 1;
+      startLoop();
+    }
+  }, [disabled, startLoop]);
+
+  useEffect(() => {
     const unsubscribe = subscribePointer((pX, pY, active) => {
       const el = domRef.current;
       if (!el || prefersReducedMotion) return;
 
       const s = stateRef.current;
 
-      if (!active) {
+      if (!active || disabled) {
         s.targetX = 0;
         s.targetY = 0;
         s.targetTiltX = 0;
@@ -276,7 +291,7 @@ export function CursorPhobicElement({
       }
       isRunningRef.current = false;
     };
-  }, [repulsionRadius, maxDisplacement, maxTilt, scaleOnRepel, invert, prefersReducedMotion, startLoop]);
+  }, [repulsionRadius, maxDisplacement, maxTilt, scaleOnRepel, invert, prefersReducedMotion, startLoop, disabled]);
 
   const Component = as as React.ElementType;
 
