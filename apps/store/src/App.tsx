@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router";
+import { Routes, Route, useLocation, Navigate } from "react-router";
 import type { Product } from "@urbanrat/shared";
 import {
   isSupabaseConfigured,
@@ -430,6 +430,9 @@ export default function App() {
           />
           <Route path="/order/:orderId" element={<OrderPage onAddToCart={handleAddToCart} />} />
           <Route path="/order" element={<OrderPage onAddToCart={handleAddToCart} />} />
+
+          {/* ── Unknown routes (including /admin) fallback cleanly to storefront home without leaking /sjain ── */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 

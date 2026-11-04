@@ -580,14 +580,13 @@ Serves the storefront and admin from one origin. Both apps then share the same b
 1. **Import Git Repository**: Select the Git repository.
 2. **Framework Preset**: Select **`Vite`**.
 3. **Root Directory**: `.` (monorepo root).
-4. **Build Command**: `npm run build` *(executes store & admin builds and merges dist artifacts into `dist/`, `dist/sjain/`, and `dist/admin/`)*.
+4. **Build Command**: `npm run build` *(executes store & admin builds and merges dist artifacts into `dist/` and `dist/sjain/`)*.
 5. **Output Directory**: `dist`.
 6. **Environment Variables**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 7. **Routing (`vercel.json`)**:
    - `/sjain/:path*` → `/sjain/index.html` (Admin deep links)
-   - `/sjain` → `/sjain/index.html` (Admin entry point)
-   - `/admin` → Redirects to `/sjain`
-   - `/(.*)` → `/index.html` (Storefront SPA fallback)
+   - `/sjain` → `/sjain/index.html` (Admin entry point - strictly isolated)
+   - `/(.*)` → `/index.html` (Storefront SPA fallback; `/admin` is unlinked and routes to storefront without revealing `/sjain`)
 
 ### Option B: Standalone Multi-Project Deployment (Recommended)
 Deploy the storefront and admin as separate Vercel projects on separate subdomains (e.g. `store.urbanrat.in` and `admin.urbanrat.in`), so they never share an origin:
@@ -634,7 +633,7 @@ The complete technical implementation history, schema migration milestones, and 
   - **Dealership Program & Differentiation (`DealershipProgramPage.tsx` & `DealershipManager.tsx`)**: Interactive margins and tiers table, comparison tree of URT Authorized Dealer vs. Normal Retailer, branded vs. copy item visual showcase, and dual articles backed by `dealership_*` tables.
   - **Hindi Language Localization (`LanguageContext.tsx`)**: Full multi-language support (English / Hindi) with dictionary fallback, persistent user preference, and one-click toggle across top bar, drawer, and footer.
   - **Storefront Footer (`Footer.tsx`)**: Trust badges, express wholesale ordering link, contact information, and directory columns with mobile dock clearance.
-  - **Admin Panel URL Path (`/sjain`)**: Configured Vite base and Vercel routing to serve admin application under `/sjain` with automatic redirect from `/admin`.
+  - **Admin Panel URL Path (`/sjain`)**: Configured Vite base and Vercel routing to serve admin application strictly under `/sjain`. Completely unlinked `/admin` so it never redirects to or reveals `/sjain`.
   - **Hero Category Linking & Visual Picker (`ContentEditor.tsx` & `HeroStackedCarousel.tsx`)**:
     - **Category Routing**: Dropdown to connect any hero banner directly to a specific category route (`/marketplace?category=${slug}`).
     - **Official 3D Studio Visuals**: 1-click buttons to apply high-res dark or light 3D tech renders (`/categories/dark/${slug}.jpg` and `/categories/light/${slug}.jpg`).
