@@ -229,6 +229,14 @@ export {
   COLOR_HEX_MAP,
 } from "./productSpecs";
 
+export {
+  validateReviewContent,
+  URL_SPAM_REGEX,
+  REPEATED_CHAR_SPAM_REGEX,
+  type ReviewValidationInput,
+  type ReviewValidationResult,
+} from "./reviewAntiFake";
+
 
 
 

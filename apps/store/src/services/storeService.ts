@@ -24,6 +24,7 @@ import {
   normalizeSearchQuery,
   generateSearchVariants,
   sanitizeText,
+  validateReviewContent,
 } from "@urbanrat/shared";
 import * as addressService from "./addressService";
 
@@ -1505,6 +1506,134 @@ export function saveLocalReview(review: Review): void {
   }
 }
 
+/**
+ * Checks if the authenticated user has actually placed and confirmed/shipped
+ * an order containing the specified product (anti-fake review verification).
+ */
+export async function checkUserPurchasedProduct(productId: string): Promise<{
+  hasPurchased: boolean;
+  orderId?: string;
+  orderDate?: string;
+}> {
+  ensureConfigured();
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return { hasPurchased: false };
+
+    // Query user's orders that are active or completed
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select("id, status, items, created_at")
+      .eq("user_id", authData.user.id)
+      .in("status", ["confirmed", "processing", "shipped", "delivered"]);
+
+    if (!error && orders && orders.length > 0) {
+      for (const ord of orders) {
+        const items = Array.isArray(ord.items) ? ord.items : [];
+        const match = items.find(
+          (it: any) =>
+            it.product_id === productId ||
+            it.productId === productId ||
+            it.id === productId
+        );
+        if (match) {
+          return {
+            hasPurchased: true,
+            orderId: ord.id,
+            orderDate: ord.created_at,
+          };
+        }
+      }
+    }
+
+    // Check local orders backup (for offline/demo wholesale checkouts)
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const localOrdersRaw =
+          window.localStorage.getItem("urbanrat_orders") ||
+          window.localStorage.getItem("urt_orders");
+        if (localOrdersRaw) {
+          const localOrders = JSON.parse(localOrdersRaw);
+          if (Array.isArray(localOrders)) {
+            for (const ord of localOrders) {
+              const items = Array.isArray(ord.items) ? ord.items : [];
+              const match = items.find(
+                (it: any) =>
+                  it.product_id === productId ||
+                  it.productId === productId ||
+                  it.id === productId
+              );
+              if (match) {
+                return {
+                  hasPurchased: true,
+                  orderId: ord.id || "WHOLESALE_ORDER",
+                  orderDate: ord.created_at || new Date().toISOString(),
+                };
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } catch (err) {
+    console.warn("Could not verify product purchase:", err);
+  }
+  return { hasPurchased: false };
+}
+
+/**
+ * Checks if the authenticated user has already submitted a review for this product
+ * to prevent duplicate rating inflation / spam.
+ */
+export async function getUserProductReview(productId: string): Promise<{
+  hasReviewed: boolean;
+  review?: Review;
+}> {
+  ensureConfigured();
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return { hasReviewed: false };
+
+    // Check remote reviews table
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (!error && data) {
+      return {
+        hasReviewed: true,
+        review: data as Review,
+      };
+    }
+
+    // Check global reviews storage queue
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem(GLOBAL_REVIEWS_STORAGE_KEY);
+        if (raw) {
+          const stored: Review[] = JSON.parse(raw);
+          const match = stored.find(
+            (r) => r.product_id === productId && r.user_id === authData.user.id
+          );
+          if (match) {
+            return { hasReviewed: true, review: match };
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } catch (err) {
+    console.warn("Could not check user product review:", err);
+  }
+  return { hasReviewed: false };
+}
+
 export async function submitReview(input: {
   productId: string;
   productName?: string;
@@ -1516,12 +1645,6 @@ export async function submitReview(input: {
 }): Promise<Review> {
   ensureConfigured();
 
-  // Rule:
-  // Rating >= 4: auto-approved ("approved") and immediately shows on the product without admin approval.
-  // Rating < 4: requires admin approval ("pending") and does NOT show on product until approved.
-  const isAutoApproved = input.rating >= 4;
-  const initialStatus: "approved" | "pending" = isAutoApproved ? "approved" : "pending";
-
   let authUser: any = null;
   try {
     const { data: authData } = await supabase.auth.getUser();
@@ -1530,22 +1653,69 @@ export async function submitReview(input: {
     authUser = null;
   }
 
-  const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  if (!authUser?.id) {
+    throw new StoreError("You must be logged in to leave a review.", "UNAUTHENTICATED");
+  }
+
   const authorName = sanitizeText(
     input.authorName ||
     authUser?.user_metadata?.full_name ||
+    authUser?.user_metadata?.name ||
     "Verified Wholesale Buyer",
     70
   );
+
+  // 1. Anti-Fake Content Validation (rating bounds, link spam, repeated char spam, length bounds)
+  const validation = validateReviewContent({
+    rating: input.rating,
+    title: input.title,
+    body: input.body,
+    authorName,
+  });
+
+  if (!validation.isValid) {
+    throw new StoreError(validation.error || "Review content is invalid.", "INVALID_REVIEW");
+  }
+
+  // 2. Prevent Duplicate Reviews (1 review per buyer per product)
+  const existingReview = await getUserProductReview(input.productId);
+  if (existingReview.hasReviewed) {
+    throw new StoreError(
+      "You have already submitted a review for this product. Multiple reviews are not permitted.",
+      "DUPLICATE_REVIEW"
+    );
+  }
+
+  // 3. Verified Purchase Requirement (Only buyers who purchased this product can review)
+  const isUserAdmin =
+    authUser.app_metadata?.role === "admin" ||
+    authUser.user_metadata?.role === "admin";
+
+  let verifiedOrderId: string | undefined;
+  if (!isUserAdmin) {
+    const purchaseCheck = await checkUserPurchasedProduct(input.productId);
+    if (!purchaseCheck.hasPurchased) {
+      throw new StoreError(
+        "Only verified wholesale buyers who have purchased this product can leave a review.",
+        "PURCHASE_REQUIRED"
+      );
+    }
+    verifiedOrderId = purchaseCheck.orderId;
+  }
+
+  // All non-admin customer reviews are set to 'pending' for quality desk moderation
+  const initialStatus: "approved" | "pending" = isUserAdmin ? "approved" : "pending";
+
   const safeTitle = input.title ? sanitizeText(input.title, 120) : null;
   const safeBody = input.body ? sanitizeText(input.body, 2000) : null;
+  const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
   const fullReview: Review = {
     id: reviewId,
     product_id: input.productId,
     product_name: input.productName || null,
     product_image: input.productImage || null,
-    user_id: authUser?.id || "wholesale_buyer",
+    user_id: authUser.id,
     user_name: authorName,
     rating: input.rating,
     title: safeTitle,
@@ -1554,40 +1724,41 @@ export async function submitReview(input: {
     created_at: new Date().toISOString(),
   };
 
-  // If user is authenticated, attempt remote Supabase insertion
-  if (authUser?.id) {
-    try {
-      const { data, error } = await supabase
-        .from("reviews")
-        .insert({
-          product_id: input.productId,
-          user_id: authUser.id,
-          user_name: authorName,
-          rating: input.rating,
-          title: safeTitle,
-          body: input.authorName
-            ? `${safeBody || ""}\n\n-- Reviewer: ${authorName}`
-            : safeBody,
-          status: initialStatus,
-        })
-        .select()
-        .single();
+  try {
+    const { data, error } = await supabase
+      .from("reviews")
+      .insert({
+        product_id: input.productId,
+        user_id: authUser.id,
+        user_name: authorName,
+        rating: input.rating,
+        title: safeTitle,
+        body: verifiedOrderId
+          ? `${safeBody || ""}\n\n-- Reviewer: ${authorName}\n-- Verified Order: ${verifiedOrderId}`
+          : `${safeBody || ""}\n\n-- Reviewer: ${authorName}`,
+        status: initialStatus,
+      })
+      .select()
+      .single();
 
-      if (!error && data) {
-        fullReview.id = data.id;
-        if (data.user_name) {
-          fullReview.user_name = data.user_name;
-        }
+    if (!error && data) {
+      fullReview.id = data.id;
+      if (data.user_name) {
+        fullReview.user_name = data.user_name;
       }
-    } catch (err) {
-      console.warn("Supabase review insert failed, using local persistence:", err);
+      if (data.status) {
+        fullReview.status = data.status;
+      }
     }
+  } catch (err: any) {
+    console.warn("Supabase review insert failed:", err);
+    throw new StoreError(
+      err?.message || "Failed to submit review to moderation queue.",
+      "SUBMIT_FAILED"
+    );
   }
 
-  // Save to product local storage
-  saveLocalReview(fullReview);
-
-  // Save to global review queue so Admin Panel can moderate it
+  // Save to global review moderation queue
   saveGlobalReview(fullReview);
 
   return fullReview;
@@ -1608,20 +1779,21 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
 
     if (!error && data) {
       remoteReviews = (data as any[]).map((r) => {
-        let cleanBody = r.body;
+        let cleanBody = r.body || "";
         let author = r.user_name && r.user_name !== "Verified Wholesale Buyer" ? r.user_name : "";
         if (cleanBody) {
-          const match = cleanBody.match(/\n\n-- Reviewer:\s*(.+)$/);
-          if (match) {
-            if (!author) {
-              author = match[1].trim();
-            }
-            cleanBody = cleanBody.replace(/\n\n-- Reviewer:\s*.+$/, "").trim();
+          const match = cleanBody.match(/\n*-- Reviewer:\s*([^\n]+)/);
+          if (match && !author) {
+            author = match[1].trim();
           }
+          cleanBody = cleanBody
+            .replace(/\n*-- Reviewer:\s*[^\n]+/g, "")
+            .replace(/\n*-- Verified Order:\s*[^\n]+/g, "")
+            .trim();
         }
         return {
           ...r,
-          body: cleanBody,
+          body: cleanBody || null,
           user_name: author || r.user_name || "Verified Wholesale Buyer",
         };
       });

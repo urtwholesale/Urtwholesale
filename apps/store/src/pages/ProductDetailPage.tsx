@@ -8,6 +8,8 @@ import {
   fetchCategories,
   getApprovedReviews,
   submitReview,
+  checkUserPurchasedProduct,
+  getUserProductReview,
 } from "../services/storeService";
 import { recordRecentlyViewed } from "../services/recentViews";
 import { ProductCatalogNav } from "../components/ProductCatalogNav";
@@ -129,6 +131,53 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedStarFilter, setSelectedStarFilter] = useState<number | null>(null);
+
+  // Anti-fake review eligibility state (verified purchaser gating & duplicate prevention)
+  const [hasPurchased, setHasPurchased] = useState<boolean | null>(null);
+  const [verifiedOrderId, setVerifiedOrderId] = useState<string | null>(null);
+  const [userExistingReview, setUserExistingReview] = useState<Review | null>(null);
+  const [checkingEligibility, setCheckingEligibility] = useState<boolean>(false);
+
+  const isUserAdmin = Boolean(
+    profile?.role === "admin" ||
+    user?.app_metadata?.role === "admin" ||
+    user?.user_metadata?.role === "admin"
+  );
+  const canWriteReview = isUserAdmin || hasPurchased === true;
+
+  // Verify whether the logged-in buyer has purchased this item and/or already reviewed it
+  useEffect(() => {
+    if (!product?.id || !user?.id) {
+      setHasPurchased(null);
+      setVerifiedOrderId(null);
+      setUserExistingReview(null);
+      return;
+    }
+
+    let isMounted = true;
+    setCheckingEligibility(true);
+
+    Promise.all([
+      checkUserPurchasedProduct(product.id),
+      getUserProductReview(product.id),
+    ])
+      .then(([purchaseRes, reviewRes]) => {
+        if (!isMounted) return;
+        setHasPurchased(purchaseRes.hasPurchased);
+        setVerifiedOrderId(purchaseRes.orderId || null);
+        setUserExistingReview(reviewRes.review || null);
+      })
+      .catch((err) => {
+        console.warn("Could not check review eligibility:", err);
+      })
+      .finally(() => {
+        if (isMounted) setCheckingEligibility(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [product?.id, user?.id]);
 
   // Derived ratings breakdown strictly based on real customer reviews
   const totalRatingsCount = useMemo(() => {
@@ -427,6 +476,24 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
       return;
     }
 
+    if (!canWriteReview) {
+      setReviewError(
+        isHindi
+          ? "नकली समीक्षाओं से सुरक्षा के लिए, केवल वे खरीदार जिन्होंने यह उत्पाद खरीदा है, वे समीक्षा लिख सकते हैं।"
+          : "To protect against fake reviews, only verified buyers who have purchased this product can leave a review."
+      );
+      return;
+    }
+
+    if (userExistingReview) {
+      setReviewError(
+        isHindi
+          ? "आप इस उत्पाद के लिए पहले ही एक समीक्षा सबमिट कर चुके हैं।"
+          : "You have already submitted a review for this product."
+      );
+      return;
+    }
+
     setSubmittingReview(true);
     setReviewError(null);
     try {
@@ -449,15 +516,15 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         authorName: author,
       });
 
-      // If approved (rating >= 4), display live on the product immediately.
-      // If pending (rating < 4), do not show on product until approved by admin panel.
-      if (newReview && newReview.status === "approved") {
-        setReviews((prev) => [newReview, ...prev.filter((r) => r.id !== newReview.id)]);
-      }
+      setUserExistingReview(newReview);
       setLastSubmittedReviewStatus(newReview.status);
       setReviewSuccess(true);
       setReviewTitle("");
       setReviewBody("");
+
+      if (newReview && newReview.status === "approved") {
+        setReviews((prev) => [newReview, ...prev.filter((r) => r.id !== newReview.id)]);
+      }
     } catch (err: any) {
       setReviewError(err?.message || "Failed to submit review.");
     } finally {
@@ -1036,31 +1103,56 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               </p>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic("selection");
-                  setShowReviewForm((prev) => !prev);
-                }}
-                className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
-                  showReviewForm
-                    ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-750 border border-slate-300/80 dark:border-white/10"
-                    : "bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
-                }`}
-              >
-                {showReviewForm ? (
-                  <>
-                    <X className="w-3.5 h-3.5" />
-                    <span>{t("detail.close")}</span>
-                  </>
-                ) : (
-                  <>
-                    <PenLine className="w-3.5 h-3.5" />
-                    <span>{t("detail.write_review")}</span>
-                  </>
-                )}
-              </button>
+            <div className="flex items-center space-x-2">
+              {checkingEligibility ? (
+                <div className="h-7 w-28 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+              ) : userExistingReview ? (
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                  <span>
+                    {userExistingReview.status === "approved"
+                      ? (isHindi ? "समीक्षा प्रकाशित" : "Review Published")
+                      : (isHindi ? "समीक्षा गुणवत्ता जांच में" : "Review Under Moderation")}
+                  </span>
+                </div>
+              ) : !canWriteReview ? (
+                <div
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 shadow-2xs"
+                  title={
+                    isHindi
+                      ? "केवल वे थोक खरीदार जिन्होंने यह उत्पाद खरीदा है, वे समीक्षा लिख सकते हैं"
+                      : "Only buyers who purchased this product can write a review"
+                  }
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{isHindi ? "केवल सत्यापित खरीदार" : "Verified Purchases Only"}</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("selection");
+                    setShowReviewForm((prev) => !prev);
+                  }}
+                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+                    showReviewForm
+                      ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-750 border border-slate-300/80 dark:border-white/10"
+                      : "bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
+                  }`}
+                >
+                  {showReviewForm ? (
+                    <>
+                      <X className="w-3.5 h-3.5" />
+                      <span>{t("detail.close")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <PenLine className="w-3.5 h-3.5" />
+                      <span>{isHindi ? "सत्यापित समीक्षा लिखें" : "Write a Verified Review"}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1071,101 +1163,102 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
               {/* Left Column (lg:col-span-6 xl:col-span-6): Write a Wholesale Review Form */}
               <div className="lg:col-span-6 xl:col-span-6 bg-white dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-md space-y-3.5 transition-all">
                 {/* Header: Title on Left, Stars on Right */}
-                <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-100 dark:border-white/5">
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight">
-                      Write a Wholesale Review
-                    </h3>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      Share quality, packaging & margin feedback
-                    </p>
+                <div className="space-y-2.5 pb-2.5 border-b border-slate-100 dark:border-white/5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight flex items-center space-x-1.5">
+                        <PenLine className="w-3.5 h-3.5 text-orange-500" />
+                        <span>{isHindi ? "थोक समीक्षा लिखें" : "Write a Wholesale Review"}</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                        {isHindi ? "गुणवत्ता, पैकेजिंग और मार्जिन फीडबैक साझा करें" : "Share quality, packaging & margin feedback"}
+                      </p>
+                    </div>
+
+                    {!reviewSuccess && (
+                      <div className="flex items-center space-x-0.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/70 dark:border-slate-700/60 shadow-2xs shrink-0">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic("selection");
+                              setReviewRating(star);
+                            }}
+                            className="p-0.5 cursor-pointer hover:scale-115 active:scale-90 transition-transform"
+                            title={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                          >
+                            <Star
+                              className={`w-3.5 h-3.5 ${
+                                star <= reviewRating
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-slate-300 dark:text-slate-600 hover:text-amber-300 transition-colors"
+                              }`}
+                            />
+                          </button>
+                        ))}
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 ml-1">
+                          {reviewRating}.0
+                        </span>
+                      </div>
+                    )}
                   </div>
 
+                  {/* Anti-Fake Protection Trust Signals */}
                   {!reviewSuccess && (
-                    <div className="flex items-center space-x-0.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/70 dark:border-slate-700/60 shadow-2xs shrink-0">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => {
-                            triggerHaptic("selection");
-                            setReviewRating(star);
-                          }}
-                          className="p-0.5 cursor-pointer hover:scale-115 active:scale-90 transition-transform"
-                          title={`Rate ${star} star${star > 1 ? "s" : ""}`}
-                        >
-                          <Star
-                            className={`w-3.5 h-3.5 ${
-                              star <= reviewRating
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-slate-300 dark:text-slate-600 hover:text-amber-300 transition-colors"
-                            }`}
-                          />
-                        </button>
-                      ))}
-                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 ml-1">
-                        {reviewRating}.0
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="inline-flex items-center space-x-1 text-[10px] text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/50">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        <span>
+                          {verifiedOrderId
+                            ? (isHindi
+                                ? `सत्यापित थोक खरीद (ऑर्डर #${verifiedOrderId.slice(0, 8).toUpperCase()})`
+                                : `Verified Purchase (Order #${verifiedOrderId.slice(0, 8).toUpperCase()})`)
+                            : (isHindi ? "व्यवस्थापक सत्यापित समीक्षक" : "Admin Verified Reviewer")}
+                        </span>
                       </span>
-                    </div>
-                  )}
-
-                  {!reviewSuccess && (
-                    <div className="w-full sm:w-auto">
-                      {reviewRating < 4 ? (
-                        <span className="inline-flex items-center space-x-1 text-[10px] text-amber-700 dark:text-amber-300 font-semibold bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-800/50">
-                          <Clock className="w-2.5 h-2.5 text-amber-500" />
-                          <span>Below 4★: Requires admin sign-off before publishing</span>
+                      <span className="inline-flex items-center space-x-1 text-[10px] text-blue-700 dark:text-blue-300 font-semibold bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 rounded-full border border-blue-200/60 dark:border-blue-800/50">
+                        <Clock className="w-2.5 h-2.5 text-blue-500" />
+                        <span>
+                          {isHindi
+                            ? "गुणवत्ता डेस्क द्वारा सत्यापन के बाद प्रकाशित"
+                            : "Moderated by Quality Desk before publishing"}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center space-x-1 text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/50">
-                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
-                          <span>4-5★: Auto-approved &amp; published immediately</span>
-                        </span>
-                      )}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {reviewSuccess ? (
-                  lastSubmittedReviewStatus === "pending" ? (
-                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 font-medium flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <span>
-                          Thank you for your feedback! Because your rating is below 4 stars, our quality desk will review and approve it before it appears publicly on this product.
-                        </span>
+                  <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div className="space-y-0.5">
+                        <p className="font-bold">
+                          {isHindi ? "सत्यापित समीक्षा सबमिट हो गई!" : "Verified Review Submitted!"}
+                        </p>
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300/90 leading-relaxed">
+                          {lastSubmittedReviewStatus === "approved"
+                            ? (isHindi
+                                ? "आपकी समीक्षा लाइव प्रकाशित हो गई है।"
+                                : "Your review has been approved and published live.")
+                            : (isHindi
+                                ? "नकली समीक्षाओं से सुरक्षा के लिए, हमारी गुणवत्ता टीम सत्यापन के बाद इसे प्रकाशित करेगी।"
+                                : "To protect against fake reviews, our quality team verifies each submission before publishing it live.")}
+                        </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReviewSuccess(false);
-                          setShowReviewForm(false);
-                        }}
-                        className="text-amber-800 dark:text-amber-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
-                      >
-                        Done
-                      </button>
                     </div>
-                  ) : (
-                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-medium flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>
-                          Thank you! Your 4+ star wholesale review is now live on this product.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReviewSuccess(false);
-                          setShowReviewForm(false);
-                        }}
-                        className="text-emerald-700 dark:text-emerald-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
-                      >
-                        Done
-                      </button>
-                    </div>
-                  )
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReviewSuccess(false);
+                        setShowReviewForm(false);
+                      }}
+                      className="text-emerald-700 dark:text-emerald-300 hover:underline font-bold text-xs cursor-pointer ml-3 shrink-0"
+                    >
+                      {isHindi ? "पूर्ण" : "Done"}
+                    </button>
+                  </div>
                 ) : (
                   <form onSubmit={handleReviewSubmit} className="space-y-3">
                     {reviewError && (
@@ -1185,6 +1278,8 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                           onChange={(e) => setReviewAuthor(e.target.value)}
                           placeholder="e.g. Rajesh Kumar or Apex Mobiles"
                           required
+                          minLength={2}
+                          maxLength={70}
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all"
                         />
                       </div>
@@ -1198,22 +1293,42 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                           value={reviewTitle}
                           onChange={(e) => setReviewTitle(e.target.value)}
                           placeholder="e.g. Excellent build quality & retail packaging"
+                          maxLength={120}
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Detailed Review & Description
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          {isHindi ? "विस्तृत समीक्षा (न्यूनतम 10 अक्षर)" : "Detailed Review & Description (min. 10 chars)"}
+                        </label>
+                        <span className={`text-[10px] font-medium ${
+                          reviewBody.trim().length >= 10 ? "text-slate-400" : "text-amber-600 dark:text-amber-400"
+                        }`}>
+                          {reviewBody.trim().length}/2000 {reviewBody.trim().length < 10 && "(min 10)"}
+                        </span>
+                      </div>
                       <textarea
                         value={reviewBody}
                         onChange={(e) => setReviewBody(e.target.value)}
                         rows={3}
-                        placeholder="Describe build quality, durability, margins, and customer reception at your retail counter..."
+                        required
+                        minLength={10}
+                        maxLength={2000}
+                        placeholder={
+                          isHindi
+                            ? "उत्पाद की गुणवत्ता, पैकेजिंग, मजबूती, मार्जिन और अपने ग्राहकों की प्रतिक्रिया बताएं..."
+                            : "Describe build quality, durability, margins, and customer reception at your retail counter..."
+                        }
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none resize-none transition-all"
                       />
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {isHindi
+                          ? "सुरक्षा नियम: वेब लिंक, डोमेन या प्रचारक टेक्स्ट स्वतः अस्वीकार कर दिए जाएंगे।"
+                          : "Anti-spam policy: External web links, domain references, or repetitive spam will be rejected."}
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
@@ -1222,15 +1337,15 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                         onClick={() => setShowReviewForm(false)}
                         className="px-3.5 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                       >
-                        Cancel
+                        {isHindi ? "रद्द करें" : "Cancel"}
                       </button>
                       <button
                         type="submit"
-                        disabled={submittingReview}
+                        disabled={submittingReview || reviewBody.trim().length < 10}
                         className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:shadow-md active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center space-x-1.5 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
                       >
                         <Send className="w-3 h-3" />
-                        <span>{submittingReview ? "Submitting..." : "Submit Review"}</span>
+                        <span>{submittingReview ? (isHindi ? "सबमिट हो रहा है..." : "Submitting...") : (isHindi ? "समीक्षा सबमिट करें" : "Submit Review")}</span>
                       </button>
                     </div>
                   </form>
@@ -1427,78 +1542,156 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           </div>
         ) : reviews.length > 0 ? (
           /* Default state when reviews exist: clean list */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {reviews.map((rev) => (
-              <div
-                key={rev.id}
-                className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-linear-to-br from-orange-500 to-amber-500 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 shadow-2xs">
-                      {(rev.user_name || "V").charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center space-x-1.5 flex-wrap">
-                        <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white truncate">
-                          {rev.user_name || "Verified Wholesale Buyer"}
-                        </span>
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
-                          <CheckCircle2 className="w-2.5 h-2.5 mr-0.5 text-emerald-500" />
-                          Verified Buyer
-                        </span>
+          <div className="space-y-4">
+            {userExistingReview && (
+              <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-2.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="font-semibold text-amber-900 dark:text-amber-200">
+                    {userExistingReview.status === "approved"
+                      ? (isHindi
+                          ? "आपकी सत्यापित समीक्षा स्वीकृत होकर प्रकाशित हो चुकी है।"
+                          : "Your verified wholesale review is approved and published below.")
+                      : (isHindi
+                          ? "आपकी समीक्षा प्राप्त हो चुकी है और गुणवत्ता डेस्क द्वारा समीक्षाधीन है।"
+                          : "Your review has been received and is currently under quality desk review.")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {reviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs space-y-2 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-linear-to-br from-orange-500 to-amber-500 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 shadow-2xs">
+                        {(rev.user_name || "V").charAt(0).toUpperCase()}
                       </div>
-                      <div className="flex items-center space-x-1 mt-0.5">
-                        <div className="flex items-center text-amber-400">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3 h-3 ${
-                                i < rev.rating
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "text-slate-200 dark:text-slate-700"
-                              }`}
-                            />
-                          ))}
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-1.5 flex-wrap">
+                          <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white truncate">
+                            {rev.user_name || "Verified Wholesale Buyer"}
+                          </span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
+                            <CheckCircle2 className="w-2.5 h-2.5 mr-0.5 text-emerald-500" />
+                            Verified Buyer
+                          </span>
                         </div>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
-                          • {new Date(rev.created_at).toLocaleDateString()}
-                        </span>
+                        <div className="flex items-center space-x-1 mt-0.5">
+                          <div className="flex items-center text-amber-400">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${
+                                  i < rev.rating
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-slate-200 dark:text-slate-700"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+                            • {new Date(rev.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  {rev.title && (
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
+                  )}
+                  {rev.body && (
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                      {rev.body}
+                    </p>
+                  )}
                 </div>
-                {rev.title && (
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">{rev.title}</h4>
-                )}
-                {rev.body && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                    {rev.body}
-                  </p>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
-          /* Default state when NO reviews exist: single clean, centered card with button */
-          <div className="bg-slate-50/70 dark:bg-slate-900/60 p-6 sm:p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-3 max-w-lg mx-auto transition-colors">
-            <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
-              No approved reviews yet for this product
-            </p>
-            <p className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500">
-              Be the first verified wholesale buyer to leave a review!
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic("selection");
-                setShowReviewForm(true);
-              }}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer"
-            >
-              <PenLine className="w-3.5 h-3.5" />
-              <span>Write a Review</span>
-            </button>
+          /* Default state when NO reviews exist: anti-fake protected state */
+          <div className="bg-slate-50/70 dark:bg-slate-900/60 p-6 sm:p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-3.5 max-w-lg mx-auto transition-colors">
+            {userExistingReview ? (
+              <>
+                <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-2xs">
+                  <CheckCircle2 className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                    {isHindi ? "आपकी समीक्षा दर्ज है" : "You have already reviewed this product"}
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    {isHindi
+                      ? "समीक्षा स्पैम और रेटिंग हेरफेर से सुरक्षा के लिए, प्रति सत्यापित खरीद केवल 1 समीक्षा की अनुमति है।"
+                      : "To prevent rating spam and manipulation, each wholesale account is limited to one review per purchased product."}
+                  </p>
+                </div>
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100/70 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>
+                    {userExistingReview.status === "approved"
+                      ? (isHindi ? "समीक्षा स्वीकृत" : "Status: Approved")
+                      : (isHindi ? "समीक्षा गुणवत्ता जांच में" : "Status: Under Quality Moderation")}
+                  </span>
+                </div>
+              </>
+            ) : !canWriteReview ? (
+              <>
+                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
+                  <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                    {isHindi ? "इस उत्पाद के लिए अभी कोई स्वीकृत समीक्षा नहीं है" : "No approved reviews yet for this product"}
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    {isHindi
+                      ? "नकली समीक्षाओं से सुरक्षा: केवल वे थोक खरीदार जिन्होंने इस उत्पाद का ऑर्डर दिया है, समीक्षा छोड़ सकते हैं।"
+                      : "Protected against fake reviews: Only verified wholesale buyers who have purchased this product can leave a review."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold transition shadow-xs hover:shadow-md active:scale-95 cursor-pointer"
+                >
+                  <span>{isHindi ? "ऑर्डर करने के लिए खरीदें" : "Order to Leave a Review"}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
+                  <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                    {isHindi ? "इस उत्पाद के लिए अभी कोई समीक्षा नहीं है" : "No approved reviews yet for this product"}
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+                    {isHindi
+                      ? "सत्यापित थोक खरीदार के रूप में पहली समीक्षा दें!"
+                      : "Be the first verified wholesale buyer to leave an authentic review!"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("selection");
+                    setShowReviewForm(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer"
+                >
+                  <PenLine className="w-3.5 h-3.5" />
+                  <span>{isHindi ? "सत्यापित समीक्षा लिखें" : "Write a Verified Review"}</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </section>
