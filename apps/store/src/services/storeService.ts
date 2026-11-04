@@ -19,6 +19,8 @@ import type {
   PriceTier,
   Address,
   Review,
+  PromoCode,
+  ValidatePromoCodeResult,
 } from "@urbanrat/shared";
 import {
   normalizeSearchQuery,
@@ -760,6 +762,7 @@ export interface CreateOrderInput {
   whatsapp_message?: string | null;
   honeypot?: string | null;
   turnstile_token?: string | null;
+  promo_code?: string | null;
 }
 
 /**
@@ -774,6 +777,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     product_id: item.product_id,
     quantity: item.qty ?? item.quantity ?? 1,
     qty: item.qty ?? item.quantity ?? 1,
+    selected_color: item.selected_color || null,
   }));
 
   const { data: { session } } = await supabase.auth.getSession();
@@ -785,6 +789,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       p_items: itemsPayload,
       p_whatsapp_message: input.whatsapp_message || null,
       p_honeypot: input.honeypot || null,
+      p_promo_code: input.promo_code || null,
     });
 
     if (error) {
@@ -801,6 +806,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         whatsapp_message: input.whatsapp_message || null,
         honeypot: input.honeypot || null,
         turnstile_token: input.turnstile_token || null,
+        promo_code: input.promo_code || null,
       },
     });
 
@@ -811,6 +817,58 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       throw new StoreError((data as any).error);
     }
     return data as Order;
+  }
+}
+
+/**
+ * Fetch active promo codes eligible for customer display
+ */
+export async function fetchActivePromoCodes(): Promise<PromoCode[]> {
+  ensureConfigured();
+  try {
+    const { data, error } = await supabase
+      .from("promo_codes")
+      .select("*")
+      .eq("is_active", true)
+      .order("min_order_amount", { ascending: true });
+
+    if (error) {
+      console.warn("[storeService] Error fetching promo codes:", error);
+      return [];
+    }
+    return (data as PromoCode[]) || [];
+  } catch (err) {
+    console.warn("[storeService] Could not load active promo codes:", err);
+    return [];
+  }
+}
+
+/**
+ * Validate promo code against current cart order amount
+ */
+export async function validatePromoCode(
+  code: string,
+  orderAmount: number
+): Promise<ValidatePromoCodeResult> {
+  ensureConfigured();
+  const cleanCode = code.trim().toUpperCase();
+  if (!cleanCode) {
+    return { valid: false, message: "Please enter a promo code" };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("validate_promo_code", {
+      p_code: cleanCode,
+      p_order_amount: orderAmount,
+    });
+
+    if (error) {
+      return { valid: false, message: error.message || "Failed to validate promo code" };
+    }
+
+    return data as ValidatePromoCodeResult;
+  } catch (err: any) {
+    return { valid: false, message: err?.message || "Failed to validate promo code" };
   }
 }
 
@@ -1657,13 +1715,34 @@ export async function submitReview(input: {
     throw new StoreError("You must be logged in to leave a review.", "UNAUTHENTICATED");
   }
 
-  const authorName = sanitizeText(
-    input.authorName ||
-    authUser?.user_metadata?.full_name ||
-    authUser?.user_metadata?.name ||
-    "Verified Wholesale Buyer",
-    70
-  );
+  let resolvedAuthor = input.authorName?.trim() || "";
+  if (!resolvedAuthor || resolvedAuthor === "Verified Wholesale Buyer") {
+    try {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, business_name")
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (profileData?.full_name?.trim()) {
+        resolvedAuthor = profileData.full_name.trim();
+      } else if (profileData?.business_name?.trim()) {
+        resolvedAuthor = profileData.business_name.trim();
+      }
+    } catch {
+      // Fallback to metadata below
+    }
+  }
+
+  if (!resolvedAuthor || resolvedAuthor === "Verified Wholesale Buyer") {
+    resolvedAuthor =
+      (authUser?.user_metadata?.full_name as string)?.trim() ||
+      (authUser?.user_metadata?.name as string)?.trim() ||
+      authUser?.email?.split("@")[0] ||
+      "Verified Wholesale Buyer";
+  }
+
+  const authorName = sanitizeText(resolvedAuthor, 70);
 
   // 1. Anti-Fake Content Validation (rating bounds, link spam, repeated char spam, length bounds)
   const validation = validateReviewContent({

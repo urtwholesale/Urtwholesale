@@ -20,6 +20,12 @@ export type {
   OrderNoticeCounts,
 } from "./types/order";
 export type {
+  PromoCode,
+  PromoCodeInput,
+  DiscountType,
+  ValidatePromoCodeResult,
+} from "./types/promoCode";
+export type {
   StoreSettings,
   Banner,
   StorePage,

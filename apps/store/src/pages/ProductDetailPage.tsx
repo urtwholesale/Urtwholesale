@@ -49,7 +49,6 @@ import {
   Lightbulb,
   Palette,
   Clock,
-  Lock,
   ArrowRight,
   User,
 } from "lucide-react";
@@ -1053,108 +1052,79 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
         </div>
       </div>
 
-      {/* ── Customer Reviews & Ratings (Visible Only After Logging In) ── */}
-      {!user ? (
-        <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                {t("detail.customer_reviews")}
-              </h2>
-              <p className="text-xs text-slate-400">
-                {t("detail.verified_buyer_feedback")}
-              </p>
-            </div>
+      {/* ── Customer Reviews & Ratings (Visible To All Customers) ── */}
+      <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+              {t("detail.customer_reviews")}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {t("detail.verified_buyer_feedback")}
+            </p>
           </div>
 
-          <div className="bg-slate-50/70 dark:bg-slate-900/60 p-6 sm:p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-3.5 max-w-lg mx-auto transition-colors">
-            <div className="w-11 h-11 rounded-full bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 flex items-center justify-center mx-auto shadow-2xs">
-              <Lock className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                {isHindi ? "समीक्षाएं केवल लॉग इन के बाद उपलब्ध हैं" : "Reviews Available After Login Only"}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                {isHindi
-                  ? "थोक ग्राहक समीक्षाएं, रेटिंग और सत्यापित खरीदार फीडबैक केवल सत्यापित खातों के लिए लॉग इन करने के बाद ही दिखाई देंगे।"
-                  : "Customer reviews, ratings, and verified wholesale buyer feedback are visible only after logging in."}
-              </p>
-            </div>
-            <Link
-              to={`/login?redirect=${encodeURIComponent(`/product/${product.slug}`)}`}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold transition shadow-xs hover:shadow-md active:scale-95 cursor-pointer"
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>{isHindi ? "समीक्षाएं देखने के लिए लॉग इन करें" : "Log In to Access Reviews"}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+          <div className="flex items-center space-x-2">
+            {!user ? (
+              <Link
+                to={`/login?redirect=${encodeURIComponent(`/product/${product.slug}`)}`}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>{isHindi ? "समीक्षा के लिए लॉग इन करें" : "Log In to Review"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : checkingEligibility ? (
+              <div className="h-7 w-28 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+            ) : userExistingReview ? (
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                <span>
+                  {userExistingReview.status === "approved"
+                    ? (isHindi ? "समीक्षा प्रकाशित" : "Review Published")
+                    : (isHindi ? "समीक्षा गुणवत्ता जांच में" : "Review Under Moderation")}
+                </span>
+              </div>
+            ) : !canWriteReview ? (
+              <div
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 shadow-2xs"
+                title={
+                  isHindi
+                    ? "केवल वे थोक खरीदार जिन्होंने यह उत्पाद खरीदा है, वे समीक्षा लिख सकते हैं"
+                    : "Only buyers who purchased this product can write a review"
+                }
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{isHindi ? "केवल सत्यापित खरीदार" : "Verified Purchases Only"}</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setShowReviewForm((prev) => !prev);
+                }}
+                className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+                  showReviewForm
+                    ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-750 border border-slate-300/80 dark:border-white/10"
+                    : "bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
+                }`}
+              >
+                {showReviewForm ? (
+                  <>
+                    <X className="w-3.5 h-3.5" />
+                    <span>{t("detail.close")}</span>
+                  </>
+                ) : (
+                  <>
+                    <PenLine className="w-3.5 h-3.5" />
+                    <span>{isHindi ? "सत्यापित समीक्षा लिखें" : "Write a Verified Review"}</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
-        </section>
-      ) : (
-        <section className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                {t("detail.customer_reviews")}
-              </h2>
-              <p className="text-xs text-slate-400">
-                {t("detail.verified_buyer_feedback")}
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              {checkingEligibility ? (
-                <div className="h-7 w-28 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
-              ) : userExistingReview ? (
-                <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                  <span>
-                    {userExistingReview.status === "approved"
-                      ? (isHindi ? "समीक्षा प्रकाशित" : "Review Published")
-                      : (isHindi ? "समीक्षा गुणवत्ता जांच में" : "Review Under Moderation")}
-                  </span>
-                </div>
-              ) : !canWriteReview ? (
-                <div
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 shadow-2xs"
-                  title={
-                    isHindi
-                      ? "केवल वे थोक खरीदार जिन्होंने यह उत्पाद खरीदा है, वे समीक्षा लिख सकते हैं"
-                      : "Only buyers who purchased this product can write a review"
-                  }
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{isHindi ? "केवल सत्यापित खरीदार" : "Verified Purchases Only"}</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic("selection");
-                    setShowReviewForm((prev) => !prev);
-                  }}
-                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
-                    showReviewForm
-                      ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-750 border border-slate-300/80 dark:border-white/10"
-                      : "bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-md"
-                  }`}
-                >
-                  {showReviewForm ? (
-                    <>
-                      <X className="w-3.5 h-3.5" />
-                      <span>{t("detail.close")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <PenLine className="w-3.5 h-3.5" />
-                      <span>{isHindi ? "सत्यापित समीक्षा लिखें" : "Write a Verified Review"}</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
+        </div>
 
         {/* ── When Write Review is Open: 2-Column Responsive Studio Layout (Form on Left, "Our Customer Reviews" Card on Right) ── */}
         {showReviewForm ? (
@@ -1640,6 +1610,30 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                   </span>
                 </div>
               </>
+            ) : !user ? (
+              <>
+                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
+                  <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                    {isHindi ? "इस उत्पाद के लिए अभी कोई समीक्षा नहीं है" : "No approved reviews yet for this product"}
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    {isHindi
+                      ? "समीक्षा करने के लिए कृपया अपने थोक खाते में लॉग इन करें।"
+                      : "Log in with your wholesale buyer account to write a review after purchase."}
+                  </p>
+                </div>
+                <Link
+                  to={`/login?redirect=${encodeURIComponent(`/product/${product.slug}`)}`}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold transition shadow-xs hover:shadow-md active:scale-95 cursor-pointer"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>{isHindi ? "समीक्षा के लिए लॉग इन करें" : "Log In to Review"}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </>
             ) : !canWriteReview ? (
               <>
                 <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
@@ -1695,7 +1689,6 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
           </div>
         )}
       </section>
-      )}
 
       {/* ── Similar Products Row (Compatibility Group / Same Cut Glass) ── */}
       {similarProducts.length > 0 && (

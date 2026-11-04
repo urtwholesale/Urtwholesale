@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { customer, items, whatsapp_message, honeypot, turnstile_token } = body;
+    const { customer, items, whatsapp_message, honeypot, turnstile_token, promo_code } = body;
 
     // 3. Honeypot Bot Trap
     if (honeypot && String(honeypot).trim() !== "") {
@@ -146,6 +146,7 @@ Deno.serve(async (req: Request) => {
       p_items: items,
       p_whatsapp_message: whatsapp_message || null,
       p_honeypot: honeypot || null,
+      p_promo_code: promo_code || null,
     });
 
     if (error) {

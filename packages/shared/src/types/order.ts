@@ -79,6 +79,8 @@ export interface Order {
   admin_note?: string | null;
   whatsapp_message?: string | null;
   public_token?: string | null;
+  promo_code?: string | null;
+  discount_amount?: number;
   timeline?: OrderEvent[];
   events?: OrderEvent[];
   order_events?: OrderEvent[];
