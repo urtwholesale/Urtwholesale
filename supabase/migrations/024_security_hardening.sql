@@ -421,15 +421,13 @@ BEGIN
     -- Record stock movement
     INSERT INTO public.stock_movements (
       product_id,
-      quantity_change,
-      reason,
-      created_by
+      change,
+      reason
     )
     VALUES (
       v_product.id,
       -v_qty,
-      'Storefront order checkout',
-      v_user_id
+      'Storefront order checkout'
     );
   END LOOP;
 
