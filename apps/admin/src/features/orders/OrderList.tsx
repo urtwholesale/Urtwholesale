@@ -618,6 +618,17 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
               <span>Mark Shipped</span>
             </button>
 
+            {/* Mark Delivered */}
+            <button
+              type="button"
+              disabled={bulkActionInProgress}
+              onClick={() => handleBulkStatusTransition("delivered")}
+              className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Mark Delivered</span>
+            </button>
+
             {/* Cancel Orders */}
             <button
               type="button"
