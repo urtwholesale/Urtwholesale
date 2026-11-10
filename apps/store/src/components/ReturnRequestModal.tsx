@@ -455,7 +455,7 @@ export function ReturnRequestModal({
                 <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
                   What resolution would you like?
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {[
                     {
                       id: "replacement",
@@ -463,13 +463,6 @@ export function ReturnRequestModal({
                       desc: "Dispatch fresh tested units under warranty",
                       icon: Sparkles,
                       color: "text-brand-dark dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60",
-                    },
-                    {
-                      id: "return",
-                      title: "Return & Credit",
-                      desc: "Send back items for store credit note",
-                      icon: RotateCcw,
-                      color: "text-amber-700 dark:text-orange-400 bg-amber-50 dark:bg-orange-500/15 border-amber-200 dark:border-orange-500/30",
                     },
                     {
                       id: "refund",
