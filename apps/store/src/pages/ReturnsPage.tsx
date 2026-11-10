@@ -147,6 +147,11 @@ export function ReturnsPage() {
           dot: "bg-rose-500",
           badge: "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60",
         };
+      case "cancelled":
+        return {
+          dot: "bg-slate-400 dark:bg-slate-500",
+          badge: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+        };
       case "closed":
       default:
         return {

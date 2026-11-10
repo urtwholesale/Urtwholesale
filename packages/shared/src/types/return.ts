@@ -11,7 +11,8 @@ export type ReturnStatus =
   | "qc_failed"
   | "refunded"
   | "replacement_shipped"
-  | "closed";
+  | "closed"
+  | "cancelled";
 
 export type ReturnReasonCode =
   | "damaged"
@@ -185,6 +186,7 @@ export const RETURN_STATUSES: readonly ReturnStatus[] = [
   "refunded",
   "replacement_shipped",
   "closed",
+  "cancelled",
 ] as const;
 
 export const RETURN_REASON_CODES: readonly ReturnReasonCode[] = [
@@ -217,6 +219,7 @@ export const RETURN_STATUS_LABELS: Record<ReturnStatus, string> = {
   refunded: "Refund Processed",
   replacement_shipped: "Replacement Shipped",
   closed: "Closed",
+  cancelled: "Return Cancelled",
 };
 
 export function isValidReturnType(val: unknown): val is ReturnType {

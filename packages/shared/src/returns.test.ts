@@ -43,7 +43,7 @@ describe("Returns Domain Validation & Constants", () => {
   });
 
   describe("RETURN_STATUSES", () => {
-    it("contains all 11 required lifecycle statuses", () => {
+    it("contains all 12 required lifecycle statuses", () => {
       const required = [
         "requested",
         "approved",
@@ -56,11 +56,12 @@ describe("Returns Domain Validation & Constants", () => {
         "refunded",
         "replacement_shipped",
         "closed",
+        "cancelled",
       ];
       for (const st of required) {
         expect(RETURN_STATUSES).toContain(st);
       }
-      expect(RETURN_STATUSES.length).toBe(11);
+      expect(RETURN_STATUSES.length).toBe(12);
     });
 
     it("validates return statuses with isValidReturnStatus", () => {

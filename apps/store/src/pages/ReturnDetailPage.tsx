@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router";
-import { getReturnById, getReturnEvidenceUrl } from "../services/returnService";
+import { getReturnById, getReturnEvidenceUrl, cancelReturnRequest } from "../services/returnService";
 import { useSettings } from "../context/SettingsContext";
 import type { ReturnRequest, ReturnEvent, ReturnStatus } from "@urbanrat/shared";
 import {
@@ -10,6 +10,8 @@ import {
 import { triggerHaptic } from "../utils/haptics";
 import {
   RotateCcw,
+  XCircle,
+  AlertCircle,
   Calendar,
   Copy,
   Check,
@@ -37,6 +39,31 @@ export function ReturnDetailPage() {
   // Evidence signed URLs
   const [evidenceUrls, setEvidenceUrls] = useState<string[]>([]);
   const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
+
+  // Return Cancellation State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("Issue resolved / product working fine");
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  async function handleConfirmCancel() {
+    if (!returnReq) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await cancelReturnRequest(returnReq.id, cancelReason);
+      triggerHaptic("success");
+      setCancelModalOpen(false);
+      await loadReturn();
+    } catch (err: unknown) {
+      console.error("Failed to cancel return request:", err);
+      const e = err as Error;
+      setCancelError(e.message || "Failed to cancel return request.");
+      triggerHaptic("heavy");
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   // Copy Feedback
   const [copiedCode, setCopiedCode] = useState(false);
@@ -164,6 +191,11 @@ export function ReturnDetailPage() {
           dot: "bg-rose-500",
           badge: "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60",
         };
+      case "cancelled":
+        return {
+          dot: "bg-slate-400 dark:bg-slate-500",
+          badge: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+        };
       case "closed":
       default:
         return {
@@ -174,6 +206,10 @@ export function ReturnDetailPage() {
   }
 
   const statusMeta = getStatusMeta(returnReq.status);
+  const canCancel =
+    returnReq.status === "requested" ||
+    returnReq.status === "approved" ||
+    returnReq.status === "pickup_scheduled";
 
   return (
     <div className="max-w-5xl mx-auto py-4 sm:py-6 px-3 sm:px-4 space-y-5 animate-in fade-in duration-300 pb-20">
@@ -195,6 +231,19 @@ export function ReturnDetailPage() {
           {returnReq.return_code}
         </span>
       </nav>
+
+      {/* ── Cancelled Return Alert Banner ── */}
+      {returnReq.status === "cancelled" && (
+        <div className="p-4 rounded-3xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 flex items-center space-x-3 shadow-xs">
+          <XCircle className="w-5 h-5 text-slate-500 shrink-0" />
+          <div className="text-xs">
+            <p className="font-bold">This Return Request Has Been Cancelled</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-0.5">
+              No pickup or further QC action will take place. The units have been retained in your order.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Top Header Banner ── */}
       <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -251,16 +300,34 @@ export function ReturnDetailPage() {
           </p>
         </div>
 
-        {/* WhatsApp Deep Link Button */}
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 font-bold text-xs border border-emerald-200/80 dark:border-emerald-800/60 transition shadow-2xs self-start md:self-auto"
-        >
-          <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Resolution Desk on WhatsApp</span>
-        </a>
+        {/* Header Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+          {canCancel && (
+            <button
+              type="button"
+              disabled={cancelling}
+              onClick={() => {
+                triggerHaptic("selection");
+                setCancelModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center space-x-1.5 py-2.5 px-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 font-bold text-xs border border-rose-200/80 dark:border-rose-800/60 transition shadow-2xs cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>Cancel Return</span>
+            </button>
+          )}
+
+          {/* WhatsApp Deep Link Button */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 font-bold text-xs border border-emerald-200/80 dark:border-emerald-800/60 transition shadow-2xs"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Resolution Desk on WhatsApp</span>
+          </a>
+        </div>
       </div>
 
       {/* ── Two Column Content Layout ── */}
@@ -520,6 +587,88 @@ export function ReturnDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Cancellation Confirmation Modal ── */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  Cancel Return Request?
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCancelModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to cancel return request <strong className="text-slate-900 dark:text-white">#{returnReq.return_code}</strong> for Order <strong className="text-slate-900 dark:text-white">#{returnReq.order_id}</strong>?
+              The return resolution will be closed and you will keep the consignment units.
+            </p>
+
+            {cancelError && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-xs font-semibold border border-rose-200 dark:border-rose-800">
+                {cancelError}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                Select Cancellation Reason:
+              </label>
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-light cursor-pointer"
+              >
+                <option value="Issue resolved / product working fine">Issue resolved / product working fine</option>
+                <option value="Placed return request by mistake">Placed return request by mistake</option>
+                <option value="Decided to keep the wholesale consignment">Decided to keep the wholesale consignment</option>
+                <option value="Settled mutually with supplier">Settled mutually with supplier</option>
+                <option value="Other reason">Other reason</option>
+              </select>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end space-x-2.5">
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() => setCancelModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                Keep Return
+              </button>
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={handleConfirmCancel}
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition active:scale-95 disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer"
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Confirm &amp; Cancel Return</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Media Lightbox Modal ── */}
       {activeMediaUrl && (

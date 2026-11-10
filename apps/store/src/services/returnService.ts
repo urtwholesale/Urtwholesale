@@ -56,6 +56,23 @@ export async function createReturnRequest(
 /**
  * Fetches all return requests for the authenticated customer with items and events
  */
+
+/**
+ * Customer or admin cancels an active return request
+ */
+export async function cancelReturnRequest(
+  returnIdOrCode: string,
+  reason?: string
+): Promise<any> {
+  const { data, error } = await supabase.rpc("customer_cancel_return_request", {
+    p_return_id: returnIdOrCode.trim(),
+    p_reason: reason || "Cancelled by customer via Return Portal",
+  });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function listCustomerReturns(): Promise<ReturnRequest[]> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth?.user) return [];
