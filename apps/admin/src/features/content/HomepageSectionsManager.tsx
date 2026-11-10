@@ -301,7 +301,7 @@ export function HomepageSectionsManager() {
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+          <Check className="w-4 h-4 text-emerald-400 stroke-3" />
           <span className="text-xs font-bold">{toastMessage}</span>
         </div>
       )}

@@ -179,9 +179,9 @@ export function TopBar({
               className="w-8 h-8 min-[360px]:w-8.5 min-[360px]:h-8.5 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer shrink-0"
             >
               {isDark ? (
-                <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2] text-amber-400 hover:rotate-45 transition-transform duration-300" />
+                <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-2 text-amber-400 hover:rotate-45 transition-transform duration-300" />
               ) : (
-                <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2] text-slate-700 hover:text-cyan-600 transition-colors" />
+                <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-2 text-slate-700 hover:text-cyan-600 transition-colors" />
               )}
             </button>
           </CursorPhobicElement>
@@ -199,7 +199,7 @@ export function TopBar({
               aria-label={`View cart with ${cartCount} items`}
               className="relative w-8 h-8 min-[360px]:w-8.5 min-[360px]:h-8.5 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all shrink-0"
             >
-              <ShoppingBag className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2]" />
+              <ShoppingBag className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-2" />
 
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 sm:min-w-4.5 sm:h-4.5 px-1 rounded-full text-[9px] sm:text-[10px] font-bold text-white bg-primary flex items-center justify-center shadow-xs">

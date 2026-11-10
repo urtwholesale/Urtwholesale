@@ -54,7 +54,7 @@ function getSectionIcon(iconName: string) {
       );
     case "Zap":
       return (
-        <Zap className="w-5 h-5 fill-cyan-400 text-cyan-300 stroke-[2] drop-shadow-[0_2px_8px_rgba(6,182,212,0.6)] transition-transform duration-300 group-hover:scale-110" />
+        <Zap className="w-5 h-5 fill-cyan-400 text-cyan-300 stroke-2 drop-shadow-[0_2px_8px_rgba(6,182,212,0.6)] transition-transform duration-300 group-hover:scale-110" />
       );
     case "Headphones":
     case "Volume2":
@@ -83,7 +83,7 @@ function getSectionIcon(iconName: string) {
       );
     default:
       return (
-        <Zap className="w-5 h-5 fill-cyan-400 text-cyan-300 stroke-[2] drop-shadow-[0_2px_8px_rgba(6,182,212,0.6)] transition-transform duration-300 group-hover:scale-110" />
+        <Zap className="w-5 h-5 fill-cyan-400 text-cyan-300 stroke-2 drop-shadow-[0_2px_8px_rgba(6,182,212,0.6)] transition-transform duration-300 group-hover:scale-110" />
       );
   }
 }
