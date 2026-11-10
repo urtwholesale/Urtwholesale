@@ -51,6 +51,8 @@ import {
   Clock,
   ArrowRight,
   User,
+  ShoppingBag,
+  Zap,
 } from "lucide-react";
 import { QuantityInput } from "../components/QuantityInput";
 import { triggerHaptic } from "../utils/haptics";
@@ -952,22 +954,25 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
             </div>
           </div>
 
-          {/* Action Buttons: Add to Cart & Buy Now */}
+          {/* Action Buttons: Symmetrical Side-by-Side Add to Cart & Buy Now */}
           <div className="space-y-2.5">
-            <div className="flex flex-col sm:flex-row gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={handleAddToCart}
                 disabled={!isInStock}
-                className="flex-1 h-12 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs sm:text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-11.5 sm:h-12 px-3 sm:px-5 rounded-2xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-bold text-xs sm:text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
               >
                 {addedToast ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>{t("detail.added_to_cart")}</span>
+                    <CheckCircle2 className="w-4 h-4 text-white shrink-0 animate-in zoom-in-75 duration-150" />
+                    <span className="truncate">{t("detail.added_to_cart")}</span>
                   </>
                 ) : (
-                  <span>{t("detail.add_to_cart")}</span>
+                  <>
+                    <ShoppingBag className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                    <span className="truncate">{t("detail.add_to_cart")}</span>
+                  </>
                 )}
               </button>
 
@@ -975,9 +980,10 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 type="button"
                 onClick={handleBuyNow}
                 disabled={!isInStock}
-                className="flex-1 h-12 px-6 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-black dark:hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-transparent dark:border-slate-700"
+                className="w-full h-11.5 sm:h-12 px-3 sm:px-5 rounded-2xl bg-slate-900 dark:bg-slate-800 hover:bg-black dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 sm:gap-2 border border-slate-800 dark:border-slate-700 group active:scale-[0.98]"
               >
-                {t("detail.buy_now")}
+                <Zap className="w-4 h-4 shrink-0 fill-amber-400 text-amber-400 transition-transform duration-200 group-hover:scale-110" />
+                <span className="truncate">{t("detail.buy_now")}</span>
               </button>
             </div>
 
@@ -993,9 +999,9 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center space-x-2 py-3 px-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200/80 transition"
+                className="w-full h-11 sm:h-12 flex items-center justify-center space-x-2 px-5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-bold text-xs sm:text-sm border border-emerald-200/80 dark:border-emerald-800/80 transition active:scale-[0.98]"
               >
-                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>{t("detail.whatsapp_inquiry")}</span>
               </a>
             )}
