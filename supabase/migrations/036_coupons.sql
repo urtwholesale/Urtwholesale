@@ -187,7 +187,8 @@ DECLARE
   v_ip text;
   v_attempts integer;
   v_code text;
-  v_coupon record;
+  v_coupon public.coupons%ROWTYPE;
+  v_has_coupon boolean := false;
   v_caller_id uuid := auth.uid();
   v_raw_phone text;
   v_clean_phone text;
@@ -675,7 +676,8 @@ DECLARE
 
   -- Coupon resolution
   v_input_code text;
-  v_coupon record;
+  v_coupon public.coupons%ROWTYPE;
+  v_has_coupon boolean := false;
   v_applied_coupon_id uuid := NULL;
   v_applied_coupon_code text := NULL;
   v_discount_amount numeric(10, 2) := 0;
@@ -834,6 +836,8 @@ BEGIN
       FROM unnest(v_coupon.category_ids) AS cat_id
       CROSS JOIN LATERAL public.get_category_descendant_ids(cat_id) AS d;
     END IF;
+
+    v_has_coupon := true;
   END IF;
 
   -- 6. Process Line Items (Lock product rows FOR UPDATE)
@@ -946,7 +950,7 @@ BEGIN
   END LOOP;
 
   -- 7. Validate & Apply Coupon
-  IF v_coupon.id IS NOT NULL THEN
+  IF v_has_coupon THEN
     IF v_subtotal < v_coupon.min_order_value THEN
       RAISE EXCEPTION 'COUPON_INVALID: Minimum order value of ₹% required for coupon "%"', v_coupon.min_order_value, v_coupon.code;
     END IF;
@@ -1144,7 +1148,8 @@ DECLARE
 
   -- Coupon resolution
   v_input_code text;
-  v_coupon record;
+  v_coupon public.coupons%ROWTYPE;
+  v_has_coupon boolean := false;
   v_applied_coupon_id uuid := NULL;
   v_applied_coupon_code text := NULL;
   v_discount_amount numeric(10, 2) := 0;
@@ -1294,6 +1299,8 @@ BEGIN
       FROM unnest(v_coupon.category_ids) AS cat_id
       CROSS JOIN LATERAL public.get_category_descendant_ids(cat_id) AS d;
     END IF;
+
+    v_has_coupon := true;
   END IF;
 
   -- 6. Process Line Items (Lock product rows FOR UPDATE)
@@ -1402,7 +1409,7 @@ BEGIN
   END LOOP;
 
   -- 7. Validate & Apply Coupon
-  IF v_coupon.id IS NOT NULL THEN
+  IF v_has_coupon THEN
     IF v_subtotal < v_coupon.min_order_value THEN
       RAISE EXCEPTION 'COUPON_INVALID: Minimum order value of ₹% required for coupon "%"', v_coupon.min_order_value, v_coupon.code;
     END IF;

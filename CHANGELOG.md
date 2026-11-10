@@ -7,6 +7,7 @@ All notable changes, architectural touchpoints, schema migrations, and feature r
 
 ## Table of Contents
 
+- [Touchpoint 46 — Fix Record "v_coupon" Is Not Assigned Yet on Checkout RPCs](#touchpoint-46--fix-record-v_coupon-is-not-assigned-yet-on-checkout-rpcs-039_fix_coupon_unassigned_recordsql)
 - [Touchpoint 45 — Fix Column "price_tiers" Does Not Exist on Checkout RPCs](#touchpoint-45--fix-column-price_tiers-does-not-exist-on-checkout-rpcs-038_fix_checkout_price_tierssql)
 - [Touchpoint 44 — Dynamic Homepage Divisions Management & Punchy Visual Brand Identity (`037_homepage_divisions.sql`)](#touchpoint-44--dynamic-homepage-divisions-management--punchy-visual-brand-identity-037_homepage_divisionssql)
 - [Touchpoint 43 — Coupons & Discounts Management, Server-Side Verification & Secure Redemption Engine](#touchpoint-43--coupons--discounts-management-server-side-verification--secure-redemption-engine)
@@ -49,6 +50,20 @@ All notable changes, architectural touchpoints, schema migrations, and feature r
 - [Touchpoint 03 — 4-Level Category Hierarchy & Attribute Schemas (`006_category_attributes.sql`)](#touchpoint-03--touchpoint-03-4-level-category-hierarchy-attribute-schemas-006categoryattributessql)
 - [Touchpoint 02 — Atomic Verified Orders, Volume Pricing Engine & Image Compression (`005_create_verified_order.sql`)](#touchpoint-02--touchpoint-02-atomic-verified-orders-volume-pricing-engine-image-compression-005createverifiedordersql)
 - [Touchpoint 01 — Core Storefront Architecture, Centerpiece Navigation Dock & Branding Standards](#touchpoint-01--touchpoint-01-core-storefront-architecture-centerpiece-navigation-dock-branding-standards)
+
+---
+
+## Touchpoint 46 — Fix Record "v_coupon" Is Not Assigned Yet on Checkout RPCs (`039_fix_coupon_unassigned_record.sql`)
+
+- **Root Cause Analysis**:
+  - In `create_verified_order` and `create_verified_order_guest`, variable `v_coupon` was declared as a generic `record` type.
+  - When a customer placed an order without applying a coupon code, the code normalization and lookup block was bypassed (`v_coupon` remained unassigned).
+  - Later in step 7, `IF v_coupon.id IS NOT NULL THEN` attempted to inspect field `.id` on the unassigned `record`, causing PostgreSQL to raise: `record "v_coupon" is not assigned yet`.
+- **Database Hardening Migration (`039_fix_coupon_unassigned_record.sql`)**:
+  - Declared `v_coupon` using strong composite type `public.coupons%ROWTYPE;` whose fields default cleanly to `NULL`.
+  - Introduced explicit boolean state variable `v_has_coupon boolean := false;`, set to `true` only upon successful coupon verification.
+  - Guarded step 7 with `IF v_has_coupon THEN`, cleanly bypassing coupon application logic when no coupon code is supplied.
+  - Applied migration 039 to the live remote database via Supabase CLI and confirmed all security pentests pass.
 
 ---
 
