@@ -1116,7 +1116,7 @@ export function DashboardPartyDetailModal({
                                 </div>
 
                                 {party.city && (
-                                  <div className="flex items-center space-x-1 text-slate-400 truncate max-w-[200px]">
+                                  <div className="flex items-center space-x-1 text-slate-400 truncate max-w-50">
                                     <MapPin className="w-3 h-3 shrink-0" />
                                     <span className="truncate">{party.city}</span>
                                   </div>

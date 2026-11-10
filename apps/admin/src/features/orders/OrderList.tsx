@@ -984,7 +984,7 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                               ₹{ord.total.toLocaleString("en-IN")}
                             </span>
                             {(ord.coupon_code || ord.couponCode) && (
-                              <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border block w-fit">
+                              <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border w-fit">
                                 🎟️ {ord.coupon_code || ord.couponCode} (-₹{Number(ord.discount_amount || ord.discountAmount || 0).toLocaleString("en-IN")})
                               </span>
                             )}
@@ -1219,7 +1219,7 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                             ₹{ord.total.toLocaleString("en-IN")}
                           </span>
                           {(ord.coupon_code || ord.couponCode) && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border block ml-auto mt-0.5">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary-soft text-primary border border-primary-border ml-auto mt-0.5">
                               🎟️ {ord.coupon_code || ord.couponCode} (-₹{Number(ord.discount_amount || ord.discountAmount || 0).toLocaleString("en-IN")})
                             </span>
                           )}
