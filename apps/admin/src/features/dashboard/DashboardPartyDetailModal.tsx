@@ -12,6 +12,7 @@ import {
   fetchDashboardNewBuyers,
   fetchAdminProducts,
   adminMarkPartyBadDebt,
+  adminUpdateOrderPaymentStatus,
 } from "../../lib/adminService";
 import { OrderDetailModal } from "../orders/OrderDetailModal";
 import { triggerHaptic } from "../../utils/haptics";
@@ -36,6 +37,7 @@ import {
   Users,
   ShieldAlert,
   Loader2,
+  RotateCcw,
   Eye,
     ArrowUpDown,
   Building2,
@@ -427,6 +429,34 @@ export function DashboardPartyDetailModal({
       triggerHaptic("heavy");
     } finally {
       setBadDebtInProgress(null);
+    }
+  }
+
+  async function handleToggleOrderBadDebt(ord: Order) {
+    const isCurrentlyBadDebt = ord.payment_status === "bad_debt";
+    const targetStatus = isCurrentlyBadDebt ? "pending" : "bad_debt";
+    const confirmMsg = isCurrentlyBadDebt
+      ? `Clear Bad Debt flag for Order #${ord.id} and revert to Pending?`
+      : `Mark ONLY Order #${ord.id} (₹${(ord.total || 0).toLocaleString("en-IN")}) as BAD DEBT?\n\nOther orders of this party will remain unaffected.`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await adminUpdateOrderPaymentStatus(
+        ord.id,
+        targetStatus,
+        isCurrentlyBadDebt
+          ? "Bad debt cleared via Dashboard Party Inspector"
+          : "Specific transaction marked as bad debt via Dashboard Party Inspector"
+      );
+      triggerHaptic("success");
+      setActionSuccess(`Order #${ord.id} payment status updated to ${targetStatus.toUpperCase()}!`);
+      setTimeout(() => setActionSuccess(null), 3000);
+      await loadData();
+    } catch (err: any) {
+      console.error("Failed to update transaction bad debt:", err);
+      alert(err?.message || "Failed to update order payment status.");
+      triggerHaptic("heavy");
     }
   }
 
@@ -1269,6 +1299,28 @@ export function DashboardPartyDetailModal({
                                         <Eye className="w-3.5 h-3.5" />
                                         <span>Inspect</span>
                                       </button>
+
+                                      {ord.payment_status === "bad_debt" ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleOrderBadDebt(ord)}
+                                          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-slate-300 font-bold transition cursor-pointer text-xs"
+                                          title="Clear Bad Debt for this specific transaction"
+                                        >
+                                          <RotateCcw className="w-3 h-3" />
+                                          <span className="hidden sm:inline">Clear Bad Debt</span>
+                                        </button>
+                                      ) : ord.payment_status !== "paid" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleOrderBadDebt(ord)}
+                                          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 font-bold transition cursor-pointer text-xs"
+                                          title="Count only this specific transaction as Bad Debt"
+                                        >
+                                          <ShieldAlert className="w-3 h-3" />
+                                          <span className="hidden sm:inline">Bad Debt</span>
+                                        </button>
+                                      )}
                                       {onSelectOrder && (
                                         <button
                                           type="button"

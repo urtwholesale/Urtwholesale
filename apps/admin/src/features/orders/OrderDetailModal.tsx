@@ -43,6 +43,7 @@ import {
   Package,
   Ticket,
   XCircle,
+  RotateCcw,
   CreditCard,
   AlertOctagon,
 } from "lucide-react";
@@ -237,6 +238,30 @@ export function OrderDetailModal({
       fetchOrderEvents(order.id).then(setEvents).catch(console.error);
     } catch (err: any) {
       setError(err?.message || "Failed to mark order as bad debt.");
+    } finally {
+      setUpdatingPayment(false);
+    }
+  }
+
+  async function handleQuickClearBadDebt() {
+    if (!window.confirm(`Clear Bad Debt status for Order #${order.id} and revert payment status to PENDING?`)) {
+      return;
+    }
+    setUpdatingPayment(true);
+    setError(null);
+    setPaymentSuccess(null);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        "pending",
+        "Bad Debt status cleared; payment reverted to Pending"
+      );
+      setPaymentSuccess("Order Bad Debt status cleared!");
+      setSelectedPaymentStatus("pending");
+      onUpdated();
+      fetchOrderEvents(order.id).then(setEvents).catch(console.error);
+    } catch (err: any) {
+      setError(err?.message || "Failed to clear bad debt status.");
     } finally {
       setUpdatingPayment(false);
     }
@@ -1126,7 +1151,7 @@ export function OrderDetailModal({
                       </span>
                     )}
 
-                    {order.payment_status !== "bad_debt" && (
+                    {order.payment_status !== "bad_debt" ? (
                       <button
                         type="button"
                         disabled={updatingPayment}
@@ -1134,7 +1159,17 @@ export function OrderDetailModal({
                         className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200/80 font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                       >
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        <span>1-Click Bad Debt</span>
+                        <span>1-Click Mark Bad Debt (Transaction)</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={updatingPayment}
+                        onClick={handleQuickClearBadDebt}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Clear Bad Debt (Revert to Pending)</span>
                       </button>
                     )}
                   </div>

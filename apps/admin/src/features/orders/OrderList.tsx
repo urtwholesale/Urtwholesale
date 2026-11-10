@@ -28,6 +28,7 @@ import { triggerHaptic } from "../../utils/haptics";
 import {
   Search,
   RefreshCw,
+  RotateCcw,
   Loader2,
   Eye,
   Check,
@@ -262,6 +263,66 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
     } catch (err: any) {
       triggerHaptic("heavy");
       showToast(err?.message || "Failed to bulk update payment status.");
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  }
+
+  // ── Single Transaction Quick Mark Bad Debt ──
+  async function handleQuickMarkBadDebt(order: Order) {
+    if (order.payment_status === "bad_debt") return;
+    triggerHaptic("medium");
+    if (
+      !window.confirm(
+        `Mark ONLY this specific transaction (Order #${order.id} - ₹${(order.total || 0).toLocaleString("en-IN")}) as BAD DEBT?\n\nThis marks this individual consignment as defaulted without affecting other orders of this customer.`
+      )
+    ) {
+      return;
+    }
+
+    setBulkActionInProgress(true);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        "bad_debt",
+        "Transaction marked as BAD DEBT by administrator"
+      );
+      triggerHaptic("success");
+      showToast(`Order #${order.id} marked as Bad Debt transaction!`);
+      loadData();
+    } catch (err: any) {
+      triggerHaptic("heavy");
+      showToast(err?.message || "Failed to mark transaction as bad debt.");
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  }
+
+  // ── Single Transaction Quick Clear Bad Debt ──
+  async function handleQuickClearBadDebt(order: Order) {
+    if (order.payment_status !== "bad_debt") return;
+    triggerHaptic("medium");
+    if (
+      !window.confirm(
+        `Clear Bad Debt status for Order #${order.id} and revert payment status to PENDING?`
+      )
+    ) {
+      return;
+    }
+
+    setBulkActionInProgress(true);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        "pending",
+        "Bad Debt status cleared; payment reverted to Pending"
+      );
+      triggerHaptic("success");
+      showToast(`Order #${order.id} Bad Debt status cleared!`);
+      loadData();
+    } catch (err: any) {
+      triggerHaptic("heavy");
+      showToast(err?.message || "Failed to clear bad debt status.");
     } finally {
       setBulkActionInProgress(false);
     }
@@ -883,11 +944,15 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                               <p className="font-bold text-slate-900 truncate">
                                 {ord.customer?.name || "Customer"}
                               </p>
-                              {ord.is_party_bad_debt && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-2xs" title={ord.party_bad_debt_reason || "Flagged as bad debt party"}>
+                              {ord.is_party_bad_debt ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-2xs" title={ord.party_bad_debt_reason || "Customer account flagged as bad debt"}>
                                   ⚠️ Bad Debt Party
                                 </span>
-                              )}
+                              ) : ord.payment_status === "bad_debt" ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-2xs" title="Only this specific order transaction is counted as bad debt">
+                                  ⚠️ Bad Debt Order
+                                </span>
+                              ) : null}
                             </div>
                             {ord.customer?.business_name && (
                               <p className="text-[11px] font-semibold text-slate-600 truncate">
@@ -962,7 +1027,7 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                                 : "bg-amber-50 text-amber-800 border-amber-200"
                             }`}
                           >
-                            {ord.payment_status === "bad_debt" ? "⚠️ Bad Debt" : ord.payment_status || "Pending"}
+                            {ord.payment_status === "bad_debt" ? "⚠️ Bad Debt (Order)" : ord.payment_status || "Pending"}
                           </span>
                         </td>
 
@@ -979,20 +1044,68 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                         {/* Action Button */}
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
-                            {ord.payment_status !== "paid" && ord.status !== "cancelled" && (
-                              <button
-                                type="button"
-                                disabled={bulkActionInProgress}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleQuickMarkPaid(ord);
-                                }}
-                                title="Mark payment as received (Paid)"
-                                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200/70 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span className="hidden xl:inline">Mark Paid</span>
-                              </button>
+                            {ord.payment_status === "bad_debt" ? (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={bulkActionInProgress}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickMarkPaid(ord);
+                                  }}
+                                  title="Mark payment as received (Paid)"
+                                  className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200/70 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Mark Paid</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={bulkActionInProgress}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickClearBadDebt(ord);
+                                  }}
+                                  title="Clear Bad Debt status for this transaction"
+                                  className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Clear Bad Debt</span>
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                {ord.payment_status !== "paid" && ord.status !== "cancelled" && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={bulkActionInProgress}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleQuickMarkPaid(ord);
+                                      }}
+                                      title="Mark payment as received (Paid)"
+                                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200/70 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                      <span className="hidden xl:inline">Mark Paid</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={bulkActionInProgress}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleQuickMarkBadDebt(ord);
+                                      }}
+                                      title="Count only this specific transaction as Bad Debt"
+                                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200/70 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
+                                    >
+                                      <AlertTriangle className="w-3.5 h-3.5" />
+                                      <span className="hidden xl:inline">Bad Debt</span>
+                                    </button>
+                                  </>
+                                )}
+                              </>
                             )}
                             {ord.status !== "cancelled" && ord.status !== "delivered" && (
                               <button
@@ -1129,18 +1242,60 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                       </div>
 
                       <div className="flex items-center space-x-1.5">
-                        {ord.payment_status !== "paid" && ord.status !== "cancelled" && (
-                          <button
-                            type="button"
-                            disabled={bulkActionInProgress}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleQuickMarkPaid(ord);
-                            }}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200"
-                          >
-                            Mark Paid
-                          </button>
+                        {ord.payment_status === "bad_debt" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={bulkActionInProgress}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuickMarkPaid(ord);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200"
+                            >
+                              Mark Paid
+                            </button>
+                            <button
+                              type="button"
+                              disabled={bulkActionInProgress}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuickClearBadDebt(ord);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200"
+                            >
+                              Clear Bad Debt
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {ord.payment_status !== "paid" && ord.status !== "cancelled" && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={bulkActionInProgress}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickMarkPaid(ord);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200"
+                                >
+                                  Mark Paid
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={bulkActionInProgress}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickMarkBadDebt(ord);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs border border-rose-200"
+                                >
+                                  Bad Debt
+                                </button>
+                              </>
+                            )}
+                          </>
                         )}
                         {ord.status !== "cancelled" && ord.status !== "delivered" && (
                           <button
