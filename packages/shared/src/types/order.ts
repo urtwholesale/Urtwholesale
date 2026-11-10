@@ -13,7 +13,7 @@ export type OrderStatus =
   | string;
 
 export type OrderSource = "website" | "whatsapp" | "manual" | string;
-export type PaymentStatus = "pending" | "paid" | "unpaid" | "cod" | "failed" | "refunded" | string;
+export type PaymentStatus = "pending" | "paid" | "unpaid" | "cod" | "failed" | "refunded" | "bad_debt" | string;
 
 export interface OrderItem {
   product_id: string;
@@ -54,6 +54,11 @@ export interface CustomerLifetimeStats {
   delivered_orders?: number;
   first_order_date?: string | null;
   last_order_date?: string | null;
+  is_bad_debt?: boolean;
+  bad_debt_reason?: string | null;
+  bad_debt_marked_at?: string | null;
+  bad_debt_orders_count?: number;
+  bad_debt_total_amount?: number;
 }
 
 export interface OrderNoticeCounts {
@@ -92,6 +97,8 @@ export interface Order {
   events?: OrderEvent[];
   order_events?: OrderEvent[];
   returns?: ReturnRequest[];
+  is_party_bad_debt?: boolean;
+  party_bad_debt_reason?: string | null;
   created_at: string;
   updated_at?: string;
 }

@@ -40,6 +40,7 @@ import {
   MessageCircle,
   Truck,
   CheckCircle2,
+  AlertTriangle,
   ChevronDown,
   Package,
 } from "lucide-react";
@@ -597,6 +598,7 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
               <option value="cod">COD / Unpaid</option>
+              <option value="bad_debt">Bad Debt / Defaulted</option>
               <option value="refunded">Refunded</option>
             </select>
           </div>
@@ -702,6 +704,17 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
             >
               <Check className="w-3.5 h-3.5" />
               <span>Mark Paid</span>
+            </button>
+
+            {/* Mark Bad Debt */}
+            <button
+              type="button"
+              disabled={bulkActionInProgress}
+              onClick={() => handleBulkPaymentStatusTransition("bad_debt")}
+              className="px-3 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Mark Bad Debt</span>
             </button>
 
             {/* Cancel Orders */}
@@ -866,9 +879,16 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                         {/* Customer Info (Name + Business + Phone) */}
                         <td className="py-3.5 px-3">
                           <div className="min-w-0 max-w-50">
-                            <p className="font-bold text-slate-900 truncate">
-                              {ord.customer?.name || "Customer"}
-                            </p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-slate-900 truncate">
+                                {ord.customer?.name || "Customer"}
+                              </p>
+                              {ord.is_party_bad_debt && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-2xs" title={ord.party_bad_debt_reason || "Flagged as bad debt party"}>
+                                  ⚠️ Bad Debt Party
+                                </span>
+                              )}
+                            </div>
                             {ord.customer?.business_name && (
                               <p className="text-[11px] font-semibold text-slate-600 truncate">
                                 {ord.customer.business_name}
@@ -935,12 +955,14 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${
                               ord.payment_status === "paid"
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : ord.payment_status === "bad_debt"
+                                ? "bg-rose-100 text-rose-900 border-rose-300 font-black"
                                 : ord.payment_status === "cod"
                                 ? "bg-blue-50 text-blue-800 border-blue-200"
                                 : "bg-amber-50 text-amber-800 border-amber-200"
                             }`}
                           >
-                            {ord.payment_status || "Pending"}
+                            {ord.payment_status === "bad_debt" ? "⚠️ Bad Debt" : ord.payment_status || "Pending"}
                           </span>
                         </td>
 
@@ -1071,7 +1093,14 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                     {/* Customer & Items Details */}
                     <div className="text-xs space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">{ord.customer?.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-900">{ord.customer?.name}</span>
+                          {ord.is_party_bad_debt && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white">
+                              ⚠️ Bad Debt
+                            </span>
+                          )}
+                        </div>
                         <div className="text-right">
                           <span className="font-black text-slate-900 text-sm">
                             ₹{ord.total.toLocaleString("en-IN")}
@@ -1096,7 +1125,7 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                         <span>&bull;</span>
                         <span className="capitalize">{ord.source || "Website"}</span>
                         <span>&bull;</span>
-                        <span className="capitalize">{ord.payment_status || "Pending"}</span>
+                        <span className={`capitalize ${ord.payment_status === "bad_debt" ? "text-rose-700 font-bold" : ""}`}>{ord.payment_status === "bad_debt" ? "⚠️ Bad Debt" : ord.payment_status || "Pending"}</span>
                       </div>
 
                       <div className="flex items-center space-x-1.5">

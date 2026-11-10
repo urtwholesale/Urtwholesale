@@ -2072,6 +2072,27 @@ export async function adminUpdateOrderPaymentStatus(
 /**
  * Bulk updates order payment statuses
  */
+
+/**
+ * Admin marks or unmarks a wholesale customer/party as Bad Debt
+ */
+export async function adminMarkPartyBadDebt(params: {
+  phone?: string;
+  userId?: string;
+  isBadDebt: boolean;
+  reason?: string;
+}): Promise<any> {
+  const { data, error } = await supabase.rpc("admin_mark_party_bad_debt", {
+    p_phone: params.phone || null,
+    p_user_id: params.userId || null,
+    p_is_bad_debt: params.isBadDebt,
+    p_reason: params.reason || null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function adminBulkUpdateOrderPaymentStatus(
   orderIds: string[],
   paymentStatus: PaymentStatus,

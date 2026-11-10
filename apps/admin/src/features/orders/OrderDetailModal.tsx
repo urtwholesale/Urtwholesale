@@ -18,6 +18,7 @@ import {
   adminUpdateOrderStatus,
   adminUpdateOrderShipping,
   adminUpdateOrderPaymentStatus,
+  adminMarkPartyBadDebt,
   fetchOrderEvents,
   fetchCustomerLifetimeStats,
   fetchStoreSettings,
@@ -43,6 +44,7 @@ import {
   Ticket,
   XCircle,
   CreditCard,
+  AlertOctagon,
 } from "lucide-react";
 
 interface OrderDetailModalProps {
@@ -58,6 +60,7 @@ const ALLOWED_PAYMENT_OPTIONS: { value: PaymentStatus; label: string; desc: stri
   { value: "cod", label: "Cash on Delivery (COD)", desc: "Payment to be collected upon carrier delivery" },
   { value: "failed", label: "Failed / Declined", desc: "Payment transaction declined or gateway timed out" },
   { value: "refunded", label: "Refunded to Buyer", desc: "Funds returned to customer source" },
+  { value: "bad_debt", label: "Bad Debt (Defaulted / Write-Off)", desc: "Customer defaulted on payment; transaction written off as uncollectible" },
 ];
 
 const ALLOWED_STATUS_OPTIONS: { value: OrderStatus; label: string; desc: string }[] = [
@@ -169,6 +172,75 @@ export function OrderDetailModal({
   // Audit Events
   const [events, setEvents] = useState<OrderEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
+
+
+  // Party Bad Debt state
+  const [markingPartyBadDebt, setMarkingPartyBadDebt] = useState(false);
+  const [partyBadDebtPromptOpen, setPartyBadDebtPromptOpen] = useState(false);
+  const [partyBadDebtReason, setPartyBadDebtReason] = useState("");
+  const [partyBadDebtSuccess, setPartyBadDebtSuccess] = useState<string | null>(null);
+
+  async function handleTogglePartyBadDebt(markAsBadDebt: boolean) {
+    if (markAsBadDebt && !partyBadDebtReason.trim()) {
+      alert("Please provide a reason or note for flagging this party as Bad Debt.");
+      return;
+    }
+    if (!markAsBadDebt && !window.confirm("Remove Bad Debt flag for this wholesale customer?")) {
+      return;
+    }
+
+    setMarkingPartyBadDebt(true);
+    setError(null);
+    setPartyBadDebtSuccess(null);
+    try {
+      await adminMarkPartyBadDebt({
+        phone: order.customer?.phone,
+        userId: order.user_id || undefined,
+        isBadDebt: markAsBadDebt,
+        reason: markAsBadDebt ? partyBadDebtReason.trim() : undefined,
+      });
+
+      setPartyBadDebtSuccess(
+        markAsBadDebt
+          ? "Party successfully flagged as Bad Debt / Defaulted Account!"
+          : "Bad Debt flag removed for this party."
+      );
+      setPartyBadDebtPromptOpen(false);
+      setPartyBadDebtReason("");
+      onUpdated();
+      fetchCustomerLifetimeStats(order.customer?.phone, order.user_id || undefined)
+        .then(setLifetimeStats)
+        .catch(console.error);
+    } catch (err: any) {
+      setError(err?.message || "Failed to update party Bad Debt status.");
+    } finally {
+      setMarkingPartyBadDebt(false);
+    }
+  }
+
+  async function handleQuickMarkBadDebt() {
+    if (!window.confirm(`Mark Order #${order.id} as BAD DEBT / WRITE-OFF? This flags the transaction as defaulted for wholesale accounting.`)) {
+      return;
+    }
+    setUpdatingPayment(true);
+    setError(null);
+    setPaymentSuccess(null);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        "bad_debt",
+        "Payment marked as BAD DEBT / WRITE-OFF via Order Details quick action"
+      );
+      setPaymentSuccess("Order marked as Bad Debt / Write-Off!");
+      setSelectedPaymentStatus("bad_debt");
+      onUpdated();
+      fetchOrderEvents(order.id).then(setEvents).catch(console.error);
+    } catch (err: any) {
+      setError(err?.message || "Failed to mark order as bad debt.");
+    } finally {
+      setUpdatingPayment(false);
+    }
+  }
 
   // Customer Lifetime Stats
   const [lifetimeStats, setLifetimeStats] = useState<CustomerLifetimeStats | null>(null);
@@ -541,7 +613,7 @@ export function OrderDetailModal({
                   : "bg-amber-50 text-amber-800 border-amber-200"
               }`}
             >
-              Payment: {order.payment_status || "Pending"}
+              Payment: {order.payment_status === "bad_debt" ? "⚠️ Bad Debt" : order.payment_status || "Pending"}
             </span>
           </div>
 
@@ -561,6 +633,106 @@ export function OrderDetailModal({
               {error}
             </div>
           )}
+
+          {/* ── Bad Debt Party Status Banner & Controls ── */}
+          <div className="space-y-2">
+            {partyBadDebtSuccess && (
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center space-x-1.5">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{partyBadDebtSuccess}</span>
+              </div>
+            )}
+
+            {(lifetimeStats?.is_bad_debt || order.is_party_bad_debt) ? (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start space-x-2.5">
+                  <AlertOctagon className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-black text-xs uppercase tracking-wider text-rose-700">
+                      ⚠️ Defaulted / Bad Debt Wholesale Party
+                    </h5>
+                    <p className="text-xs text-rose-800 mt-0.5 font-medium">
+                      This customer/party has been blacklisted as a Bad Debt account for payment defaults.
+                    </p>
+                    {(lifetimeStats?.bad_debt_reason || order.party_bad_debt_reason) && (
+                      <p className="text-[11px] font-mono text-rose-900 mt-1 bg-white/70 px-2 py-1 rounded-lg border border-rose-200 inline-block">
+                        <strong>Reason:</strong> {lifetimeStats?.bad_debt_reason || order.party_bad_debt_reason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={markingPartyBadDebt}
+                  onClick={() => handleTogglePartyBadDebt(false)}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-rose-100 text-rose-800 font-bold text-xs border border-rose-300 shadow-2xs transition active:scale-95 disabled:opacity-50 cursor-pointer self-start sm:self-auto shrink-0"
+                >
+                  {markingPartyBadDebt ? "Updating..." : "Remove Bad Debt Flag"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-xs px-1">
+                <span className="text-slate-500 font-medium">
+                  Party Credit Status: <strong className="text-emerald-700">Good Standing</strong>
+                </span>
+
+                {!partyBadDebtPromptOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setPartyBadDebtPromptOpen(true)}
+                    className="text-rose-600 hover:text-rose-800 font-bold text-xs flex items-center space-x-1 cursor-pointer hover:underline"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Mark Party as Bad Debt</span>
+                  </button>
+                ) : null}
+              </div>
+            )}
+
+            {/* Prompt form to enter reason when marking party bad debt */}
+            {partyBadDebtPromptOpen && !(lifetimeStats?.is_bad_debt || order.is_party_bad_debt) && (
+              <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 text-xs space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-rose-900 flex items-center space-x-1">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <span>Flag Entire Party as Bad Debt</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPartyBadDebtPromptOpen(false)}
+                    className="text-slate-400 hover:text-slate-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={partyBadDebtReason}
+                  onChange={(e) => setPartyBadDebtReason(e.target.value)}
+                  placeholder="Reason (e.g. Cheque dishonored / 90+ days overdue / uncollectible)"
+                  className="w-full px-3 py-2 rounded-xl border border-rose-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setPartyBadDebtPromptOpen(false)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={markingPartyBadDebt || !partyBadDebtReason.trim()}
+                    onClick={() => handleTogglePartyBadDebt(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    {markingPartyBadDebt ? "Flagging..." : "Confirm Bad Debt Flag"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ── Customer Lifetime Stats Strip (Requirement 7) ── */}
           <div className="p-4 rounded-2xl bg-surface-card border border-surface-border shadow-xs">
@@ -886,6 +1058,8 @@ export function OrderDetailModal({
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${
                     order.payment_status === "paid"
                       ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : order.payment_status === "bad_debt"
+                      ? "bg-rose-100 text-rose-900 border-rose-300 font-bold"
                       : order.payment_status === "cod"
                       ? "bg-blue-50 text-blue-800 border-blue-200"
                       : "bg-amber-50 text-amber-800 border-amber-200"
@@ -933,23 +1107,37 @@ export function OrderDetailModal({
                   />
                 </div>
 
-                <div className="pt-1 flex items-center justify-between">
-                  {order.payment_status !== "paid" ? (
-                    <button
-                      type="button"
-                      disabled={updatingPayment}
-                      onClick={handleQuickMarkOrderPaid}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>1-Click Mark Paid</span>
-                    </button>
-                  ) : (
-                    <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" />
-                      Order is Paid
-                    </span>
-                  )}
+                <div className="pt-1 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
+                    {order.payment_status !== "paid" ? (
+                      <button
+                        type="button"
+                        disabled={updatingPayment}
+                        onClick={handleQuickMarkOrderPaid}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>1-Click Mark Paid</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" />
+                        Order is Paid
+                      </span>
+                    )}
+
+                    {order.payment_status !== "bad_debt" && (
+                      <button
+                        type="button"
+                        disabled={updatingPayment}
+                        onClick={handleQuickMarkBadDebt}
+                        className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200/80 font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>1-Click Bad Debt</span>
+                      </button>
+                    )}
+                  </div>
 
                   <button
                     type="submit"
