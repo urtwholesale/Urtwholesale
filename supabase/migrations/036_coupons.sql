@@ -866,7 +866,7 @@ BEGIN
     END IF;
     v_seen_product_ids := array_append(v_seen_product_ids, v_item.product_id);
 
-    SELECT id, name, sku, category_id, price, images, is_active, stock, min_order_qty, price_tiers
+    SELECT id, name, sku, category_id, price, images, is_active, stock, min_order_qty
     INTO v_product
     FROM public.products
     WHERE id = v_item.product_id
@@ -1326,7 +1326,7 @@ BEGIN
     END IF;
     v_seen_product_ids := array_append(v_seen_product_ids, v_item.product_id);
 
-    SELECT id, name, sku, category_id, price, images, is_active, stock, min_order_qty, price_tiers
+    SELECT id, name, sku, category_id, price, images, is_active, stock, min_order_qty
     INTO v_product
     FROM public.products
     WHERE id = v_item.product_id

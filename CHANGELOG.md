@@ -7,6 +7,8 @@ All notable changes, architectural touchpoints, schema migrations, and feature r
 
 ## Table of Contents
 
+- [Touchpoint 45 — Fix Column "price_tiers" Does Not Exist on Checkout RPCs](#touchpoint-45--fix-column-price_tiers-does-not-exist-on-checkout-rpcs-038_fix_checkout_price_tierssql)
+- [Touchpoint 44 — Dynamic Homepage Divisions Management & Punchy Visual Brand Identity (`037_homepage_divisions.sql`)](#touchpoint-44--dynamic-homepage-divisions-management--punchy-visual-brand-identity-037_homepage_divisionssql)
 - [Touchpoint 43 — Coupons & Discounts Management, Server-Side Verification & Secure Redemption Engine](#touchpoint-43--coupons--discounts-management-server-side-verification--secure-redemption-engine)
 - [Touchpoint 39 — Dedicated Home Page Bestsellers Curation & Catalog Management](#touchpoint-39--touchpoint-39-dedicated-home-page-bestsellers-curation-catalog-management)
 - [Touchpoint 38 — Premium Glassmorphic Navigation Icons on Home Page Carousels](#touchpoint-38--touchpoint-38-premium-glassmorphic-navigation-icons-on-home-page-carousels)
@@ -47,6 +49,19 @@ All notable changes, architectural touchpoints, schema migrations, and feature r
 - [Touchpoint 03 — 4-Level Category Hierarchy & Attribute Schemas (`006_category_attributes.sql`)](#touchpoint-03--touchpoint-03-4-level-category-hierarchy-attribute-schemas-006categoryattributessql)
 - [Touchpoint 02 — Atomic Verified Orders, Volume Pricing Engine & Image Compression (`005_create_verified_order.sql`)](#touchpoint-02--touchpoint-02-atomic-verified-orders-volume-pricing-engine-image-compression-005createverifiedordersql)
 - [Touchpoint 01 — Core Storefront Architecture, Centerpiece Navigation Dock & Branding Standards](#touchpoint-01--touchpoint-01-core-storefront-architecture-centerpiece-navigation-dock-branding-standards)
+
+---
+
+## Touchpoint 45 — Fix Column "price_tiers" Does Not Exist on Checkout RPCs (`038_fix_checkout_price_tiers.sql`)
+
+- **Root Cause Analysis**:
+  - In `create_verified_order` (authenticated user checkout) and `create_verified_order_guest` (service-role guest checkout), a `SELECT id, name, sku, category_id, price, images, is_active, stock, min_order_qty, price_tiers INTO v_product FROM public.products` query was executed.
+  - The PostgreSQL table `public.products` does not possess a column named `price_tiers` (volume pricing tiers reside in the separate relational table `public.product_price_tiers` and are computed via `public.get_unit_price(product_id, qty)`).
+  - When clicking "Checkout via WhatsApp", PostgreSQL threw error code `42703` (`column "price_tiers" does not exist`), halting order creation and displaying a red error toast on `/cart`.
+- **Database Hardening Migration (`038_fix_checkout_price_tiers.sql`)**:
+  - Removed `, price_tiers` from both `create_verified_order` and `create_verified_order_guest` SELECT statements against `public.products`.
+  - Re-applied functions with strict security settings (`SECURITY DEFINER`, search path isolation `SET search_path = public, pg_temp`, and privilege revocation).
+  - Pushed to the remote Supabase database and verified zero regressions across automated test suites.
 
 ---
 
