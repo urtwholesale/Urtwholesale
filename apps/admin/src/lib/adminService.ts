@@ -4,6 +4,7 @@ import type {
   Product,
   Order,
   OrderStatus,
+  PaymentStatus,
   CustomerLifetimeStats,
   OrderNoticeCounts,
   OrderEvent,
@@ -59,7 +60,9 @@ import { compressImage, type CompressionResult } from "../utils/imageCompressor"
 export interface DashboardStats {
   current: {
     revenue: number;
+    paid_revenue?: number;
     order_count: number;
+    paid_order_count?: number;
     avg_order_value: number;
     pending_count: number;
     low_stock_count: number;
@@ -67,7 +70,9 @@ export interface DashboardStats {
   };
   previous: {
     revenue: number;
+    paid_revenue?: number;
     order_count: number;
+    paid_order_count?: number;
     avg_order_value: number;
     pending_count: number;
     low_stock_count: number;
@@ -2045,6 +2050,48 @@ export async function adminUpdateOrderShipping(
 /**
  * Bulk updates order statuses
  */
+
+/**
+ * Admin updates order payment status (e.g. "paid", "pending", "cod", "refunded")
+ */
+export async function adminUpdateOrderPaymentStatus(
+  orderId: string,
+  paymentStatus: PaymentStatus,
+  note?: string
+): Promise<any> {
+  const { data, error } = await supabase.rpc("admin_update_order_payment_status", {
+    p_order_id: orderId,
+    p_payment_status: paymentStatus,
+    p_note: note || null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Bulk updates order payment statuses
+ */
+export async function adminBulkUpdateOrderPaymentStatus(
+  orderIds: string[],
+  paymentStatus: PaymentStatus,
+  note?: string
+): Promise<{ succeeded: string[]; failed: { id: string; error: string }[] }> {
+  const succeeded: string[] = [];
+  const failed: { id: string; error: string }[] = [];
+
+  for (const id of orderIds) {
+    try {
+      await adminUpdateOrderPaymentStatus(id, paymentStatus, note);
+      succeeded.push(id);
+    } catch (err: any) {
+      failed.push({ id, error: err?.message || "Failed to update payment status" });
+    }
+  }
+
+  return { succeeded, failed };
+}
+
 export async function adminBulkUpdateOrderStatus(
   orderIds: string[],
   newStatus: OrderStatus,

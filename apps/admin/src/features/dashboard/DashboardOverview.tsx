@@ -176,6 +176,11 @@ export function DashboardOverview() {
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                 ₹{Number(stats.current.revenue || 0).toLocaleString("en-IN")}
               </span>
+              {stats.current.paid_revenue !== undefined && (
+                <p className="text-[10px] text-emerald-700 font-bold mt-0.5">
+                  ₹{Number(stats.current.paid_revenue || 0).toLocaleString("en-IN")} collected (Paid)
+                </p>
+              )}
               <div className="flex items-center space-x-1 mt-0.5">
                 <span
                   className={`text-[10px] font-bold ${
@@ -201,6 +206,11 @@ export function DashboardOverview() {
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                 {stats.current.order_count}
               </span>
+              {stats.current.paid_order_count !== undefined && (
+                <p className="text-[10px] text-emerald-700 font-bold mt-0.5">
+                  {stats.current.paid_order_count} Paid orders
+                </p>
+              )}
               <div className="flex items-center space-x-1 mt-0.5">
                 <span
                   className={`text-[10px] font-bold ${

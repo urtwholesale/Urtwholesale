@@ -5,6 +5,7 @@ import type {
   OrderEvent,
   CustomerLifetimeStats,
   StoreSettings,
+  PaymentStatus,
 } from "@urbanrat/shared";
 import {
   ORDER_STATUS_BADGES,
@@ -16,6 +17,7 @@ import {
 import {
   adminUpdateOrderStatus,
   adminUpdateOrderShipping,
+  adminUpdateOrderPaymentStatus,
   fetchOrderEvents,
   fetchCustomerLifetimeStats,
   fetchStoreSettings,
@@ -40,6 +42,7 @@ import {
   Package,
   Ticket,
   XCircle,
+  CreditCard,
 } from "lucide-react";
 
 interface OrderDetailModalProps {
@@ -47,6 +50,15 @@ interface OrderDetailModalProps {
   onClose: () => void;
   onUpdated: () => void;
 }
+
+
+const ALLOWED_PAYMENT_OPTIONS: { value: PaymentStatus; label: string; desc: string }[] = [
+  { value: "paid", label: "Paid / Received", desc: "Full wholesale settlement confirmed via bank/UPI/cash" },
+  { value: "pending", label: "Pending Verification", desc: "Awaiting bank statement or proof of payment" },
+  { value: "cod", label: "Cash on Delivery (COD)", desc: "Payment to be collected upon carrier delivery" },
+  { value: "failed", label: "Failed / Declined", desc: "Payment transaction declined or gateway timed out" },
+  { value: "refunded", label: "Refunded to Buyer", desc: "Funds returned to customer source" },
+];
 
 const ALLOWED_STATUS_OPTIONS: { value: OrderStatus; label: string; desc: string }[] = [
   { value: "pending", label: "Pending Verification", desc: "Awaiting wholesale stock and payment review" },
@@ -81,6 +93,60 @@ export function OrderDetailModal({
   const [statusNote, setStatusNote] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusSuccess, setStatusSuccess] = useState<string | null>(null);
+
+  // Payment status state
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus>(
+    order.payment_status || "pending"
+  );
+  const [paymentNote, setPaymentNote] = useState("");
+  const [updatingPayment, setUpdatingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedPaymentStatus(order.payment_status || "pending");
+  }, [order.payment_status]);
+
+  async function handleQuickMarkOrderPaid() {
+    setUpdatingPayment(true);
+    setError(null);
+    setPaymentSuccess(null);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        "paid",
+        "Payment marked as PAID via Order Details quick action"
+      );
+      setPaymentSuccess("Order payment marked as Paid!");
+      setSelectedPaymentStatus("paid");
+      onUpdated();
+      fetchOrderEvents(order.id).then(setEvents).catch(console.error);
+    } catch (err: any) {
+      setError(err?.message || "Failed to mark payment as paid.");
+    } finally {
+      setUpdatingPayment(false);
+    }
+  }
+
+  async function handlePaymentStatusChange(e: React.FormEvent) {
+    e.preventDefault();
+    setUpdatingPayment(true);
+    setError(null);
+    setPaymentSuccess(null);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        selectedPaymentStatus,
+        paymentNote.trim() || `Payment status updated to ${selectedPaymentStatus}`
+      );
+      setPaymentSuccess(`Payment status successfully set to ${selectedPaymentStatus}!`);
+      onUpdated();
+      fetchOrderEvents(order.id).then(setEvents).catch(console.error);
+    } catch (err: any) {
+      setError(err?.message || "Failed to update payment status.");
+    } finally {
+      setUpdatingPayment(false);
+    }
+  }
 
   // Shipping & Tracking state
   const [courierName, setCourierName] = useState(order.courier_name || "");
@@ -448,6 +514,23 @@ export function OrderDetailModal({
               Source: {order.source || "Website"}
             </span>
 
+            {/* Quick Mark as Paid Button */}
+            {order.payment_status !== "paid" && (
+              <button
+                type="button"
+                disabled={updatingPayment}
+                onClick={handleQuickMarkOrderPaid}
+                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                {updatingPayment ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+                <span>Mark as Paid</span>
+              </button>
+            )}
+
             {/* Payment Status Pill */}
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize ${
@@ -791,6 +874,100 @@ export function OrderDetailModal({
               </form>
             </div>
           </div>
+
+            {/* ── Wholesale Payment Management (RPC) ── */}
+            <div className="p-4.5 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h4 className="font-black text-xs uppercase tracking-wider text-slate-900 flex items-center space-x-1.5">
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <span>Wholesale Payment Management (RPC)</span>
+                </h4>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${
+                    order.payment_status === "paid"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : order.payment_status === "cod"
+                      ? "bg-blue-50 text-blue-800 border-blue-200"
+                      : "bg-amber-50 text-amber-800 border-amber-200"
+                  }`}
+                >
+                  Current: {order.payment_status || "Pending"}
+                </span>
+              </div>
+
+              {paymentSuccess && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center space-x-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{paymentSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handlePaymentStatusChange} className="space-y-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                    Target Payment Status
+                  </label>
+                  <select
+                    value={selectedPaymentStatus}
+                    onChange={(e) => setSelectedPaymentStatus(e.target.value as PaymentStatus)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-brand-light"
+                  >
+                    {ALLOWED_PAYMENT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} — {opt.desc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                    Payment Reference / Transaction Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={paymentNote}
+                    onChange={(e) => setPaymentNote(e.target.value)}
+                    placeholder="e.g. Verified via UPI UTR 4310928731 / NEFT Bank Transfer"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-light"
+                  />
+                </div>
+
+                <div className="pt-1 flex items-center justify-between">
+                  {order.payment_status !== "paid" ? (
+                    <button
+                      type="button"
+                      disabled={updatingPayment}
+                      onClick={handleQuickMarkOrderPaid}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>1-Click Mark Paid</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" />
+                      Order is Paid
+                    </span>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={updatingPayment || (selectedPaymentStatus === order.payment_status && !paymentNote)}
+                    className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active ml-auto"
+                  >
+                    {updatingPayment ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Updating Payment...</span>
+                      </>
+                    ) : (
+                      <span>Update Payment Status</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
 
           {/* ── Ordered Line Items & Tier Pricing ── */}
           <div className="p-4.5 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3">

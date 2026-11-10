@@ -17,6 +17,8 @@ import {
   fetchOrderNoticeCounts,
   adminBulkUpdateOrderStatus,
   adminUpdateOrderStatus,
+  adminUpdateOrderPaymentStatus,
+  adminBulkUpdateOrderPaymentStatus,
   exportOrdersToExcel,
   exportOrdersToCSV,
 } from "../../lib/adminService";
@@ -226,6 +228,68 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
       next.add(id);
     }
     setSelectedOrderIds(next);
+  }
+
+
+  // ── Bulk Payment Status Update ──
+  async function handleBulkPaymentStatusTransition(targetPaymentStatus: PaymentStatus) {
+    if (selectedOrderIds.size === 0) return;
+    triggerHaptic("medium");
+
+    const ids = Array.from(selectedOrderIds);
+    const label = targetPaymentStatus.toUpperCase();
+    if (!window.confirm(`Mark payment as ${label} for ${ids.length} selected orders?`)) {
+      return;
+    }
+
+    setBulkActionInProgress(true);
+    try {
+      const res = await adminBulkUpdateOrderPaymentStatus(
+        ids,
+        targetPaymentStatus,
+        `Bulk payment status updated to ${targetPaymentStatus} via Orders Hub`
+      );
+
+      triggerHaptic("success");
+      showToast(
+        `Successfully marked ${res.succeeded.length} orders as ${label}${
+          res.failed.length > 0 ? ` (${res.failed.length} failed)` : ""
+        }`
+      );
+      setSelectedOrderIds(new Set());
+      loadData();
+    } catch (err: any) {
+      triggerHaptic("heavy");
+      showToast(err?.message || "Failed to bulk update payment status.");
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  }
+
+  // ── Single Order Quick Mark Paid ──
+  async function handleQuickMarkPaid(order: Order) {
+    if (order.payment_status === "paid") return;
+    triggerHaptic("medium");
+    if (!window.confirm(`Mark payment as PAID for Order #${order.id} (${order.customer?.name || "Customer"} - ₹${(order.total || 0).toLocaleString("en-IN")})?`)) {
+      return;
+    }
+
+    setBulkActionInProgress(true);
+    try {
+      await adminUpdateOrderPaymentStatus(
+        order.id,
+        "paid",
+        "Payment marked as PAID via Orders quick action"
+      );
+      triggerHaptic("success");
+      showToast(`Order #${order.id} marked as Paid!`);
+      loadData();
+    } catch (err: any) {
+      triggerHaptic("heavy");
+      showToast(err?.message || "Failed to mark order as paid.");
+    } finally {
+      setBulkActionInProgress(false);
+    }
   }
 
   // ── Bulk Status Update ──
@@ -629,6 +693,17 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
               <span>Mark Delivered</span>
             </button>
 
+            {/* Mark Paid */}
+            <button
+              type="button"
+              disabled={bulkActionInProgress}
+              onClick={() => handleBulkPaymentStatusTransition("paid")}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition active:scale-95 disabled:opacity-40 cursor-pointer flex items-center space-x-1.5 shadow-2xs"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Mark Paid</span>
+            </button>
+
             {/* Cancel Orders */}
             <button
               type="button"
@@ -882,6 +957,21 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                         {/* Action Button */}
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
+                            {ord.payment_status !== "paid" && ord.status !== "cancelled" && (
+                              <button
+                                type="button"
+                                disabled={bulkActionInProgress}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickMarkPaid(ord);
+                                }}
+                                title="Mark payment as received (Paid)"
+                                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200/70 font-bold text-xs transition active:scale-95 cursor-pointer disabled:opacity-40"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span className="hidden xl:inline">Mark Paid</span>
+                              </button>
+                            )}
                             {ord.status !== "cancelled" && ord.status !== "delivered" && (
                               <button
                                 type="button"
@@ -1010,6 +1100,19 @@ export function OrderList({ initialOrderId, onClearInitialOrder }: OrderListProp
                       </div>
 
                       <div className="flex items-center space-x-1.5">
+                        {ord.payment_status !== "paid" && ord.status !== "cancelled" && (
+                          <button
+                            type="button"
+                            disabled={bulkActionInProgress}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuickMarkPaid(ord);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
                         {ord.status !== "cancelled" && ord.status !== "delivered" && (
                           <button
                             type="button"
