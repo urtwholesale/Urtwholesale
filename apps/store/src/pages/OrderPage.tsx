@@ -155,6 +155,13 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   const upiId = settings?.upi_id || "7000947033-1@okbizaxis";
   const storeName = settings?.store_name || settings?.store_info?.name || "URT Wholesale";
 
+  const isDelivered = order?.status?.toLowerCase() === "delivered";
+  const isCancelled = order?.status?.toLowerCase() === "cancelled";
+  const isRefunded = order?.status?.toLowerCase() === "refunded";
+  const isReturned = order?.status?.toLowerCase() === "returned";
+  const isPaid = order?.payment_status?.toLowerCase() === "paid" || order?.payment_status?.toLowerCase() === "verified";
+  const shouldShowPaymentCard = Boolean(order) && !isDelivered && !isCancelled && !isRefunded && !isReturned && !isPaid;
+
   const upiLink = useMemo(() => {
     if (!order) return "";
     const totalAmount = order.total ?? 0;
@@ -162,7 +169,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
   }, [upiId, storeName, order]);
 
   useEffect(() => {
-    if (!upiLink) return;
+    if (!upiLink || !shouldShowPaymentCard) return;
     let isMounted = true;
     QRCode.toDataURL(upiLink, {
       width: 240,
@@ -183,7 +190,7 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
     return () => {
       isMounted = false;
     };
-  }, [upiLink]);
+  }, [upiLink, shouldShowPaymentCard]);
 
   function handleCopyUpi() {
     triggerHaptic("selection");
@@ -1268,78 +1275,111 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
             )}
           </div>
 
-          {/* ── "Pay now" Dynamic UPI & QR Code Card ── */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/10">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm">
-                  ₹
+          {/* ── "Pay now" Dynamic UPI & QR Code Card (Hidden after delivery or full payment) ── */}
+          {shouldShowPaymentCard ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs p-5 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/10">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm">
+                    ₹
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      {isHindi ? "भुगतान करें" : "Pay now"}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                      {isHindi ? "GPay, PhonePe, Paytm या BHIM UPI से स्कैन करें" : "Scan with GPay, PhonePe, Paytm, or BHIM UPI"}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                  ₹{total.toLocaleString("en-IN")}
+                </span>
+              </div>
+
+              {/* QR Code container (Dynamic QR generated from UPI link with static fallback) */}
+              <div className="flex flex-col items-center justify-center p-3.5 bg-slate-50/80 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-white/10 space-y-2">
+                <div className="w-48 sm:w-52 h-48 sm:h-52 rounded-xl overflow-hidden shadow-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-2">
+                  <img
+                    src={!qrError && qrDataUrl ? qrDataUrl : "/payment-qr.png"}
+                    alt={`UPI Payment QR Code for Order #${order.id}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 text-center">
+                  Scan to pay <strong className="text-slate-800 dark:text-white">₹{total.toLocaleString("en-IN")}</strong> for Order #{order.id}
+                </p>
+              </div>
+
+              {/* UPI ID copy box */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                  {isHindi ? "भुगतान के लिए यूपीआई आईडी" : "UPI ID for Payment"}
+                </label>
+                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-2">
+                  <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-100 truncate mr-2">
+                    {upiId}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyUpi}
+                    className="shrink-0 text-xs font-bold text-brand-dark dark:text-brand-light hover:text-brand-dark/80 flex items-center space-x-1 cursor-pointer transition"
+                  >
+                    {copiedUpi ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-600 dark:text-emerald-400 text-[11px]">{isHindi ? "कॉपी हो गया" : "Copied"}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span className="text-slate-600 dark:text-slate-300 text-[11px]">{isHindi ? "कॉपी करें" : "Copy"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Direct Pay with UPI App button (Mobile) */}
+              <a
+                href={upiLink}
+                className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99]"
+              >
+                <span>{isHindi ? `UPI ऐप से भुगतान करें (₹${total.toLocaleString("en-IN")})` : `Pay with UPI app (₹${total.toLocaleString("en-IN")})`}</span>
+              </a>
+            </div>
+          ) : (isDelivered || isPaid) ? (
+            /* ── Order Delivered / Payment Completed Confirmation Card (Barcode & UPI ID hidden) ── */
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs p-5 space-y-3 animate-in fade-in">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/40 shadow-2xs">
+                  <CheckCircle2 className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                    Pay now
+                    {isDelivered
+                      ? (isHindi ? "ऑर्डर सफलतापूर्वक डिलीवर हुआ" : "Order Successfully Delivered")
+                      : (isHindi ? "भुगतान पूर्ण एवं सत्यापित" : "Payment Completed & Verified")}
                   </h3>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                    Scan with GPay, PhonePe, Paytm, or BHIM UPI
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {isDelivered
+                      ? (isHindi ? "पैकेज ग्राहक को डिलीवर कर दिया गया है। भुगतान सुरक्षित रूप से पूर्ण है।" : "Package has been delivered to customer. Payment completed.")
+                      : (isHindi ? "इस थोक ऑर्डर का भुगतान सत्यापित हो चुका है।" : "Wholesale payment has been verified.")}
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-                ₹{total.toLocaleString("en-IN")}
-              </span>
-            </div>
 
-            {/* QR Code container (Dynamic QR generated from UPI link with static fallback) */}
-            <div className="flex flex-col items-center justify-center p-3.5 bg-slate-50/80 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-white/10 space-y-2">
-              <div className="w-48 sm:w-52 h-48 sm:h-52 rounded-xl overflow-hidden shadow-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-2">
-                <img
-                  src={!qrError && qrDataUrl ? qrDataUrl : "/payment-qr.png"}
-                  alt={`UPI Payment QR Code for Order #${order.id}`}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 text-center">
-                Scan to pay <strong className="text-slate-800 dark:text-white">₹{total.toLocaleString("en-IN")}</strong> for Order #{order.id}
-              </p>
-            </div>
-
-            {/* UPI ID copy box */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                UPI ID for Payment
-              </label>
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-2">
-                <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-100 truncate mr-2">
-                  {upiId}
+              <div className="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  {isHindi ? "भुगतान स्थिति" : "Payment Status"}
                 </span>
-                <button
-                  type="button"
-                  onClick={handleCopyUpi}
-                  className="shrink-0 text-xs font-bold text-brand-dark dark:text-brand-light hover:text-brand-dark/80 flex items-center space-x-1 cursor-pointer transition"
-                >
-                  {copiedUpi ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-emerald-600 dark:text-emerald-400 text-[11px]">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                      <span className="text-slate-600 dark:text-slate-300 text-[11px]">Copy</span>
-                    </>
-                  )}
-                </button>
+                <span className="inline-flex items-center space-x-1 font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40 text-[11px]">
+                  <Check className="w-3 h-3 stroke-[2.5]" />
+                  <span>{isHindi ? `पूर्ण (₹${total.toLocaleString("en-IN")})` : `Settled (₹${total.toLocaleString("en-IN")})`}</span>
+                </span>
               </div>
             </div>
-
-            {/* Direct Pay with UPI App button (Mobile) */}
-            <a
-              href={upiLink}
-              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-[0.99]"
-            >
-              <span>Pay with UPI app (₹{total.toLocaleString("en-IN")})</span>
-            </a>
-          </div>
+          ) : null}
 
           {/* ── Price Details Card ── */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-xs overflow-hidden transition">
