@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import * as XLSX from "xlsx";
 import type {
   Product,
+  Profile,
   Order,
   OrderStatus,
   PaymentStatus,
@@ -179,6 +180,37 @@ export async function fetchTopProducts(
     total_revenue: Number(row.total_revenue) || 0,
     image: row.image,
   }));
+}
+
+export async function fetchDashboardOrders(
+  fromDate: string,
+  toDate: string
+): Promise<Order[]> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .gte("created_at", fromDate)
+    .lte("created_at", `${toDate}T23:59:59.999Z`)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as Order[];
+}
+
+export async function fetchDashboardNewBuyers(
+  fromDate: string,
+  toDate: string
+): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "customer")
+    .gte("created_at", fromDate)
+    .lte("created_at", `${toDate}T23:59:59.999Z`)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as Profile[];
 }
 
 // ----------------------------------------------------------------------------

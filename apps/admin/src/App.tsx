@@ -1478,7 +1478,15 @@ export default function App() {
 
         {/* Tab Content Views */}
         <div className="flex-1">
-          {activeTab === "dashboard" && <DashboardOverview />}
+          {activeTab === "dashboard" && (
+            <DashboardOverview
+              onSelectOrder={(orderId) => {
+                setTargetOrderId(orderId);
+                setActiveTab("orders");
+              }}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+            />
+          )}
           {activeTab === "categories" && <CategoryManager />}
           {activeTab === "catalog" && <CatalogUploadHome />}
           {activeTab === "image_bulk_upload" && <ImageBulkUploadPage />}

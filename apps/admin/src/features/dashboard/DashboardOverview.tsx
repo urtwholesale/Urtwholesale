@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   fetchDashboardStats,
   fetchSalesByDay,
@@ -10,6 +10,10 @@ import {
   type TopProduct,
 } from "../../lib/adminService";
 import {
+  DashboardPartyDetailModal,
+  type DashboardDrilldownConfig,
+} from "./DashboardPartyDetailModal";
+import {
   DollarSign,
   ShoppingBag,
   TrendingUp,
@@ -18,9 +22,16 @@ import {
   Users,
   RefreshCw,
   Package,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 
-export function DashboardOverview() {
+interface DashboardOverviewProps {
+  onSelectOrder?: (orderId: string) => void;
+  onNavigateTab?: (tab: any) => void;
+}
+
+export function DashboardOverview({ onSelectOrder, onNavigateTab }: DashboardOverviewProps = {}) {
   const [daysRange, setDaysRange] = useState<number>(30);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [sales, setSales] = useState<DailySale[]>([]);
@@ -29,18 +40,25 @@ export function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Active Drilldown for Party-Wise Detailed View
+  const [drilldownConfig, setDrilldownConfig] = useState<DashboardDrilldownConfig | null>(null);
+
+  // Compute active date range string
+  const { fromStr, toStr } = useMemo(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - daysRange + 1);
+    return {
+      fromStr: from.toISOString().split("T")[0]!,
+      toStr: to.toISOString().split("T")[0]!,
+    };
+  }, [daysRange]);
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const to = new Date();
-      const from = new Date();
-      from.setDate(to.getDate() - daysRange + 1);
-
-      const fromStr = from.toISOString().split("T")[0]!;
-      const toStr = to.toISOString().split("T")[0]!;
-
       const [statsRes, salesRes, statusesRes, topRes] = await Promise.all([
         fetchDashboardStats(fromStr, toStr),
         fetchSalesByDay(fromStr, toStr),
@@ -58,7 +76,7 @@ export function DashboardOverview() {
     } finally {
       setLoading(false);
     }
-  }, [daysRange]);
+  }, [fromStr, toStr]);
 
   useEffect(() => {
     loadDashboard();
@@ -77,14 +95,20 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      {/* ── Top Bar with Date Range Selector ── */}
+      {/* ── Top Bar with Date Range Selector & Interactive Explainer ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-            Executive Analytics &amp; Sales Performance
-          </h2>
-          <p className="text-xs text-slate-500">
-            Computed in real-time via Postgres analytical RPCs
+          <div className="flex items-center space-x-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              Executive Analytics &amp; Sales Performance
+            </h2>
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+              <Sparkles className="w-2.5 h-2.5" />
+              <span>Interactive Party Drilldown</span>
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Computed in real-time via Postgres analytical RPCs • Click any card or row to view detailed party-wise breakdowns
           </p>
         </div>
 
@@ -147,18 +171,18 @@ export function DashboardOverview() {
           <button
             type="button"
             onClick={loadDashboard}
-            className="px-3 py-1 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition"
+            className="px-3 py-1 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700 transition cursor-pointer"
           >
             Retry
           </button>
         </div>
       )}
 
-      {/* ── Primary Metric KPI Cards from admin_dashboard_stats ── */}
+      {/* ── Primary Metric KPI Cards from admin_dashboard_stats (ALL CLICKABLE FOR PARTY DRILLDOWN) ── */}
       {loading && !stats ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-24 bg-white rounded-2xl border border-slate-100 p-4 animate-pulse space-y-2">
+            <div key={i} className="h-28 bg-white rounded-2xl border border-slate-100 p-4 animate-pulse space-y-2">
               <div className="h-3 bg-slate-100 rounded w-1/2" />
               <div className="h-6 bg-slate-200 rounded w-3/4" />
             </div>
@@ -166,11 +190,17 @@ export function DashboardOverview() {
         </div>
       ) : stats ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Revenue */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          {/* 1. Revenue Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDrilldownConfig({ type: "revenue" })}
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between hover:border-emerald-300 hover:shadow-md cursor-pointer transition active:scale-[0.98] group relative"
+            title="Click to view Party-Wise Revenue & Collections Breakdown"
+          >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">Revenue</span>
-              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <DollarSign className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -194,13 +224,23 @@ export function DashboardOverview() {
                 <span className="text-[10px] text-slate-400 font-medium">vs prev</span>
               </div>
             </div>
+            <div className="pt-2 mt-2 border-t border-slate-100/80 flex items-center justify-between text-[9px] font-bold text-emerald-700 group-hover:underline">
+              <span>Party ledger breakdown</span>
+              <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+            </div>
           </div>
 
-          {/* Orders Count */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          {/* 2. Orders Count Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDrilldownConfig({ type: "orders" })}
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between hover:border-primary/40 hover:shadow-md cursor-pointer transition active:scale-[0.98] group relative"
+            title="Click to view Party-Wise Orders Breakdown"
+          >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">Orders</span>
-              <ShoppingBag className="w-4 h-4 text-primary" />
+              <ShoppingBag className="w-4 h-4 text-primary group-hover:scale-110 transition" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -224,13 +264,23 @@ export function DashboardOverview() {
                 <span className="text-[10px] text-slate-400 font-medium">vs prev</span>
               </div>
             </div>
+            <div className="pt-2 mt-2 border-t border-slate-100/80 flex items-center justify-between text-[9px] font-bold text-primary group-hover:underline">
+              <span>Party consignments</span>
+              <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+            </div>
           </div>
 
-          {/* Average Order Value (AOV) */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          {/* 3. Average Order Value (AOV) Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDrilldownConfig({ type: "avg_order" })}
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between hover:border-purple-300 hover:shadow-md cursor-pointer transition active:scale-[0.98] group relative"
+            title="Click to view Party-Wise Average Order Value & Ticket Size Tiers"
+          >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">Avg Order</span>
-              <TrendingUp className="w-4 h-4 text-purple-600" />
+              <TrendingUp className="w-4 h-4 text-purple-600 group-hover:scale-110 transition" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -249,13 +299,23 @@ export function DashboardOverview() {
                 <span className="text-[10px] text-slate-400 font-medium">vs prev</span>
               </div>
             </div>
+            <div className="pt-2 mt-2 border-t border-slate-100/80 flex items-center justify-between text-[9px] font-bold text-purple-700 group-hover:underline">
+              <span>Party purchasing tiers</span>
+              <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+            </div>
           </div>
 
-          {/* Pending Orders */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          {/* 4. Pending Orders Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDrilldownConfig({ type: "pending" })}
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between hover:border-amber-300 hover:shadow-md cursor-pointer transition active:scale-[0.98] group relative"
+            title="Click to view Party-Wise Pending Dispatch Orders"
+          >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">Pending</span>
-              <Clock className="w-4 h-4 text-amber-500" />
+              <Clock className="w-4 h-4 text-amber-500 group-hover:scale-110 transition" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-amber-600 tracking-tight">
@@ -265,13 +325,23 @@ export function DashboardOverview() {
                 Require dispatch action
               </p>
             </div>
+            <div className="pt-2 mt-2 border-t border-slate-100/80 flex items-center justify-between text-[9px] font-bold text-amber-700 group-hover:underline">
+              <span>Pending party actions</span>
+              <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+            </div>
           </div>
 
-          {/* Low Stock Threshold Alerts */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          {/* 5. Low Stock Threshold Alerts Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDrilldownConfig({ type: "low_stock" })}
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between hover:border-rose-300 hover:shadow-md cursor-pointer transition active:scale-[0.98] group relative"
+            title="Click to view Low Stock Products & Restock Alerts"
+          >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">Low Stock</span>
-              <AlertTriangle className="w-4 h-4 text-rose-500" />
+              <AlertTriangle className="w-4 h-4 text-rose-500 group-hover:scale-110 transition" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-rose-600 tracking-tight">
@@ -281,13 +351,23 @@ export function DashboardOverview() {
                 Below threshold levels
               </p>
             </div>
+            <div className="pt-2 mt-2 border-t border-slate-100/80 flex items-center justify-between text-[9px] font-bold text-rose-700 group-hover:underline">
+              <span>Restock alerts</span>
+              <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+            </div>
           </div>
 
-          {/* New Customer Registrations */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          {/* 6. New Customer Registrations Card */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDrilldownConfig({ type: "new_buyers" })}
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between hover:border-sky-300 hover:shadow-md cursor-pointer transition active:scale-[0.98] group relative"
+            title="Click to view Party-Wise New Customer Registrations"
+          >
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">New Buyers</span>
-              <Users className="w-4 h-4 text-sky-600" />
+              <Users className="w-4 h-4 text-sky-600 group-hover:scale-110 transition" />
             </div>
             <div className="mt-2">
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -297,13 +377,17 @@ export function DashboardOverview() {
                 Profiles registered
               </p>
             </div>
+            <div className="pt-2 mt-2 border-t border-slate-100/80 flex items-center justify-between text-[9px] font-bold text-sky-700 group-hover:underline">
+              <span>New party profiles</span>
+              <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+            </div>
           </div>
         </div>
       ) : null}
 
       {/* ── Two-Column Breakdown: Daily Sales Timeline + Status Distribution ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Daily Sales Trend from admin_sales_by_day */}
+        {/* Daily Sales Trend from admin_sales_by_day (CLICKABLE ROWS FOR PARTY DRILLDOWN) */}
         <div className="lg:col-span-8 bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -311,7 +395,7 @@ export function DashboardOverview() {
                 Daily Sales &amp; Dispatch Volume
               </h3>
               <p className="text-[11px] text-slate-400">
-                Generated via admin_sales_by_day RPC
+                Generated via admin_sales_by_day RPC • Click any date row to inspect party orders placed on that day
               </p>
             </div>
             <span className="text-xs font-semibold text-slate-500">
@@ -328,6 +412,7 @@ export function DashboardOverview() {
                     <th className="pb-2">Orders</th>
                     <th className="pb-2 text-right">Daily Revenue</th>
                     <th className="pb-2 text-right">Volume Share</th>
+                    <th className="pb-2 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -336,12 +421,19 @@ export function DashboardOverview() {
                     const percentage = Math.round((row.revenue / maxRev) * 100);
 
                     return (
-                      <tr key={row.sale_date} className="hover:bg-slate-50/50 transition">
-                        <td className="py-2.5 font-mono text-slate-700 font-medium">
-                          {new Date(row.sale_date).toLocaleDateString("en-IN", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                      <tr
+                        key={row.sale_date}
+                        onClick={() => setDrilldownConfig({ type: "daily_sale", date: row.sale_date })}
+                        className="hover:bg-primary/5 transition cursor-pointer group"
+                        title="Click to view party-wise orders placed on this date"
+                      >
+                        <td className="py-2.5 font-mono text-slate-700 font-medium flex items-center space-x-1.5">
+                          <span className="group-hover:text-primary font-bold">
+                            {new Date(row.sale_date).toLocaleDateString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
                         </td>
                         <td className="py-2.5 font-bold text-slate-800">
                           {row.order_count}
@@ -360,6 +452,12 @@ export function DashboardOverview() {
                             />
                           </div>
                         </td>
+                        <td className="py-2.5 text-right">
+                          <span className="inline-flex items-center text-[10px] font-bold text-primary group-hover:underline">
+                            <span>Parties</span>
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />
+                          </span>
+                        </td>
                       </tr>
                     );
                   })}
@@ -373,14 +471,14 @@ export function DashboardOverview() {
           )}
         </div>
 
-        {/* Status Distribution from admin_orders_by_status */}
+        {/* Status Distribution from admin_orders_by_status (CLICKABLE FOR PARTY DRILLDOWN) */}
         <div className="lg:col-span-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-4">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900">
               Orders by Status
             </h3>
             <p className="text-[11px] text-slate-400">
-              Lifecycle status aggregation via admin_orders_by_status RPC
+              Lifecycle status aggregation • Click any status to view party-wise orders
             </p>
           </div>
 
@@ -399,22 +497,27 @@ export function DashboardOverview() {
               return (
                 <div
                   key={item.status}
-                  className="p-3 rounded-2xl bg-slate-50/70 border border-slate-100 flex items-center justify-between"
+                  onClick={() => setDrilldownConfig({ type: "status", status: item.status })}
+                  className="p-3 rounded-2xl bg-slate-50/70 hover:bg-white hover:border-primary/40 hover:shadow-xs border border-slate-100 flex items-center justify-between cursor-pointer transition active:scale-[0.98] group"
+                  title={`Click to view party-wise ${item.status} orders`}
                 >
                   <div className="flex items-center space-x-2">
                     <span className={`w-2 h-2 rounded-full ${statusColors[item.status] || "bg-slate-400"}`} />
-                    <span className="text-xs font-bold capitalize text-slate-800">
+                    <span className="text-xs font-bold capitalize text-slate-800 group-hover:text-primary transition">
                       {item.status}
                     </span>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-xs font-black text-slate-900">
-                      {item.order_count} {item.order_count === 1 ? "order" : "orders"}
-                    </span>
-                    <p className="text-[10px] text-slate-400 font-medium">
-                      ₹{Number(item.total_amount || 0).toLocaleString("en-IN")}
-                    </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-900">
+                        {item.order_count} {item.order_count === 1 ? "order" : "orders"}
+                      </span>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        ₹{Number(item.total_amount || 0).toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary group-hover:translate-x-0.5 transition" />
                   </div>
                 </div>
               );
@@ -423,7 +526,7 @@ export function DashboardOverview() {
         </div>
       </div>
 
-      {/* ── Top Selling Products from admin_top_products ── */}
+      {/* ── Top Selling Products from admin_top_products (CLICKABLE TO VIEW BUYER PARTIES) ── */}
       <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -431,7 +534,7 @@ export function DashboardOverview() {
               Top Selling Wholesale Products
             </h3>
             <p className="text-[11px] text-slate-400">
-              Extracted from orders.items via admin_top_products RPC
+              Extracted from orders.items via admin_top_products RPC • Click any product to view which parties bought this SKU
             </p>
           </div>
         </div>
@@ -441,18 +544,26 @@ export function DashboardOverview() {
             {topProducts.map((p, idx) => (
               <div
                 key={p.product_id || idx}
-                className="p-3 rounded-2xl bg-slate-50/60 border border-slate-100 flex flex-col justify-between space-y-3"
+                onClick={() =>
+                  setDrilldownConfig({
+                    type: "product_buyers",
+                    productId: p.product_id,
+                    productName: p.name,
+                  })
+                }
+                className="p-3 rounded-2xl bg-slate-50/60 hover:bg-white hover:border-primary/40 hover:shadow-md border border-slate-100 flex flex-col justify-between space-y-3 cursor-pointer transition active:scale-[0.98] group"
+                title={`Click to view party buyers for ${p.name}`}
               >
                 <div className="flex items-center space-x-2.5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
                     {p.image ? (
-                      <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                      <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
                     ) : (
                       <Package className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
+                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-primary transition">
                       {p.name}
                     </h4>
                     <p className="text-[10px] text-slate-400">
@@ -467,6 +578,11 @@ export function DashboardOverview() {
                     ₹{Number(p.total_revenue || 0).toLocaleString("en-IN")}
                   </span>
                 </div>
+
+                <div className="text-[9px] font-bold text-primary group-hover:underline flex items-center justify-between">
+                  <span>View party buyers</span>
+                  <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition" />
+                </div>
               </div>
             ))}
           </div>
@@ -476,6 +592,18 @@ export function DashboardOverview() {
           </p>
         )}
       </div>
+
+      {/* ── Active Party Drilldown Modal ── */}
+      {drilldownConfig && (
+        <DashboardPartyDetailModal
+          config={drilldownConfig}
+          fromDate={fromStr}
+          toDate={toStr}
+          onClose={() => setDrilldownConfig(null)}
+          onSelectOrder={onSelectOrder}
+          onNavigateTab={onNavigateTab}
+        />
+      )}
     </div>
   );
 }
