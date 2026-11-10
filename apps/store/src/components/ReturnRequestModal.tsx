@@ -1,4 +1,4 @@
-import { useState, useId } from "react";
+import { useState, useId, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import type {
   Order,
@@ -77,27 +77,77 @@ export function ReturnRequestModal({
   // Step 4: Created Return Result
   const [createdReturn, setCreatedReturn] = useState<ReturnRequest | null>(null);
 
+  // Map of already returned/requested quantities by product_id across active returns for this order
+  const alreadyReturnedByProduct = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const ret of order?.returns || []) {
+      if (ret.status !== "rejected") {
+        for (const item of ret.items || []) {
+          map[item.product_id] = (map[item.product_id] || 0) + (item.quantity || 0);
+        }
+      }
+    }
+    return map;
+  }, [order?.returns]);
+
+  function getItemEligibleQty(item: OrderItem): number {
+    const delivered = item.quantity || 1;
+    const alreadyReturned = alreadyReturnedByProduct[item.product_id] || 0;
+    return Math.max(0, delivered - alreadyReturned);
+  }
+
+  // Check if every item in this order has 0 eligible quantity left
+  const allItemsFullyReturned = Boolean(
+    order && order.items.length > 0 && order.items.every((item) => getItemEligibleQty(item) === 0)
+  );
+
+  const activeExistingReturn = (order?.returns && order.returns.length > 0)
+    ? order.returns.find((r) => r.status !== "rejected") || order.returns[0]
+    : null;
+
   if (!isOpen || !order) return null;
+
+  function handleClose() {
+    setError(null);
+    setStep(1);
+    setItemsState({});
+    setFiles([]);
+    setCreatedReturn(null);
+    onClose();
+  }
+
+  // Current non-null order reference for TypeScript
+  const currentOrder = order;
 
   // Initialize or get item selection state
   function getItemState(idx: number, item: OrderItem): SelectedItemState {
-    if (itemsState[idx]) return itemsState[idx]!;
+    const eligibleQty = getItemEligibleQty(item);
+    if (itemsState[idx]) {
+      return {
+        selected: eligibleQty > 0 && itemsState[idx]!.selected,
+        quantity: Math.min(itemsState[idx]!.quantity, eligibleQty),
+      };
+    }
+    // Default selection: select the first item that actually has eligible quantity remaining
+    const firstEligibleIdx = currentOrder.items.findIndex((it) => getItemEligibleQty(it) > 0);
     return {
-      selected: idx === 0, // default first item selected
-      quantity: item.quantity,
+      selected: eligibleQty > 0 && idx === firstEligibleIdx,
+      quantity: eligibleQty,
     };
   }
 
   function handleToggleItem(idx: number, item: OrderItem) {
+    const eligibleQty = getItemEligibleQty(item);
+    if (eligibleQty <= 0) return; // Cannot select items that have already been returned
     triggerHaptic("selection");
     setItemsState((prev) => {
-      const current = prev[idx] || { selected: false, quantity: item.quantity };
+      const current = prev[idx] || { selected: false, quantity: eligibleQty };
       return {
         ...prev,
         [idx]: {
           ...current,
           selected: !current.selected,
-          quantity: current.quantity > 0 ? current.quantity : item.quantity,
+          quantity: current.quantity > 0 ? Math.min(current.quantity, eligibleQty) : eligibleQty,
         },
       };
     });
@@ -106,9 +156,10 @@ export function ReturnRequestModal({
 
   function handleQuantityChange(idx: number, item: OrderItem, qty: number) {
     triggerHaptic("selection");
-    const clamped = Math.max(1, Math.min(item.quantity, qty));
+    const eligibleQty = getItemEligibleQty(item);
+    const clamped = Math.max(1, Math.min(eligibleQty, qty));
     setItemsState((prev) => {
-      const current = prev[idx] || { selected: true, quantity: item.quantity };
+      const current = prev[idx] || { selected: true, quantity: eligibleQty };
       return {
         ...prev,
         [idx]: {
@@ -277,7 +328,7 @@ export function ReturnRequestModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -320,131 +371,181 @@ export function ReturnRequestModal({
 
           {/* ════════════ STEP 1: PICK ITEMS & QUANTITIES ════════════ */}
           {step === 1 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Select which items from this order you want to return or replace:
-                </p>
-                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                  {selectedEntries.length} of {order.items.length} selected
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {order.items.map((item, idx) => {
-                  const state = getItemState(idx, item);
-                  const unitPrice = item.unit_price || item.price || 0;
-
-                  return (
-                    <div
-                      key={idx}
-                      className={`p-3.5 rounded-2xl border transition-all ${
-                        state.selected
-                          ? "border-brand-dark dark:border-orange-500 bg-sky-50/30 dark:bg-orange-500/10 shadow-2xs"
-                          : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-800/40 opacity-85 hover:opacity-100"
-                      }`}
+            allItemsFullyReturned ? (
+              <div className="py-8 text-center space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-orange-500/15 text-amber-700 dark:text-orange-400 flex items-center justify-center mx-auto border border-amber-200/80 dark:border-orange-500/30 shadow-xs">
+                  <CheckCircle2 className="w-7 h-7 stroke-[2.2]" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                    Return / Replacement Already Requested
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    All products from this order have already been registered for return or replacement. You cannot submit another request for the same items.
+                  </p>
+                </div>
+                {activeExistingReturn && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleClose();
+                        navigate(`/returns/${activeExistingReturn.id}`);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold shadow-xs transition cursor-pointer"
                     >
-                      <div className="flex items-start space-x-3">
-                        {/* Checkbox */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleItem(idx, item)}
-                          className={`mt-1 w-5 h-5 rounded-lg border flex items-center justify-center transition cursor-pointer shrink-0 ${
-                            state.selected
-                              ? "bg-brand-dark dark:bg-orange-500 border-brand-dark dark:border-orange-500 text-white"
-                              : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-slate-400"
-                          }`}
-                        >
-                          {state.selected && <Check className="w-3.5 h-3.5 stroke-3" />}
-                        </button>
-
-                        {/* Thumbnail */}
-                        <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Package className="w-6 h-6 text-slate-300 dark:text-slate-600" />
-                          )}
-                        </div>
-
-                        {/* Details */}
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
-                            {item.name}
-                          </p>
-
-                          <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400">
-                            {item.sku && <span>SKU: {item.sku}</span>}
-                            <span>&bull;</span>
-                            <span>Delivered: <strong>{item.quantity} pcs</strong></span>
-                          </div>
-
-                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            ₹{unitPrice.toLocaleString("en-IN")} / pc
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Quantity Selector (when selected) */}
-                      {state.selected && (
-                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                          <span className="text-slate-600 dark:text-slate-300 font-medium">
-                            Quantity to return / replace:
-                          </span>
-
-                          <div className="flex items-center space-x-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleQuantityChange(idx, item, state.quantity - 1)
-                              }
-                              disabled={state.quantity <= 1}
-                              className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 transition cursor-pointer"
-                            >
-                              -
-                            </button>
-
-                            <input
-                              type="number"
-                              min={1}
-                              max={item.quantity}
-                              value={state.quantity}
-                              onChange={(e) =>
-                                handleQuantityChange(
-                                  idx,
-                                  item,
-                                  parseInt(e.target.value) || 1
-                                )
-                              }
-                              className="w-14 py-1 text-center font-bold text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-brand-dark dark:focus:border-brand"
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleQuantityChange(idx, item, state.quantity + 1)
-                              }
-                              disabled={state.quantity >= item.quantity}
-                              className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 transition cursor-pointer"
-                            >
-                              +
-                            </button>
-
-                            <span className="text-[11px] text-slate-400 dark:text-slate-500 pl-1">
-                              (max {item.quantity})
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>View Active Return ({activeExistingReturn.return_code})</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Select which items from this order you want to return or replace:
+                  </p>
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                    {selectedEntries.length} of {order.items.length} selected
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {order.items.map((item, idx) => {
+                    const eligibleQty = getItemEligibleQty(item);
+                    const isFullyReturned = eligibleQty <= 0;
+                    const state = getItemState(idx, item);
+                    const unitPrice = item.unit_price || item.price || 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3.5 rounded-2xl border transition-all ${
+                          isFullyReturned
+                            ? "border-slate-200/60 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/20 opacity-60"
+                            : state.selected
+                            ? "border-brand-dark dark:border-orange-500 bg-sky-50/30 dark:bg-orange-500/10 shadow-2xs"
+                            : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-800/40 opacity-85 hover:opacity-100"
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          {/* Checkbox */}
+                          <button
+                            type="button"
+                            disabled={isFullyReturned}
+                            onClick={() => handleToggleItem(idx, item)}
+                            className={`mt-1 w-5 h-5 rounded-lg border flex items-center justify-center transition shrink-0 ${
+                              isFullyReturned
+                                ? "border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                                : state.selected
+                                ? "bg-brand-dark dark:bg-orange-500 border-brand-dark dark:border-orange-500 text-white cursor-pointer"
+                                : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-slate-400 cursor-pointer"
+                            }`}
+                          >
+                            {state.selected && <Check className="w-3.5 h-3.5 stroke-3" />}
+                          </button>
+
+                          {/* Thumbnail */}
+                          <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                            )}
+                          </div>
+
+                          {/* Details */}
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
+                              {item.name}
+                            </p>
+
+                            <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap gap-y-0.5">
+                              {item.sku && <span>SKU: {item.sku}</span>}
+                              <span>&bull;</span>
+                              <span>Delivered: <strong>{item.quantity} pcs</strong></span>
+                            </div>
+
+                            {isFullyReturned ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold text-[10px] border border-amber-200/80 dark:border-amber-800/60 mt-1">
+                                <Check className="w-3 h-3" />
+                                <span>Return / Replacement Already Requested</span>
+                              </span>
+                            ) : (
+                              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                ₹{unitPrice.toLocaleString("en-IN")} / pc
+                                {eligibleQty < (item.quantity || 1) && (
+                                  <span className="text-[11px] text-slate-500 font-normal ml-2">
+                                    ({eligibleQty} pcs remaining eligible)
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quantity Selector (when selected & eligible) */}
+                        {!isFullyReturned && state.selected && (
+                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span className="text-slate-600 dark:text-slate-300 font-medium">
+                              Quantity to return / replace:
+                            </span>
+
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleQuantityChange(idx, item, state.quantity - 1)
+                                }
+                                disabled={state.quantity <= 1}
+                                className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 transition cursor-pointer"
+                              >
+                                -
+                              </button>
+
+                              <input
+                                type="number"
+                                min={1}
+                                max={eligibleQty}
+                                value={state.quantity}
+                                onChange={(e) =>
+                                  handleQuantityChange(
+                                    idx,
+                                    item,
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                                className="w-14 py-1 text-center font-bold text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-brand-dark dark:focus:border-brand"
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleQuantityChange(idx, item, state.quantity + 1)
+                                }
+                                disabled={state.quantity >= eligibleQty}
+                                className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 transition cursor-pointer"
+                              >
+                                +
+                              </button>
+
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 pl-1">
+                                (max {eligibleQty})
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )
           )}
 
           {/* ════════════ STEP 2: CHOOSE REASON + TYPE + DESCRIPTION ════════════ */}
@@ -709,7 +810,7 @@ export function ReturnRequestModal({
                 <button
                   type="button"
                   onClick={() => {
-                    onClose();
+                    handleClose();
                     navigate(`/returns/${createdReturn.id}`);
                   }}
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-on-primary bg-primary hover:bg-primary-hover active:bg-primary-active text-xs font-semibold shadow-xs transition cursor-pointer"
@@ -719,7 +820,7 @@ export function ReturnRequestModal({
 
                 <Link
                   to="/returns"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition text-center"
                 >
                   All Returns
@@ -748,18 +849,19 @@ export function ReturnRequestModal({
             ) : (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="h-11 px-4 rounded-xl bg-transparent border border-surface-border text-slate-700 dark:text-slate-200 hover:bg-surface-card-subtle font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
               >
-                Cancel
+                {allItemsFullyReturned ? "Close" : "Cancel"}
               </button>
             )}
 
-            {step === 1 && (
+            {!allItemsFullyReturned && step === 1 && (
               <button
                 type="button"
                 onClick={handleNextToStep2}
-                className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
+                disabled={selectedEntries.length === 0}
+                className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-xl bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 font-semibold text-xs shadow-xs focus-visible:ring-2 ring-ring ring-offset-2 transition-all cursor-pointer"
               >
                 <span>Continue ({selectedEntries.length} items)</span>
                 <ArrowRight className="w-3.5 h-3.5" />

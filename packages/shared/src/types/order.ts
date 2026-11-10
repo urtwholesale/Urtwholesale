@@ -1,3 +1,5 @@
+import type { ReturnRequest } from "./return";
+
 export type OrderStatus =
   | "pending"
   | "confirmed"
@@ -89,6 +91,7 @@ export interface Order {
   timeline?: OrderEvent[];
   events?: OrderEvent[];
   order_events?: OrderEvent[];
+  returns?: ReturnRequest[];
   created_at: string;
   updated_at?: string;
 }

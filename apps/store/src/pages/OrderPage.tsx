@@ -119,8 +119,11 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
         fetchOrderReturnsMap().catch(() => ({} as Record<string, ReturnRequest>)),
       ]);
       setOrder(data);
-      if (data && returnsMap) {
-        setExistingReturn(returnsMap[data.id] || null);
+      if (data) {
+        const orderReturn = (data.returns && data.returns.length > 0)
+          ? data.returns.find(r => r.status !== 'rejected') || data.returns[0]
+          : null;
+        setExistingReturn(orderReturn || (returnsMap ? returnsMap[data.id] : null) || null);
       }
     } catch (err: unknown) {
       console.error("Failed to load order:", err);
@@ -486,6 +489,24 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
       daysRemaining: Math.max(0, returnWindowDays - diffDays),
     };
   }, [order, returnWindowDays]);
+
+  // Check if all items in this order have already been returned / requested
+  const isOrderFullyReturned = useMemo(() => {
+    if (!order?.items || order.items.length === 0) return false;
+    const returnedByProduct: Record<string, number> = {};
+    for (const ret of order.returns || []) {
+      if (ret.status !== "rejected") {
+        for (const item of ret.items || []) {
+          returnedByProduct[item.product_id] = (returnedByProduct[item.product_id] || 0) + (item.quantity || 0);
+        }
+      }
+    }
+    return order.items.every((item) => {
+      const delivered = item.quantity || 1;
+      const returned = returnedByProduct[item.product_id] || 0;
+      return delivered <= returned;
+    });
+  }, [order]);
 
   // Loading state
   if (loading) {
@@ -863,14 +884,14 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
           )}
 
           {/* Return / Replace Action Button (Requirement 1 & 5) */}
-          {existingReturn ? (
+          {(existingReturn || isOrderFullyReturned) ? (
             <Link
-              to={`/returns/${existingReturn.id}`}
+              to={existingReturn ? `/returns/${existingReturn.id}` : `/returns`}
               onClick={() => triggerHaptic("selection")}
               className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 py-2 px-3.5 rounded-xl bg-sky-50 text-sky-900 border border-sky-200 font-bold text-xs transition active:scale-[0.99] cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5 text-sky-700" />
-              <span>View Return ({existingReturn.return_code})</span>
+              <span>View Return {existingReturn ? `(${existingReturn.return_code})` : ""}</span>
             </Link>
           ) : returnInfo.isDelivered ? (
             returnInfo.isWithinWindow ? (
@@ -1522,7 +1543,8 @@ export function OrderPage({ onAddToCart }: OrderPageProps) {
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         order={order}
-        onSuccess={() => {
+        onSuccess={(created) => {
+          setExistingReturn(created);
           loadOrder();
         }}
       />
