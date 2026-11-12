@@ -12,13 +12,15 @@ The platform features:
 - **Customer Storefront (`apps/store`)**: High-performance mobile-first web app with lightning-fast catalog navigation, real-time search, B2B wholesale volume price tiers, persistent cart management, verified server-side orders, and seamless WhatsApp order dispatch.
 - **Admin Management Panel (`apps/admin`)**: Separately isolated back-office dashboard featuring an ultra-modern left sidebar layout (inspired by LeaseFlow), executive RPC analytics, catalog/inventory control, order pipeline with GST invoicing, interactive hero banner media management, and self-service admin credentials.
 - **Shared Architecture (`packages/shared`)**: Shared TypeScript domain models, volume tier calculation engine, and schemas ensuring 100% type safety across both frontend applications and Postgres database models.
-- **Supabase Cloud Backend (`supabase/`)**: PostgreSQL database with Row Level Security (RLS), Supabase Auth, Storage buckets (`product-images`, `banners`, `avatars`), atomic verified order creation RPCs (`create_verified_order`), and real-time analytical functions.
+- **Supabase Cloud Backend (`supabase/`)**: PostgreSQL database with Row Level Security (RLS), Supabase Auth, Storage buckets (`product-images`, `banners`, `avatars`, `catalog-images`, `return-evidence`), atomic verified order creation RPCs (`create_verified_order`), and real-time analytical functions.
 
 ---
 
 ## 2. Monorepo Architecture
 
 The project is structured as an **npm workspace** monorepo:
+
+The tree shows key entry points; not every component is listed.
 
 ```
 urbanrat-store/
@@ -30,16 +32,35 @@ urbanrat-store/
 │   │   │   ├── logo.png               # Official Urbanrat bunny logo
 │   │   │   └── hero-accessories.jpg
 │   │   ├── src/
-│   │   │   ├── components/            # Reusable UI (Two-tier TopBar, NavigationDock, WholesaleMarquee, Footer, TurnstileWidget, ProductCard, ErrorState, etc.)
-│   │   │   ├── context/               # Global contexts (SettingsContext for store_settings)
+│   │   │   ├── components/            # Reusable UI (AddressFormModal, AddressPicker, EmptyState, TopBar, WholesaleMarquee, Footer)
+│   │   │   │   ├── CursorPhobicDots.tsx   # Canvas dot matrix background reacting to cursor/touch with spring-damped repulsion
+│   │   │   │   ├── CursorPhobicElement.tsx # Pointer-reactive 3D tilt and magnetic repulsion displacement container
+│   │   │   │   └── coupon/            # Coupon checkout widgets (CouponInput, AppliedCouponChip, CouponSavingsRow, PriceSummary)
+│   │   │   ├── context/               # Global contexts (SettingsContext, AuthContext)
+│   │   │   │   └── AuthContext.tsx    # Customer authentication state, profile synchronization & session provider
 │   │   │   ├── features/auth/         # Customer authentication & profile modal (CustomerAuth)
+│   │   │   ├── hooks/                 # Custom React hooks (useCoupon for reactive discounts)
+│   │   │   │   ├── useCoupon.ts       # Reactive coupon validation, discount calculation & error state hook
+│   │   │   │   └── useCoupon.test.ts  # Unit tests for useCoupon lifecycle and calculations
+│   │   │   ├── locales/               # Localization dictionaries & tests
+│   │   │   │   ├── categoryTranslations.ts # Category-specific Hindi translations dictionary
+│   │   │   │   ├── translations.ts    # Core bilingual English ('en') and Hindi ('hi') translation tokens
+│   │   │   │   └── translations.test.ts # Unit tests verifying English and Hindi translation key parity
 │   │   │   ├── lib/                   # Supabase client instantiation
 │   │   │   ├── pages/                 # Route views (Home, Marketplace, Categories, Urbanrat, Cart, Order, Menu, ProductDetail)
+│   │   │   │   ├── AccountPage.tsx    # Customer profile, language preference, and account overview
+│   │   │   │   ├── AddressesPage.tsx  # Saved shipping address book and default address manager
+│   │   │   │   ├── DealerApplicationPage.tsx # B2B dealer network application form and submission
+│   │   │   │   ├── MyOrdersPage.tsx   # Customer wholesale order history and status tracking
+│   │   │   │   ├── ReturnsPage.tsx    # Customer return requests list and initiation portal
+│   │   │   │   └── ReturnDetailPage.tsx # Return request timeline, evidence viewer, and customer cancellation
 │   │   │   ├── services/              # Pure live Supabase data service layer (no mock fallbacks)
 │   │   │   ├── utils/                 # WhatsApp message generator, currency & haptic helpers
+│   │   │   │   └── buildWhatsAppMessage.test.ts # Unit tests for WhatsApp message formatting and encoding
 │   │   │   ├── App.tsx                # Main application layout, two-tier header clearance & cart state
 │   │   │   ├── index.css              # Tailwind CSS v4 design tokens & theme classes
 │   │   │   └── main.tsx               # React DOM root
+│   │   ├── generate_hero_cards.py     # Dev-only tool: Generates 5:4 composite promotional hero card visuals
 │   │   ├── index.html                 # Configured with favicon.ico, logo.png & apple-touch-icon
 │   │   ├── package.json
 │   │   ├── tsconfig.json
@@ -53,15 +74,37 @@ urbanrat-store/
 │       │   ├── features/
 │       │   │   ├── auth/              # Admin login with username mapping (the admin username) & role check
 │       │   │   ├── catalog/           # Category-wise Single & Bulk Catalog Uploads, QC Verification, Keywords & Multi-Level Category Manager
+│       │   │   │   ├── CatalogUploadHome.tsx # Catalog upload center dashboard with upload wizards & batch history
 │       │   │   │   ├── components/    # Reusable UI (KeywordsInput, CategoryCascader, BulkCatalogModal, SingleCatalogWizard, UploadDetailModal, UploadHistoryList)
 │       │   │   │   ├── categories/    # 4-Level multi-column Category Manager & dynamic attribute schemas
+│       │   │   │   │   └── components/ # Category column views, edit/delete modals & attribute panels (CategoryColumn, CategoryEditModal)
+│       │   │   │   ├── images/        # Image Library & bulk uploader (ImageBulkUploadPage, ImagePickerModal)
 │       │   │   │   ├── utils/         # SheetJS (xlsx) multi-sheet template generator (templateGenerator.ts) & spreadsheet parser (catalogParser.ts)
+│       │   │   │   │   └── catalogParser.test.ts # Unit tests for spreadsheet parsing, header aliasing & QC validation
 │       │   │   │   ├── types.ts       # Upload batch, item, and QC verification interfaces
 │       │   │   │   └── index.ts       # Catalog feature barrel export
-│       │   │   ├── dashboard/         # Executive Analytics & RPC KPI cards (DashboardOverview)
+│       │   │   ├── dashboard/         # Executive Analytics & Party Detail Modal
+│       │   │   │   ├── DashboardOverview.tsx # Real-time analytical KPI cards, sales charts & status breakdown
+│       │   │   │   └── DashboardPartyDetailModal.tsx # Wholesale party analytics, bad debt tagging & payment tracking
 │       │   │   ├── products/          # Catalog & inventory management (ProductList, ProductEditor with KeywordsInput, index.ts barrel)
+│       │   │   │   └── components/    # Bulk operations UI (BulkEditDrawer & tabs, CategoryMoveModal, BulkHistoryModal)
 │       │   │   ├── orders/            # Order pipeline & GST invoice generation (OrderList, OrderDetailModal)
+│       │   │   │   └── OrderNoticesStrip.tsx # Real-time notification strip for unfulfilled orders, pending payments & returns
 │       │   │   ├── content/           # Hero banners, ImageCompressorTool, policies & keywords (ContentEditor)
+│       │   │   ├── banners/           # Hero & promotional banner management
+│       │   │   │   └── BannersEditor.tsx # Banner image uploader, link destination & position controls
+│       │   │   ├── pages/             # Store policy and content markdown editor
+│       │   │   │   └── PagesEditor.tsx # Markdown editor with publish toggles for store policies
+│       │   │   ├── returns/           # Wholesale returns & supplier claims management
+│       │   │   │   ├── ClaimModal.tsx # Supplier claim settlement & tracking modal
+│       │   │   │   ├── ClaimTrackingList.tsx # Supplier claim status tracking and audit view
+│       │   │   │   ├── ReturnDetailDrawer.tsx # Return inspection drawer with evidence preview & status controls
+│       │   │   │   ├── ReturnsHome.tsx # Returns management hub with sub-navigation tabs
+│       │   │   │   ├── ReturnsOverview.tsx # Return requests metrics, KPI cards & status breakdown
+│       │   │   │   ├── ReturnTrackingList.tsx # Customer return requests table with action buttons
+│       │   │   │   └── index.ts       # Returns feature barrel export
+│       │   │   ├── reviews/           # Product review moderation queue
+│       │   │   │   └── ReviewModerationList.tsx # Review moderation list with approve, reject & delete actions
 │       │   │   └── settings/          # Store settings & admin password self-service (SettingsEditor)
 │       │   ├── lib/
 │       │   │   ├── adminService.ts    # Admin database operations, storage uploads with auto-WebP compression & analytics RPCs
@@ -79,31 +122,69 @@ urbanrat-store/
 ├── packages/
 │   └── shared/                        # Shared Domain Package
 │       ├── src/
+│       │   ├── constants/             # Domain constant dictionaries
+│       │   │   └── india.ts           # Indian States/UTs, GST state code mappings & wholesale address labels
 │       │   ├── types/
 │       │   │   ├── address.ts         # Customer delivery address schema
+│       │   │   ├── bulk.ts            # Bulk product operations, patch definitions & status types
 │       │   │   ├── cart.ts            # CartItem & CartSummary definitions
 │       │   │   ├── catalog.ts         # Catalog batch & QC verification types
 │       │   │   ├── category.ts        # Category hierarchy models
+│       │   │   ├── coupon.ts          # Coupon, discount calculations & redemption record types
+│       │   │   ├── dealership.ts      # Dealership tier margins, showcase items & guide articles schema
 │       │   │   ├── order.ts           # Order status, line items, and customer schema
 │       │   │   ├── pricing.ts         # Volume price tiers & price breakdown models
 │       │   │   ├── product.ts         # Product, keywords text[], pricing, specs, and stock models
 │       │   │   ├── profile.ts         # User & Admin profile types
+│       │   │   ├── promoCode.ts       # Promo code discounts & validation result models
 │       │   │   ├── review.ts          # Product review and rating models
+│       │   │   ├── return.ts          # Return requests, return items, dispute evidence & supplier claim types
 │       │   │   ├── stockMovement.ts   # Stock audit trail models
 │       │   │   └── storeSettings.ts   # B2B settings, banners, and policy pages
 │       │   ├── adminAuth.ts           # Admin authorization logic & AAL2 MFA enforcement checks
 │       │   ├── adminAuth.test.ts      # Unit tests for AAL1 rejection, AAL2 approval, role validation & safe rollout
+│       │   ├── bulkOps.ts             # Bulk product operations engine, tier adjustments & stock mutations
+│       │   ├── bulkOps.test.ts        # Unit test suite for bulk price/stock adjustments and undo patches
+│       │   ├── catalogHeaders.ts      # Header normalization & canonical spreadsheet column aliasing
+│       │   ├── catalogHeaders.test.ts # Unit tests for universal catalog header aliasing & fallbacks
+│       │   ├── catalogImages.ts       # SKU hint extraction and catalog image filename parsing
+│       │   ├── catalogImages.test.ts  # Unit tests for SKU hint extraction and multi-image matching
+│       │   ├── categoryImages.ts      # 3D tech studio category visual path resolution
+│       │   ├── categoryImages.test.ts # Unit tests for dark/light category visual path mapping
+│       │   ├── categoryTree.ts        # Hierarchical 4-level category tree and breadcrumb generation
+│       │   ├── categoryTree.test.ts   # Unit tests for category tree building and descendant retrieval
+│       │   ├── colors.ts              # Product color swatches, color parsing & variant availability
+│       │   ├── colors.test.ts         # Unit tests for color array parsing, deduplication & normalization
+│       │   ├── coupons.ts             # Coupon code normalization, validation formatting & discount engine
+│       │   ├── coupons.test.ts        # Unit tests for coupon percentage, fixed caps & minimum cart validation
+│       │   ├── dealership.test.ts     # Unit tests for dealership tier margins and showcase models
+│       │   ├── homepageSections.test.ts # Unit tests for dynamic homepage division schemas and icon themes
 │       │   ├── keywords.ts            # Keyword normalization, deduplication & validation engine (normalizeKeywords)
 │       │   ├── keywords.test.ts       # Unit tests covering normalization, trimming, limits & separators
 │       │   ├── pricing.ts             # B2B volume pricing calculator & tier matching
 │       │   ├── pricing.test.ts        # Unit test suite for pricing engine
+│       │   ├── orders.ts              # Order status labels, visual status badges & pipeline filters
+│       │   ├── orders.test.ts         # Unit tests for order status badges and transitions
+│       │   ├── productSpecs.ts        # Product specifications parsing, highlight specs & color hex mapping
+│       │   ├── productSpecs.test.ts   # Unit tests for spec highlights and color hex resolution
+│       │   ├── marquee.test.ts        # Unit tests for marquee announcement items and active filtering
 │       │   ├── returns.ts             # Private return-evidence signed URL helpers & TTL constants
 │       │   ├── returns.test.ts        # Unit test suite for returns domain, claim guards & signed URL TTL
-│       │   └── index.ts               # Barrel export
+│       │   ├── reviewAntiFake.ts      # Review validation rules, repetitive text & URL spam detection
+│       │   ├── reviewAntiFake.test.ts # Unit tests for anti-fraud review content moderation rules
+│       │   ├── search.ts              # Typo corrections, keyword tokenization & wholesale search synonyms
+│       │   ├── search.test.ts         # Unit tests for search engine query normalization and typo tolerance
+│       │   ├── validation.ts          # Domain input validation (GSTIN, Indian mobile numbers & pincodes)
+│       │   └── validation.test.ts     # Unit test suite for GSTIN, phone and pincode regex validators
+│       │   ├── sanitize.ts            # HTML entity escaping & safe URL redirect path sanitization
+│       │   ├── sanitize.test.ts       # Unit tests for HTML entity escaping & URL sanitization
+│       │   ├── index.ts               # Barrel export
 │       ├── package.json
 │       └── tsconfig.json
 │
 ├── supabase/
+│   ├── archive/
+│   │   └── 026_rollback.sql           # Archived emergency recovery script restoring table-wide SELECT on products
 │   ├── functions/
 │   │   ├── checkout-gate/             # Deno Edge Function for Turnstile bot-gated guest checkout
 │   │   └── order-og/                  # Deno Edge Function for dynamic WhatsApp link previews
@@ -133,22 +214,34 @@ urbanrat-store/
 │   │   ├── 023_diverse_new_arrivals.sql # Window-partitioned round-robin category product selection RPC
 │   │   ├── 024_security_hardening.sql # Role immutability, products_public view, stock isolation, order bounds & RPC privilege revocation
 │   │   ├── 025_security_gaps_closure.sql # Tracking tokens, execute revokes, bounded search, safe MFA rollout & anti-abuse (superseded by 026a/b)
-│   │   ├── 026a_storefront_additive.sql # Stored generated in_stock, products_public view, public_tokens, guest order RPC, checkout rate limits
-│   │   ├── 026b_storefront_tightening.sql # Overload drops, column SELECT on products, sensitive table revokes, anon allowlist
-│   │   ├── 026_rollback.sql           # Emergency rollback migration restoring table-wide SELECT on products
+│   │   ├── 026_storefront_catalog_and_tightening.sql # Two-phase storefront hardening: in_stock column, products_public view, public_tokens, checkout RPCs, column SELECT & anon allowlist
 │   │   ├── 027_admin_mfa_enforcement.sql # Safe TOTP MFA audit RPC, JSONB is_admin() hardening, reversible enforcement commands
 │   │   ├── 028_marquee_announcements.sql # Continuous marquee announcements table, RLS policies, trigger & default wholesale seeds
 │   │   ├── 029_dealership_program.sql # Dynamic Dealership Program: margins, branded vs copy showcase, differentiation & articles
+│   │   ├── 030_fix_stock_movements_and_checkout.sql # Fix stock movements schema, max_order_qty column & checkout RPCs
+│   │   ├── 031_fix_order_totals_and_settings.sql # Fix order totals NULL checks & store_settings key lookup
+│   │   ├── 032_performance_optimization_and_columns.sql # Colors swatch array, views/sales counts & composite performance indexes
+│   │   ├── 033_promo_codes_system.sql # Promo codes system with min-order thresholds & admin controls (superseded by 036)
+│   │   ├── 034_sync_review_customer_names.sql # Sync and display real customer names on product reviews
+│   │   └── 035_fix_order_total_and_reviews.sql # Fix orders total default/null constraint & get_product_reviews RPC
 │   │   ├── 036_coupons.sql            # Promotional coupon engine, RLS lockdown, atomic redemptions & admin management
 │   │   ├── 037_homepage_divisions.sql # Dynamic homepage divisions configuration, jewel-grade division icons
 │   │   ├── 038_fix_checkout_price_tiers.sql # Fix column "price_tiers" does not exist in create_verified_order & create_verified_order_guest
-│   │   └── 039_fix_coupon_unassigned_record.sql # Fix record "v_coupon" is not assigned yet on Checkout RPCs
+│   │   ├── 039_fix_coupon_unassigned_record.sql # Fix record "v_coupon" is not assigned yet on Checkout RPCs
+│   │   ├── 040_fix_return_requests_reason.sql # Fix return requests reason check constraint for defective & damaged goods
+│   │   ├── 041_embed_returns_in_get_order_by_id.sql # Embed active return requests array directly in get_order_by_id RPC
+│   │   ├── 042_admin_update_order_payment_status.sql # Admin order payment status update RPC (admin_update_order_payment_status)
+│   │   ├── 043_bad_debt_party_and_transaction.sql # Wholesale party and transaction bad debt tagging & management RPCs
+│   │   ├── 044_customer_cancel_return_request.sql # Customer-side return request cancellation RPC (customer_cancel_return_request)
+│   │   └── 045_fix_return_resolution_notes_and_cancel.sql # Add resolution_notes column to return_requests & allow cancelled in return_events
 │   └── seed.sql                       # 12 categories, 18 subcategories, products & volume tiers
 │
 ├── scripts/                           # Penetration testing & database verification scripts
 │   ├── run_rest_pentest.js            # Automated 15-probe PostgREST RLS penetration test runner
 │   ├── audit_database_security.js     # Schema and function privilege auditing script
 │   ├── check_anon_functions.sql       # Diagnostic SQL for functions executable by anon role
+│   ├── convert_categories.py          # Category image processing and dark/light theme background blending
+│   ├── push_to_database.js            # Automated seed and database migration push runner
 │   └── rls_penetration_test.sql       # Direct SQL RLS penetration and isolation probe suite
 │
 ├── .github/
@@ -284,7 +377,7 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 3. **B2B Wholesale Volume Pricing & Catalog Stock Display**:
    - Volume tier discounts configured per product (e.g. 10–49 units, 50–99 units, 100+ units).
    - Interactive tiered savings preview directly on product pages and in the cart.
-   - **Catalog Stock Isolation & Stored Generated `in_stock` Column**: Rather than calculating stock availability on-the-fly via functions or exposing raw counts, `in_stock` is implemented as an indexed stored generated column on `public.products` (`in_stock boolean GENERATED ALWAYS AS (stock > 0) STORED`, added in `026a_storefront_additive.sql`, superseding the initial view-level helper in `024_security_hardening.sql`). Both the storefront catalog view `public.products_public` (with `security_invoker = on`) and column-level SELECT grants in `026b_storefront_tightening.sql` expose `in_stock` while revoking `anon` access to internal warehouse stock counts (`stock`), cost prices, and supplier data. Storefront client queries (`storeService.ts`) retrieve `PRODUCT_SAFE_COLUMNS` including `in_stock`, completely eliminating warehouse inventory intelligence leakage.
+   - **Catalog Stock Isolation & Stored Generated `in_stock` Column**: Rather than calculating stock availability on-the-fly via functions or exposing raw counts, `in_stock` is implemented as an indexed stored generated column on `public.products` (`in_stock boolean GENERATED ALWAYS AS (stock > 0) STORED`, added in `026_storefront_catalog_and_tightening.sql`, superseding the initial view-level helper in `024_security_hardening.sql`). Both the storefront catalog view `public.products_public` (with `security_invoker = on`) and column-level SELECT grants in `026_storefront_catalog_and_tightening.sql` expose `in_stock` while revoking `anon` access to internal warehouse stock counts (`stock`), cost prices, and supplier data. Storefront client queries (`storeService.ts`) retrieve `PRODUCT_SAFE_COLUMNS` including `in_stock`, completely eliminating warehouse inventory intelligence leakage.
    - Server-side verification via Supabase Postgres RPCs (`create_verified_order` for authenticated checkouts, and service-role-only `create_verified_order_guest` via the `checkout-gate` Edge Function for guests) prevents client-side price tampering.
 
 4. **Real-Time Instant Search**:
@@ -347,6 +440,10 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
     - **Server-Authoritative Anti-Tampering**: Submits coupon code to PostgreSQL RPCs (`create_verified_order` for authenticated users, `/functions/v1/checkout-gate` for guests); client-side price tampering is completely ignored and overwritten by server-side catalog tier recomputation.
     - **Dual Theme & Mobile-First**: Uses solid teal semantic tokens (`bg-primary`, `bg-primary-soft`, `border-primary-border`), WCAG AA compliant contrast, tactile haptic feedback (`triggerHaptic`), and English/Hindi dictionary localization.
 
+13. **Customer Return Cancellation Flow (`ReturnDetailPage.tsx`)**:
+    - Wholesale customers can cancel pending return requests directly from the return details timeline before items are physically received or in-transit.
+    - Prompts with a cancellation reason modal and executes the `customer_cancel_return_request` RPC (migration 044/045), logging a `'cancelled'` event in `return_events` with cancellation resolution notes.
+
 ### Admin Panel (`apps/admin`)
 
 1. **Redesigned Sidebar Layout (LeaseFlow Inspired UI)**:
@@ -354,9 +451,17 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
    - **Brand Squircle Header**: Displays official Urbanrat logo with brand typography.
    - **Hub Selector Card**: "Main Wholesale Hub • Pan-India Central" depot switcher.
    - **Grouped Navigation**:
-     - **Dashboard**: Layout grid icon with high-contrast dark active pill styling.
-     - **Commerce & Sales**: *Products* (with live product count badge) & *Orders* (with new pending order count badge).
-     - **Storefront & Workspace**: *Content* (media & pages) & *Store Settings*.
+     - **Dashboard**: Executive metrics, sales charts & KPIs (`dashboard`).
+     - **Commerce & Sales**:
+       - *Catalog*: 4-level category hierarchy & dynamic attributes (`categories`), single/bulk catalog onboarding with QC checks (`catalog`), and bulk image uploader with WebP optimization (`image_bulk_upload`).
+       - *Products*: Catalog inventory management with live product count badge (`products`).
+       - *Orders*: Order pipeline with pending order badge & GST tax invoices (`orders`).
+       - *Coupons*: Promotional codes and discount management (`coupons`).
+       - *Returns*: Customer return inspection, status controls & pending returns badge (`returns`).
+       - *Reviews*: Verified buyer review moderation queue with pending count badge (`reviews`).
+     - **Storefront & Workspace**:
+       - *Content*: Hero banners, store pages & trending tags (`content`).
+       - *Store Settings*: MOQs, free shipping, tax & admin credentials (`settings`).
    - **Live Cloud Sync Card**: "Urbanrat Cloud • Supabase Live" with pulsing indicator and interactive toggle.
    - **Admin Profile Card**: Displays admin avatar (the admin's initials), the admin username, role badge (`Super Admin`), and 1-click **Sign Out**.
 
@@ -372,6 +477,7 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
      - Multi-image manager uploading to Supabase Storage (`product-images`).
      - Volume Price Tiers manager via `admin_save_product_tiers`.
      - Direct stock adjustment via `admin_adjust_stock` with audit notes.
+   - **Bulk Product Operations (`BulkEditDrawer.tsx`)**: Multi-product batch editing with specialized tabs (`BulkDetailsTab`, `BulkTiersTab`, `BulkStockTab`, `BulkImagesTab`), dry-run diff preview (`BulkPreviewPanel`), category reassignment (`CategoryMoveModal`), and 1-click audit rollback (`BulkHistoryModal`).
 
 4. **Order Pipeline & Invoicing (`OrderList.tsx` & `OrderDetailModal.tsx`)**:
    - Filter orders by status (*All, Pending, Confirmed, Processing, Shipped, Delivered, Cancelled, Refunded*).
@@ -426,6 +532,7 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
     - **Client-Side WebP Category Image Compressor**: Converts category media to WebP format via Canvas compression before uploading to `product-images` storage bucket.
     - **Dynamic Attributes Schema Engine**: Configures custom product specifications per category (`text`, `number`, `select`, `multiselect`, `boolean`) with option tag builders, required toggles, and subcategory inheritance. Displays inherited attributes as read-only chips with source category breadcrumbs.
     - **Live Category Search**: Instant query filtering matching across all 4 tiers with automatic tree expansion and column jump.
+    - **Modular Component Architecture**: Modular column cascades (`CategoryColumn`), safe deletion safeguards (`CategoryDeleteModal`), and attribute schema configurators (`CategoryAttributesPanel`) isolate category tree maintenance into reusable UI components.
 
 12. **Search Keywords System & Reusable `KeywordsInput` Across All Catalog Touchpoints (`apps/admin/src/features/catalog/components/KeywordsInput.tsx`)**:
     - **Reusable Tag Input Component**: Mobile-first chip manager styled with canonical brand tokens (`bg-brand-light/20`, `text-brand-dark`), supporting tag addition via `Enter`, comma (`,`), or `blur`, with full paste splitting (comma, semicolon, pipe, or line breaks).
@@ -444,6 +551,25 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
     - **Performance & Redemptions Drawer (`CouponDetailDrawer.tsx`)**: Real-time KPI analytics (Total Redemptions, Total Discount Given, Revenue Influenced, Last Used) and paginated redemption history log linking directly to order modal records.
     - **Orders & Invoicing Integration (`OrderList.tsx` & `OrderDetailModal.tsx`)**: Displays coupon badge `🎟️ CODE (-₹X)` in order table rows and mobile cards; `OrderDetailModal` financial breakdown includes coupon row; and browser-native GST tax invoice includes `"Discount (CODE)"` line with GST computed on the discounted taxable base.
 
+14. **Wholesale Returns & Supplier Claims Management (`apps/admin/src/features/returns/`)**:
+    - Unified returns hub (`ReturnsHome.tsx`, `ReturnsOverview.tsx`, `ReturnTrackingList.tsx`) for inspecting customer return requests, unboxing videos, and photo evidence (`return-evidence`).
+    - Multi-stage status transitions (approve, pickup, restock, refund, reject) via `ReturnDetailDrawer.tsx` and automated supplier dispute claims tracking via `ClaimTrackingList.tsx` and `ClaimModal.tsx`.
+
+15. **Customer Review Moderation Queue (`ReviewModerationList.tsx`)**:
+    - Dedicated moderation dashboard routing all $< 4$-star reviews to an administrator review queue, while $\ge 4$-star reviews are auto-approved via database triggers.
+    - Real-time rating distribution KPIs, search by customer/product, and 1-click status actions (approve, reject, or permanently delete).
+
+16. **Promotional Banners & Policy Pages Editors (`BannersEditor.tsx` & `PagesEditor.tsx`)**:
+    - Dedicated banner editor (`BannersEditor.tsx`) managing hero placements (`home_hero`, `home_brand`, `urbanrat_hero`), sort orders, active toggles, and direct uploads.
+    - Policy and content editor (`PagesEditor.tsx`) providing markdown authoring and publication toggles for store policy pages (`about`, `terms`, `privacy`, `shipping`, `warranty`).
+
+17. **Order Payment Status Marking (`admin_update_order_payment_status`, Migration 042)**:
+    - 1-click "Mark Paid" button on orders in `OrderList.tsx`, `OrderDetailModal.tsx`, and `DashboardPartyDetailModal.tsx` to transition unpaid orders to `paid`.
+    - Invokes `admin_update_order_payment_status` RPC to atomically record payment state, append timeline events to `order_events`, and update executive revenue collections.
+
+18. **Wholesale Party & Transaction Bad Debt Tracking (`DashboardPartyDetailModal.tsx`, Migration 043)**:
+    - Detailed wholesale party analytics modal displaying customer lifetime volume, outstanding dues, paid orders, and order history.
+    - Supports tagging entire wholesale profiles as "Bad Debt Parties" via `admin_toggle_bad_debt_party` RPC, or isolating individual orders as `bad_debt` via `admin_toggle_bad_debt_transaction`, rendering prominent warning badges across order queues.
 ---
 
 ## 5. Database Schema & Security (Supabase)
@@ -475,18 +601,29 @@ The styling architecture across both apps is powered by Tailwind CSS v4 with uni
 | `021_banners_rating.sql` | Banner promotional ratings | Adds customizable `rating text default '4.9'` column to `banners` table; triggers PostgREST schema cache reload. |
 | `022_review_approval_system.sql` | Review rating approval automation | Review approval workflow with `auto_moderate_review` trigger function enforcing automatic approval for $\ge 4$ stars and admin moderation for $< 4$ stars. |
 | `023_diverse_new_arrivals.sql` | Category-diverse new arrivals showcase | Window-partitioned recursive CTE function `get_new_arrivals_by_category(items_per_category)` ensuring home page new arrivals represent all product families. |
-| `024_security_hardening.sql` | Comprehensive Security Hardening & Least Privilege | Strict role immutability trigger (`check_profile_role_update`), `handle_new_user` role lockdown (hardcodes `'customer'`), storefront `products_public` view with `security_invoker = on` and `product_is_in_stock` helper, direct anon SELECT revoked on `products.stock`, hardened `create_verified_order` (quantity bounds, active status, duplicate line rejection), `create_return_request` path validation (`auth.uid() || '/'`), server-side bounds on `search_products_v2` (60-char query cap, 50-row limit), `get_order_by_id` phone masking and `admin_note` stripping, and enforced `is_admin()` checks and `SET search_path = public, pg_temp` across all admin/bulk/stats functions with EXECUTE revoked from PUBLIC/anon. |
-| `025_security_gaps_closure.sql` | Evidence Audit Security Gaps Closure (Superseded/Extended) | Initial proposal for unguessable `public_token` on `orders` and `dealer_applications`, token-gated `get_order_by_id` & `get_dealer_application_by_code`, bounds on legacy `search_products` (60 chars, 50 rows), safe TOTP MFA rollout via `enforce_admin_mfa` and `is_admin()`, storage bucket enumeration prevention, content-based review moderation, and rate limits tracking with honeypot bot trap. *(Note: Tracking token generation, order lookup signatures, and guest RPCs were superseded and extended by the authoritative migrations `026a_storefront_additive.sql` and `026b_storefront_tightening.sql`)*. |
-| `026a_storefront_additive.sql` | Two-Phase Storefront Hardening (Phase 1: Additive) | Authoritative stored generated column `products.in_stock` (`stock > 0`), safe storefront catalog view `public.products_public` (with embedded price tiers and `security_invoker = on`), admin view `public.products_admin`, authoritative 128-bit `public_token` on `orders` and `dealer_applications` with unique indexes, `order_events.customer_visible` column & RLS filter, authoritative token-gated `get_order_by_id(text, text)` with minimal guest masking and `get_dealer_application_by_code(text, text)`, service-role-only `create_verified_order_guest` RPC, table-backed `checkout_rate_limits` sliding window counter, and `max_order_qty` store setting. |
-| `026b_storefront_tightening.sql` | Two-Phase Storefront Hardening (Phase 2: Tightening) | Drops legacy single-param `get_order_by_id(text)` and 3-param `create_verified_order(jsonb, jsonb, text)` to eliminate PostgREST overload ambiguity (PGRST203); revokes table-wide `SELECT` on `products` from `anon` while granting column-level `SELECT` on 27 safe columns matching `products_public`; revokes direct `SELECT` on `orders`, `order_events`, `dealer_applications`, `dealer_events`, and `addresses` from `anon`; permanently drops insecure `customer_addresses` view; tightens `reviews` RLS and `auto_moderate_review`; and restricts `anon` execute privileges to an explicit allowlist. |
-| `026_rollback.sql` | Storefront Hardening Emergency Rollback | Emergency recovery script for 026a/026b that restores table-wide `SELECT` on `products`, `orders`, and sensitive tables, reverts view definitions, and restores legacy single-arg `get_order_by_id(text)` while preserving existing `public_token` column values to prevent data loss. *(Not applied)*. |
+| `024_security_hardening.sql` | Comprehensive Security Hardening & Least Privilege | Strict role immutability trigger (`check_profile_role_update`), `handle_new_user` role lockdown (hardcodes `'customer'`), storefront `products_public` view with `security_invoker = on` and `product_is_in_stock` helper, direct anon SELECT revoked on `products.stock`, hardened `create_verified_order` (quantity bounds, active status, duplicate line rejection), `create_return_request` path validation (folder path must start with the caller's user ID), server-side bounds on `search_products_v2` (60-char query cap, 50-row limit), `get_order_by_id` phone masking and `admin_note` stripping, and enforced `is_admin()` checks and `SET search_path = public, pg_temp` across all admin/bulk/stats functions with EXECUTE revoked from PUBLIC/anon. |
+| `025_security_gaps_closure.sql` | Evidence Audit Security Gaps Closure (Superseded/Extended) | Initial proposal for unguessable `public_token` on `orders` and `dealer_applications`, token-gated `get_order_by_id` & `get_dealer_application_by_code`, bounds on legacy `search_products` (60 chars, 50 rows), safe TOTP MFA rollout via `enforce_admin_mfa` and `is_admin()`, storage bucket enumeration prevention, content-based review moderation, and rate limits tracking with honeypot bot trap. *(Note: Tracking token generation, order lookup signatures, and guest RPCs were superseded and extended by the authoritative consolidated migration `026_storefront_catalog_and_tightening.sql`)*. |
+| `026_storefront_catalog_and_tightening.sql` | Two-Phase Storefront Hardening & Catalog Tightening | Consolidates Phase 1 (additive) and Phase 2 (tightening): stored generated column `products.in_stock` (`stock > 0`), safe storefront catalog view `public.products_public` (embedded price tiers, `security_invoker = on`), admin view `public.products_admin`, 128-bit `public_token` on `orders` and `dealer_applications` with unique indexes, `order_events.customer_visible` filter, token-gated `get_order_by_id(text, text)` & `get_dealer_application_by_code(text, text)`, service-role `create_verified_order_guest` RPC, table-backed `checkout_rate_limits` counter, `max_order_qty` setting, drops legacy overloads (`get_order_by_id(text)`, 3-arg `create_verified_order`), revokes table-wide `SELECT` on `products` from `anon` while granting column-level `SELECT` on 27 safe columns matching `products_public`, revokes direct anon `SELECT` on sensitive tables, drops `customer_addresses` view, tightens `reviews` RLS & `auto_moderate_review`, and restricts `anon` EXECUTE to allowlist. *(Note: Originally drafted as separate phases 026a and 026b, then consolidated into this single migration file on disk)*. |
+| `supabase/archive/026_rollback.sql` | Storefront Hardening Emergency Rollback (Archived) | Emergency recovery script archived in `supabase/archive/` for the 026 hardening release; restores table-wide `SELECT` on `products`, `orders`, and sensitive tables, reverts view definitions, and restores legacy single-arg `get_order_by_id(text)` while preserving existing `public_token` column values to prevent data loss. *(Archived, not applied)*. |
 | `027_admin_mfa_enforcement.sql` | Admin Multi-Factor Authentication (MFA) Safe Rollout & Enforcement | Administrative audit RPC `public.admin_get_mfa_enrollment_status()` for inspecting cross-admin TOTP verification status before enforcement; hardened `public.is_admin()` handling JSONB boolean and string variants of `enforce_admin_mfa`; includes explicit, commented-out reversible statements to enable (`true`) or roll back (`false`) strict AAL2 enforcement. *(Pending manual execution after all admins enroll)*. |
 | `028_marquee_announcements.sql` | Continuous Marquee Announcements & Dynamic Offers | Database table `public.marquee_announcements` with RLS policies, `set_updated_at` trigger, public read access, admin management access, and 8 seed wholesale promotional announcements. |
 | `029_dealership_program.sql` | Dealership Program Dynamic Content & Differentiation | Database tables for `public.dealership_tier_margins`, `public.dealership_item_showcase` (Branded vs Copy image comparisons), `public.dealership_benefits_comparison` (Authorized Dealer vs Normal Customer benefits), and `public.dealership_articles` (Branded & Copy dealership guide articles) with RLS policies, `set_updated_at` triggers, public read access, and admin full write access. Pre-seeded with production-grade data. |
+| `030_fix_stock_movements_and_checkout.sql` | Fix stock movements schema, product columns & storefront checkout RPCs | Adds `max_order_qty` to `public.products`; adds missing audit columns (`created_by`, `unit_price`, `total_amount`) to `public.stock_movements`; and hardens checkout RPCs to enforce max order quantities and log complete stock movements. |
+| `031_fix_order_totals_and_settings.sql` | Fix order totals and store settings key-value lookup | Ensures store settings (`free_delivery_min`, `shipping_fee`, `max_order_qty`) are read accurately from individual key-value rows in `public.store_settings`; guards calculation variables with strict `COALESCE` defaults to prevent NULL order totals. |
+| `032_performance_optimization_and_columns.sql` | Website performance optimization, color swatches & merchandising columns | Adds `colors` (`text[]`) column to `public.products` for frontend color swatches; adds `views_count` and `sales_count` integer columns for high-speed bestseller/trending feeds; and creates composite performance indexes on `(is_active, is_featured)`, `(is_active, category_id)`, and `(is_active, views_count DESC)`. |
+| `033_promo_codes_system.sql` | Promo codes system with minimum-amount thresholds & admin controls | Creates `public.promo_codes` table with min order amount, max discount, and usage tracking; adds `promo_code` and `discount_amount` to `public.orders`; adds `validate_promo_code` RPC. *(Note: Early promotional discount table and RPC, superseded for production checkout and redemption by the enterprise coupon engine in `036_coupons.sql`)*. |
+| `034_sync_review_customer_names.sql` | Sync and display real customer names on product reviews | Backfills existing `public.reviews` records with real customer and business names from `public.profiles`; updates review submission triggers to automatically populate `user_name` from authenticated profiles. |
+| `035_fix_order_total_and_reviews.sql` | Fix order total default constraint & review rating aggregation RPC | Adds `DEFAULT 0` to `orders.total` column to eliminate NOT NULL constraint violations on draft checkout; hardens order total calculation in checkout RPCs; implements SECURITY DEFINER `get_product_reviews` RPC; grants anonymous SELECT on approved reviews; and adds `email` to `public.profiles`. |
 | `036_coupons.sql` | Promotional Coupon Engine, Server Validation & Secure Redemptions | Database tables `public.coupons`, `public.coupon_redemptions`, and `public.coupon_validation_attempts` with strict RLS policies (anon SELECT completely revoked); atomic order creation with coupon support in `create_verified_order` (authenticated) and `create_verified_order_guest` (service_role only) using `SELECT ... FOR UPDATE` row locking; sliding-window rate limit (10 attempts / 10 minutes) in `validate_coupon`; anti-oracle uniform error responses; category & first-order restrictions; per-customer limit via auth `user_id` or SHA-256 phone hash; idempotent auto-release on order cancellation (`trg_release_coupon_on_order_cancel`); and complete admin management RPCs (`admin_list_coupons`, `admin_upsert_coupon`, `admin_toggle_coupon`, `admin_delete_coupon`, `admin_coupon_stats`, `admin_list_coupon_redemptions`). |
 | `037_homepage_divisions.sql` | Dynamic Homepage Divisions Configuration | Seeds `store_settings.homepage_sections` with punchy, jewel-grade division icons (Crown for Bestsellers, Zap for Fast Cables, Headphones for Audio, Flame for New Arrivals, Percent for Clearance Deals) with dual English/Hindi typography, badge tags, and sort orders. |
 | `038_fix_checkout_price_tiers.sql` | Fix Checkout Missing Column "price_tiers" | Resolves PostgreSQL error `column "price_tiers" does not exist` on WhatsApp checkout by removing the invalid `price_tiers` column reference from `SELECT ... FROM public.products` in `create_verified_order` and `create_verified_order_guest`. Price tiers are accurately computed via `public.get_unit_price(product_id, qty)` against `public.product_price_tiers`. |
 | `039_fix_coupon_unassigned_record.sql` | Fix Checkout Unassigned Record "v_coupon" | Resolves PostgreSQL error `record "v_coupon" is not assigned yet` on cart checkout without a coupon by typing `v_coupon` as `public.coupons%ROWTYPE` and guarding step 7 with `IF v_has_coupon THEN`. |
+| `040_fix_return_requests_reason.sql` | Fix Return Requests Reason Column & Resilient Return RPCs | Adds `reason` column alongside `reason_code` with bidirectional synchronization trigger `sync_return_request_reason()`; adds `return_request_id` alias and sync triggers on `return_items` and `return_events`; updates `create_return_request` SECURITY DEFINER RPC with delivery window verification, delivered quantity bounds, and active return checks. |
+| `041_embed_returns_in_get_order_by_id.sql` | Embed Active Returns Array in Order Lookup RPC | Updates `get_order_by_id(text, text)` SECURITY DEFINER RPC to embed active return requests and associated return items directly into the returned order payload for both authenticated owners and guest public token lookups. |
+| `042_admin_update_order_payment_status.sql` | Administrative Order Payment Status Updates & Audit Logging | Adds `admin_update_order_payment_status(text, text, text)` SECURITY DEFINER RPC restricted to `is_admin()`; updates payment status check constraint (accepting `pending`, `paid`, `partially_paid`, `refunded`, `bad_debt`); logs status transition events to `order_events`; and updates dashboard sales aggregation. |
+| `043_bad_debt_party_and_transaction.sql` | Wholesale Party and Transaction Bad Debt Management | Adds `is_bad_debt`, `bad_debt_reason`, and `bad_debt_marked_at` to `profiles`; adds `is_party_bad_debt` and `party_bad_debt_reason` to `orders` with partial indexes; adds `admin_toggle_bad_debt_party` and `admin_toggle_bad_debt_transaction` RPCs with audit logging in `order_events` and `audit_logs`. |
+| `044_customer_cancel_return_request.sql` | Customer-Side Return Request Cancellation | Extends `return_requests` status check constraint to include `'cancelled'`; implements `customer_cancel_return_request(text, text)` SECURITY DEFINER RPC validating caller ownership and pre-transit return state; inserts timeline event into `return_events`. |
+| `045_fix_return_resolution_notes_and_cancel.sql` | Fix Return Resolution Notes Column & Events Cancellation Status | Adds `resolution_notes text` column to `return_requests`; extends `return_events_status_check` constraint to allow `'cancelled'`; hardens `customer_cancel_return_request(text, text)` RPC to populate `resolution_notes` and timeline status without schema errors. |
 
 #### Referenced Migrations Not Found in Repository
 | Migration Reference | Status | Details & Resolution |
@@ -529,17 +666,25 @@ Verified (date: 2026-11-02): `handle_new_user()` hardcodes `role = 'customer'` (
 - [x] Changing the admin password requires the current password. *(Verified on 2026-11-02: `SettingsEditor.tsx:260-280`)*
 
 #### Database
-- [x] RLS enabled on every table; no `using (true)` policies on sensitive tables. *(Verified on 2026-11-03: `001_init.sql` through `026b_storefront_tightening.sql`)*
-- [x] Every `SECURITY DEFINER` function sets `search_path`, checks `is_admin()` or `auth.uid()` first, and has EXECUTE revoked from `public`/`anon` unless it is intentionally public. *(Verified on 2026-11-03: `024_security_hardening.sql`, `026a_storefront_additive.sql`, `026b_storefront_tightening.sql`)*
-- [x] The storefront reads products through stored generated `in_stock` boolean and `products_public` view excluding warehouse stock quantities, cost, and supplier fields. *(Verified on 2026-11-03: `026a_storefront_additive.sql`, `026b_storefront_tightening.sql`, `PRODUCT_SAFE_COLUMNS` in `storeService.ts:61`)*
-- [x] Order inputs are validated server-side (quantity bounds, active products, line limits). *(Verified on 2026-11-03: `024_security_hardening.sql`, `026a_storefront_additive.sql:185-509` in `create_verified_order`, and `create_verified_order_guest`)*
-- [x] Coupon inputs and discounts are validated server-side (sliding-window rate limit 10 attempts/10 min, database tier pricing recomputation, usage limits locked via `SELECT ... FOR UPDATE`, and per-customer limit enforced via user ID or guest phone hash). *(Verified on 2026-11-05: `030_coupons.sql`, `scripts/coupon_security_test.js`)*
+- [x] RLS enabled on every table; no `using (true)` policies on sensitive tables. *(Verified on 2026-11-03: `001_init.sql` through `026_storefront_catalog_and_tightening.sql`)*
+- [x] Every `SECURITY DEFINER` function sets `search_path`, checks `is_admin()` or `auth.uid()` first, and has EXECUTE revoked from `public`/`anon` unless it is intentionally public. *(Verified on 2026-11-03: `024_security_hardening.sql`, `026_storefront_catalog_and_tightening.sql`)*
+- [x] The storefront reads products through stored generated `in_stock` boolean and `products_public` view excluding warehouse stock quantities, cost, and supplier fields. *(Verified on 2026-11-03: `026_storefront_catalog_and_tightening.sql:30-92,2035-2068`, `PRODUCT_SAFE_COLUMNS` in `storeService.ts:61`)*
+- [x] Order inputs are validated server-side (quantity bounds, active products, line limits). *(Verified on 2026-11-03: `024_security_hardening.sql`, `026_storefront_catalog_and_tightening.sql:191-515` in `create_verified_order`, and `create_verified_order_guest` at lines 522-830)*
+- [x] Coupon inputs and discounts are validated server-side (sliding-window rate limit 10 attempts/10 min, database tier pricing recomputation, usage limits locked via `SELECT ... FOR UPDATE`, and per-customer limit enforced via user ID or guest phone hash). *(Verified on 2026-11-05: `036_coupons.sql`, `scripts/coupon_security_test.js`)*
+- **Touchpoint 44 (Dynamic Homepage Divisions Management & Punchy Visual Brand Identity)**:
+  - **Dynamic Homepage Divisions Engine (`037_homepage_divisions.sql`)**: Seeded `store_settings.homepage_sections` driving storefront product division sliders dynamically from Postgres; pre-configured 5 wholesale divisions (Bestsellers with Crown icon, Fast Data & Charging Cables with Zap icon, Speakers & Audio with Headphones icon, New Arrivals with Flame icon, Clearance Deals with Percent icon) with dual English/Hindi typography.
+  - **Admin Management (`HomepageSectionsManager.tsx`)**: Built division manager under Content Management with drag/arrow reordering, visibility toggle, division editor modal, category linking, theme color picker, icon picker, and live header preview.
+  - **Storefront Styling (`CategoryProductSlider.tsx` & `HomePage.tsx`)**: Upgraded division header badges to 40px rounded squircle containers with linear gradients, glowing SVG icons, and dynamic real-time product queries per active division.
+- **Touchpoint 45 (Fix Column "price_tiers" Does Not Exist on Checkout RPCs)**:
+  - **Database Hardening Migration (`038_fix_checkout_price_tiers.sql`)**: Resolved PostgreSQL error `42703` (`column "price_tiers" does not exist`) halting order creation on cart checkout by removing invalid `price_tiers` column reference from `SELECT ... FROM public.products` in `create_verified_order` and `create_verified_order_guest`. Volume pricing is accurately computed via `public.get_unit_price(product_id, qty)` against `public.product_price_tiers`.
+- **Touchpoint 46 (Fix Record "v_coupon" Is Not Assigned Yet on Checkout RPCs)**:
+  - **Database Hardening Migration (`039_fix_coupon_unassigned_record.sql`)**: Resolved PostgreSQL runtime error `record "v_coupon" is not assigned yet` on non-coupon orders by declaring `v_coupon` with composite type `public.coupons%ROWTYPE;` and guarding step 7 execution with explicit boolean flag `IF v_has_coupon THEN`.
 
 #### Public endpoints
-- [x] Guest order tracking requires an unguessable token; responses are minimal and masked. *(Verified on 2026-11-03: `orders.public_token` & `get_order_by_id` in `026a_storefront_additive.sql`, `OrderPage.tsx:48-95`)*
-- [x] Guest checkout, dealer form, reviews and search logging are rate-limited, length-capped and CAPTCHA/honeypot-protected. *(Verified on 2026-11-03: `checkout-gate` Edge Function, Cloudflare Turnstile, `checkout_rate_limits`, honeypot in `026a/b`)*
-- [x] Review moderation is content-based, and no ratings are generated or scaled. *(Verified on 2026-11-03: `auto_moderate_review` in `026b_storefront_tightening.sql`, `HeroStackedCarousel.tsx:20-175`)*
-- [x] Coupon validation endpoint is rate-limited and anti-oracle protected (uniform privacy-safe response on invalid, expired, and non-existent codes). *(Verified on 2026-11-05: `030_coupons.sql`, `validate_coupon`, `scripts/coupon_security_test.js`)*
+- [x] Guest order tracking requires an unguessable token; responses are minimal and masked. *(Verified on 2026-11-03: `orders.public_token` at lines 121-142 & `get_order_by_id` at lines 1134-1262 in `026_storefront_catalog_and_tightening.sql`, `OrderPage.tsx:48-95`)*
+- [x] Guest checkout, dealer form, reviews and search logging are rate-limited, length-capped and CAPTCHA/honeypot-protected. *(Verified on 2026-11-03: `checkout-gate` Edge Function, Cloudflare Turnstile, `checkout_rate_limits` at lines 1060-1075, honeypot in `026_storefront_catalog_and_tightening.sql`)*
+- [x] Review moderation is content-based, and no ratings are generated or scaled. *(Verified on 2026-11-03: `auto_moderate_review` at lines 2098-2124 in `026_storefront_catalog_and_tightening.sql`, `HeroStackedCarousel.tsx:20-175`)*
+- [x] Coupon validation endpoint is rate-limited and anti-oracle protected (uniform privacy-safe response on invalid, expired, and non-existent codes). *(Verified on 2026-11-05: `036_coupons.sql`, `validate_coupon`, `scripts/coupon_security_test.js`)*
 
 #### Frontend
 - [x] All interpolated values in invoices, packing slips and OG tags are HTML-escaped; print views do not run in the admin origin. *(Verified on 2026-11-02: `order-og/index.ts:18-80`, `printHtmlSafely` in `OrderDetailModal.tsx:264, 377`)*
@@ -569,7 +714,7 @@ Verified (date: 2026-11-02): `handle_new_user()` hardcodes `role = 'customer'` (
 | **Icons** | Lucide React | 1.16 | Cohesive modern icon system |
 | **Backend & DB** | Supabase JS | 2.106 | Realtime PostgreSQL, RLS security, and storage |
 | **Monorepo Manager** | npm workspaces | 10+ / 11+ | Clean multi-package dependency management |
-| **Testing** | Vitest | 5.0 | Complete test suite across shared pricing, order verification, validation, keyword normalization, catalog image parsing, returns domain & signed URL TTL, HTML sanitization, admin MFA authorization, catalog parser, marquee announcements, dealership domain, and English & Hindi translations (257 tests across 18 suites as of 2026-11-04) |
+| **Testing** | Vitest | 5.0 | Complete test suite across shared pricing, order verification, validation, keyword normalization, catalog image parsing, returns domain & signed URL TTL, HTML sanitization, admin MFA authorization, catalog parser, marquee announcements, dealership domain, and English & Hindi translations (311 tests across 24 suites as of 2026-11-12) |
 
 ---
 
@@ -655,12 +800,15 @@ Deploy the storefront and admin as separate Vercel projects on separate subdomai
 5. **Output Directory**: `dist`.
 6. **Environment Variables**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
+> [!WARNING] Production Base Path Discrepancy
+> `apps/admin/vite.config.ts` hardcodes `base: process.env.NODE_ENV === "production" ? "/sjain/" : "/"`. For Option B (standalone subdomain such as `admin.urbanrat.in`), Vite generates production asset paths prefixed with `/sjain/assets/...`, whereas `apps/admin/vercel.json` serves from the domain root and rewrites to `/index.html`. Without configuring `base: "/"` for standalone subdomain builds, requests to `https://admin.urbanrat.in/` will fail to load scripts and stylesheets at the root origin.
+
 
 ---
 
 ## 9. Changelog & Release History
 
-The complete technical implementation history, schema migration milestones, and touchpoint logs (Touchpoints 01 through 39) have been migrated to [`CHANGELOG.md`](./CHANGELOG.md).
+The complete technical implementation history, schema migration milestones, and touchpoint logs (43 foundational touchpoints, Touchpoints 01 through 46) have been migrated to [`CHANGELOG.md`](./CHANGELOG.md).
 
 ### Milestone Overview
 - **Touchpoints 01–09 (Core Architecture & Backend Systems)**: Monorepo setup, canonical Tailwind CSS v4 design tokens, atomic verified orders RPC (`005_create_verified_order.sql`), 4-level category manager & dynamic attribute schemas (`006_category_attributes.sql`), supplier catalog upload & QC verification (`008_catalog_uploads.sql`), search keywords with GIN indexing (`009_catalog_keywords.sql`), wholesale customer authentication & saved address book (`010_customer_auth_and_addresses.sql`), marketplace orders dashboard (`011_order_events_and_details.sql`), customer returns portal (`012_returns_backend.sql`), and seller-hub admin order logistics & image bulk upload (`013_seller_hub_orders.sql`–`016_admin_submit_catalog_images.sql`).
@@ -669,8 +817,9 @@ The complete technical implementation history, schema migration milestones, and 
 - **Touchpoints 33–39 (Merchandising, Auth & Quality Automation)**: Live customer review publishing with local fallback, category-specific related accessories engine, automated $\ge 4$-star review approvals and admin moderation queue ($< 4$ stars) (`022_review_approval_system.sql`), Google OAuth sign-in integration, balanced multi-category new arrivals showcase (`023_diverse_new_arrivals.sql`), premium glassmorphic carousel navigation controls, and administrative bestsellers homepage merchandising.
 - **Touchpoint 40 (Security Hardening, Catalog Isolation & Defensive Integrity)**: Comprehensive database least-privilege migration (`024_security_hardening.sql`) locking role tampering to administrators, hardcoding 'customer' role on sign-up, isolating storefront stock queries via `products_public` view (security_invoker = on) and revoking anon SELECT on sensitive columns, atomic order bounds & active validation in `create_verified_order`, return evidence path validation, `search_products_v2` query caps, phone masking and admin note stripping in `get_order_by_id`, search_path lockdown across all admin functions, HTML escaping across invoice & print views, and strict same-origin relative path sanitization for authentication redirects.
 - **Touchpoint 41 (Two-Phase Storefront Security Hardening, Edge Checkout Gate & 15-Point Penetration Verification)**:
-  - **Phase 1 Additive Migration (`026a_storefront_additive.sql`)**: Stored generated column `products.in_stock` (`stock > 0`), safe storefront catalog view `products_public` with embedded `price_tiers`, admin-only view `products_admin`, 128-bit unguessable `public_token` on `orders` and `dealer_applications`, guest RPC `create_verified_order_guest` (service_role only), token-gated `get_order_by_id(text, text)` and `get_dealer_application_by_code(text, text)`, table-backed `checkout_rate_limits` with automatic sliding window IP cleanup, and `max_order_qty` store setting.
-  - **Phase 2 Tightening Migration (`026b_storefront_tightening.sql`)**: Dropped legacy overloads (`get_order_by_id(text)` and `create_verified_order(jsonb, jsonb, text)`) eliminating PostgREST ambiguity (PGRST203). Revoked table-wide `SELECT` on `products` from `anon` while granting column-level `SELECT` on safe columns (`products.stock` warehouse counts strictly blocked with HTTP 401). Revoked direct `SELECT` on `orders`, `order_events`, `dealer_applications`, `dealer_events`, and `addresses`. Permanently dropped insecure `customer_addresses` view (SEC-02). Enforced review moderation with `auto_moderate_review`. Restricted `anon` execute privileges to an explicit allowlist of public functions.
+  - **Two-Phase Hardening Migration (`026_storefront_catalog_and_tightening.sql`)**: Consolidates Phase 1 (additive) and Phase 2 (tightening):
+    - *Phase 1 (Additive)*: Stored generated column `products.in_stock` (`stock > 0`), safe storefront catalog view `products_public` with embedded `price_tiers`, admin-only view `products_admin`, 128-bit unguessable `public_token` on `orders` and `dealer_applications`, guest RPC `create_verified_order_guest` (service_role only), token-gated `get_order_by_id(text, text)` and `get_dealer_application_by_code(text, text)`, table-backed `checkout_rate_limits` with automatic sliding window IP cleanup, and `max_order_qty` store setting.
+    - *Phase 2 (Tightening)*: Dropped legacy overloads (`get_order_by_id(text)` and `create_verified_order(jsonb, jsonb, text)`) eliminating PostgREST ambiguity (PGRST203). Revoked table-wide `SELECT` on `products` from `anon` while granting column-level `SELECT` on safe columns (`products.stock` warehouse counts strictly blocked with HTTP 401). Revoked direct `SELECT` on `orders`, `order_events`, `dealer_applications`, `dealer_events`, and `addresses`. Permanently dropped insecure `customer_addresses` view (SEC-02). Enforced review moderation with `auto_moderate_review`. Restricted `anon` execute privileges to an explicit allowlist of public functions.
   - **Edge Functions Deployed**:
     - `checkout-gate`: Dedicated guest checkout gateway enforcing proxy-appended client IP extraction, table-backed rate limiting (5 checkouts / 10 minutes), Cloudflare Turnstile cryptographic bot verification, honeypot traps, and isolated `service_role` execution.
     - `order-og`: Server-side Open Graph social crawler preview generator for WhatsApp, Facebook, and Twitter crawlers with sanitized order tags, performing HTTP 302 redirects to client SPA tracking routes for real browsers.
@@ -688,7 +837,7 @@ The complete technical implementation history, schema migration milestones, and 
     - **Category Product Image Gallery**: Live thumbnail picker fetching products from the selected category to link high-res product photos directly to the banner.
     - **Storefront Carousel Sync**: Dynamically renders custom CTA text (`activeCard.ctaText`) and category deep links.
 - **Touchpoint 43 (Coupons & Discounts System, Server-Side Verification & Secure Redemption Engine)**:
-  - **Database & Security Hardening (`030_coupons.sql`)**: Tables `coupons`, `coupon_redemptions`, and `coupon_validation_attempts` with strict RLS policies (anon SELECT completely revoked); row-level locking (`SELECT ... FOR UPDATE`) in `create_verified_order` preventing race condition usage limit overshoot; sliding-window rate limit (10 attempts / 10 minutes) in `validate_coupon`; uniform anti-oracle response on invalid/expired codes; per-customer limit via auth `user_id` or SHA-256 phone hash; and idempotent cancellation auto-release (`trg_release_coupon_on_order_cancel`).
+  - **Database & Security Hardening (`036_coupons.sql`)**: Tables `coupons`, `coupon_redemptions`, and `coupon_validation_attempts` with strict RLS policies (anon SELECT completely revoked); row-level locking (`SELECT ... FOR UPDATE`) in `create_verified_order` preventing race condition usage limit overshoot; sliding-window rate limit (10 attempts / 10 minutes) in `validate_coupon`; uniform anti-oracle response on invalid/expired codes; per-customer limit via auth `user_id` or SHA-256 phone hash; and idempotent cancellation auto-release (`trg_release_coupon_on_order_cancel`).
   - **Storefront Checkout (`apps/store`)**: Collapsible `CouponInput`, `AppliedCouponChip`, and `CouponSavingsRow` with dynamic GST recalculation on the discounted base, dual-theme WCAG AA tokens, haptic feedback, Hindi/English localization, and guest checkout forwarding via `checkout-gate`.
   - **Admin Management (`apps/admin`)**: Navigation under Commerce & Sales (`/coupons`); `CouponList` with code search, 6 status filter pills, desktop table & mobile cards, and safe delete disable fallback; `CouponEditor` with 1-click code generator, percentage/fixed discounts, max discount cap, min order, date ranges, usage limits, and category restrictions; `CouponDetailDrawer` with KPI cards and redemption history linking to orders; and OrderList badge + GST tax invoice discount line.
   - **Security Test Runner (`scripts/coupon_security_test.js`)**: 16/16 automated penetration probes passing against live Supabase backend.
