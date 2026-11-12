@@ -800,8 +800,8 @@ Deploy the storefront and admin as separate Vercel projects on separate subdomai
 5. **Output Directory**: `dist`.
 6. **Environment Variables**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
-> [!WARNING] Production Base Path Discrepancy
-> `apps/admin/vite.config.ts` hardcodes `base: process.env.NODE_ENV === "production" ? "/sjain/" : "/"`. For Option B (standalone subdomain such as `admin.urbanrat.in`), Vite generates production asset paths prefixed with `/sjain/assets/...`, whereas `apps/admin/vercel.json` serves from the domain root and rewrites to `/index.html`. Without configuring `base: "/"` for standalone subdomain builds, requests to `https://admin.urbanrat.in/` will fail to load scripts and stylesheets at the root origin.
+> [!NOTE] Production Base Path Configuration
+> `apps/admin/vite.config.ts` uses `base: process.env.VITE_ADMIN_BASE ?? "/"`. For Option B (standalone subdomain such as `admin.urbanrat.in`), Vite generates production asset paths relative to the domain root (`/`), matching `apps/admin/vercel.json`. For subpath deployments under a unified domain (e.g. `/sjain/`), set `VITE_ADMIN_BASE="/sjain/"` in your environment.
 
 
 ---
