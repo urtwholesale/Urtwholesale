@@ -1465,7 +1465,7 @@ export default function App() {
 
             {/* Live Storefront Link */}
             <a
-              href="http://localhost:5173"
+              href={import.meta.env.PROD ? "/" : "http://localhost:5173"}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-2xs transition"
