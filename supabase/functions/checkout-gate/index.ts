@@ -4,19 +4,62 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const configuredOrigins = [
+  Deno.env.get("SITE_ORIGIN"),
+  Deno.env.get("VITE_PUBLIC_SITE_URL"),
+  "https://urtwholesale.com",
+  "https://www.urtwholesale.com",
+  "https://store.urbanrat.in",
+  "http://localhost:5173",
+].filter((o): o is string => Boolean(o && typeof o === "string" && o.trim() !== ""));
+
+function buildCorsHeaders(req: Request) {
+  const reqOrigin = req.headers.get("origin") || "";
+  const matchedOrigin = configuredOrigins.find(
+    (o) => o.toLowerCase() === reqOrigin.toLowerCase()
+  );
+  return {
+    "Access-Control-Allow-Origin": matchedOrigin || (configuredOrigins[0] || "*"),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // 1. Log incoming IP headers for proxy inspection on staging
+    // 1. Enforce payload size limit (max 64 KB) by reading raw text body
+    const rawText = await req.text();
+    const byteLength = new TextEncoder().encode(rawText).length;
+    if (byteLength > 65536) {
+      return new Response(
+        JSON.stringify({ error: "Payload too large. Maximum allowed size is 64 KB." }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    let body: any;
+    try {
+      body = JSON.parse(rawText);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON request body." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // 2. Log incoming IP headers for proxy inspection on staging
     const xForwardedFor = req.headers.get("x-forwarded-for");
     const xRealIp = req.headers.get("x-real-ip");
     const cfConnectingIp = req.headers.get("cf-connecting-ip");
@@ -44,7 +87,7 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // 2. Dedicated service-role client for guest rate-limiting and order execution
+    // 3. Dedicated service-role client for guest rate-limiting and order execution
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
     });
@@ -75,7 +118,6 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const body = await req.json();
     const {
       customer,
       items,
@@ -85,7 +127,7 @@ Deno.serve(async (req: Request) => {
       promo_code,
       coupon_code,
       couponCode,
-    } = body;
+    } = body || {};
 
     // Validate optional couponCode format (1-32 alphanumeric, uppercase, dashes, underscores)
     const rawCoupon = couponCode !== undefined ? couponCode : coupon_code;
