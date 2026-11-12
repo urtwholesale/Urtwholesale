@@ -10,7 +10,7 @@ describe("Homepage Sections Domain Configuration", () => {
   it("ensures each default section has mandatory fields and unique IDs", () => {
     const ids = new Set<string>();
 
-    DEFAULT_HOMEPAGE_SECTIONS.forEach((sec) => {
+    DEFAULT_HOMEPAGE_SECTIONS.forEach((sec: HomepageSection) => {
       expect(sec.id).toBeTruthy();
       expect(ids.has(sec.id)).toBe(false);
       ids.add(sec.id);

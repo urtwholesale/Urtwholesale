@@ -6,6 +6,11 @@ import {
 } from "./categoryImages";
 
 describe("Category Images & Visuals", () => {
+  it("exports CATEGORY_IMAGE_MAP with default category image mappings", () => {
+    expect(CATEGORY_IMAGE_MAP).toBeDefined();
+    expect(CATEGORY_IMAGE_MAP["chargers"]).toBe("chargers.jpg");
+  });
+
   it("resolves dark and light theme image paths for chargers", () => {
     expect(getCategoryVisualPath("chargers", "dark")).toBe("/categories/dark/chargers.jpg");
     expect(getCategoryVisualPath("chargers", "light")).toBe("/categories/light/chargers.jpg");
