@@ -55,6 +55,7 @@ import {
   sanitizeText,
   RETURN_EVIDENCE_URL_TTL_SECONDS,
   getReturnEvidenceSignedUrl,
+  sanitizeSpreadsheetRow,
 } from "@urbanrat/shared";
 import { compressImage, type CompressionResult } from "../utils/imageCompressor";
 
@@ -2191,7 +2192,8 @@ export function exportOrdersToExcel(orders: Order[], filename = "urt_orders_expo
     "Admin Note": o.admin_note || "—",
   }));
 
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const sanitizedRows = rows.map((r) => sanitizeSpreadsheetRow(r));
+  const ws = XLSX.utils.json_to_sheet(sanitizedRows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Orders");
   XLSX.writeFile(wb, filename);
@@ -2223,7 +2225,8 @@ export function exportOrdersToCSV(orders: Order[], filename = "urt_orders_export
     "Admin Note": o.admin_note || "—",
   }));
 
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const sanitizedRows = rows.map((r) => sanitizeSpreadsheetRow(r));
+  const ws = XLSX.utils.json_to_sheet(sanitizedRows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Orders");
   XLSX.writeFile(wb, filename, { bookType: "csv" });
@@ -3351,7 +3354,7 @@ export function exportReturnsToExcel(
     "Admin Note": r.admin_note || "",
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const worksheet = XLSX.utils.json_to_sheet(rows.map((r) => sanitizeSpreadsheetRow(r)));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Returns");
   XLSX.writeFile(workbook, filename);
@@ -3381,7 +3384,7 @@ export function exportClaimsToExcel(
     "Claim Notes": c.claim_notes || "",
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const worksheet = XLSX.utils.json_to_sheet(rows.map((r) => sanitizeSpreadsheetRow(r)));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Claims");
   XLSX.writeFile(workbook, filename);
@@ -3403,7 +3406,7 @@ export function exportProductPerformanceToExcel(
     "High Returns Flag": p.is_high_return ? "YES (>5%)" : "Normal",
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const worksheet = XLSX.utils.json_to_sheet(rows.map((r) => sanitizeSpreadsheetRow(r)));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Performance");
   XLSX.writeFile(workbook, filename);

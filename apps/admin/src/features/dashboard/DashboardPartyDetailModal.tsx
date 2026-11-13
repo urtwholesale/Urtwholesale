@@ -6,6 +6,7 @@ import type {
 } from "@urbanrat/shared";
 import {
   ORDER_STATUS_BADGES,
+  sanitizeSpreadsheetCell,
 } from "@urbanrat/shared";
 import {
   fetchDashboardOrders,
@@ -462,11 +463,13 @@ export function DashboardPartyDetailModal({
 
   // ── CSV Export ──
   function handleExportCSV() {
+    const csvEsc = (val: unknown) => `"${String(sanitizeSpreadsheetCell(val) ?? "").replace(/"/g, '""')}"`;
+
     if (config.type === "low_stock") {
       const headers = ["Product Name", "SKU", "Current Stock", "Threshold", "Status"];
       const rows = lowStockProducts.map((p) => [
-        `"${(p.name || "").replace(/"/g, '""')}"`,
-        `"${p.sku || ""}"`,
+        csvEsc(p.name || ""),
+        csvEsc(p.sku || ""),
         p.stock,
         p.low_stock_threshold || 5,
         p.stock === 0 ? "OUT OF STOCK" : "LOW STOCK",
@@ -479,11 +482,11 @@ export function DashboardPartyDetailModal({
     if (config.type === "new_buyers") {
       const headers = ["Full Name", "Business Name", "Phone", "Email", "GSTIN", "Registered Date"];
       const rows = newBuyers.map((b) => [
-        `"${(b.full_name || "").replace(/"/g, '""')}"`,
-        `"${(b.business_name || "").replace(/"/g, '""')}"`,
-        `"${b.phone || ""}"`,
-        `"${(b as any).email || ""}"`,
-        `"${b.gstin || ""}"`,
+        csvEsc(b.full_name || ""),
+        csvEsc(b.business_name || ""),
+        csvEsc(b.phone || ""),
+        csvEsc((b as any).email || ""),
+        csvEsc(b.gstin || ""),
         b.created_at,
       ]);
       const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -508,17 +511,17 @@ export function DashboardPartyDetailModal({
     ];
 
     const rows = filteredParties.map((p) => [
-      `"${p.name.replace(/"/g, '""')}"`,
-      `"${p.businessName.replace(/"/g, '""')}"`,
-      `"${p.phone}"`,
-      `"${(p.city || "").replace(/"/g, '""')}"`,
-      `"${p.gstin || ""}"`,
+      csvEsc(p.name || ""),
+      csvEsc(p.businessName || ""),
+      csvEsc(p.phone || ""),
+      csvEsc(p.city || ""),
+      csvEsc(p.gstin || ""),
       p.totalOrders,
       p.totalRevenue,
       p.paidAmount,
       p.pendingDueAmount,
       p.isPartyBadDebt ? "YES" : "NO",
-      `"${(p.partyBadDebtReason || "").replace(/"/g, '""')}"`,
+      csvEsc(p.partyBadDebtReason || ""),
       p.firstOrderDate,
       p.lastOrderDate,
     ]);

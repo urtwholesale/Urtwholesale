@@ -271,3 +271,8 @@ export {
   type ReviewValidationInput,
   type ReviewValidationResult,
 } from "./reviewAntiFake";
+
+export {
+  sanitizeSpreadsheetCell,
+  sanitizeSpreadsheetRow,
+} from "./csvSecurity";

@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import type { Category } from "@urbanrat/shared";
 import type { CatalogImage } from "../../../lib/adminService";
-import { parseSkuFromFilename, parseImageIndex } from "@urbanrat/shared";
+import { parseSkuFromFilename, parseImageIndex, sanitizeSpreadsheetRow } from "@urbanrat/shared";
 
 /**
  * Generates and triggers download of a standardized Excel (.xlsx) catalog template
@@ -242,7 +242,8 @@ export function downloadPrefilledTemplate(
   const wb = XLSX.utils.book_new();
 
   // 1. Prefilled template sheet
-  const wsTemplate = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+  const sanitizedRows = dataRows.map((r) => sanitizeSpreadsheetRow(r));
+  const wsTemplate = XLSX.utils.aoa_to_sheet([headers, ...sanitizedRows]);
   wsTemplate["!cols"] = [
     { wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 22 }, { wch: 14 },
     { wch: 14 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 18 },
@@ -259,7 +260,8 @@ export function downloadPrefilledTemplate(
       img.public_url,
       img.created_at,
     ]);
-    const wsUnmatched = XLSX.utils.aoa_to_sheet([unmatchedHeaders, ...unmatchedRows]);
+    const sanitizedUnmatched = unmatchedRows.map((r) => sanitizeSpreadsheetRow(r));
+    const wsUnmatched = XLSX.utils.aoa_to_sheet([unmatchedHeaders, ...sanitizedUnmatched]);
     wsUnmatched["!cols"] = [{ wch: 30 }, { wch: 60 }, { wch: 24 }];
     XLSX.utils.book_append_sheet(wb, wsUnmatched, "Unmatched Images");
   }
