@@ -620,10 +620,7 @@ export function ContentEditor() {
                   type="button"
                   disabled={creatingBanner}
                   onClick={handleCreateBanner}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-white text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer hover:opacity-95 disabled:opacity-50"
-                  style={{
-                    /* solid brand */
-                  }}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-brand-dark hover:bg-brand-dark/90 text-white text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer disabled:opacity-50"
                 >
                   {creatingBanner ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -672,10 +669,7 @@ export function ContentEditor() {
                           type="button"
                           disabled={savingBannerId === b.id}
                           onClick={() => handleSaveBanner(b)}
-                          className="px-4 py-1.5 rounded-xl text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-                          style={{
-                            /* solid brand */
-                          }}
+                          className="px-4 py-1.5 rounded-xl bg-brand-dark hover:bg-brand-dark/90 text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                         >
                           {savingBannerId === b.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1191,10 +1185,7 @@ export function ContentEditor() {
                       type="button"
                       disabled={savingPage}
                       onClick={handleSaveActivePage}
-                      className="px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-                      style={{
-                        /* solid brand */
-                      }}
+                      className="px-6 py-2.5 rounded-xl bg-brand-dark hover:bg-brand-dark/90 text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                     >
                       {savingPage ? (
                         <>
@@ -1284,10 +1275,7 @@ export function ContentEditor() {
                   type="button"
                   disabled={savingSearches}
                   onClick={handleSaveSearches}
-                  className="px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
-                  style={{
-                    /* solid brand */
-                  }}
+                  className="px-6 py-2.5 rounded-xl bg-brand-dark hover:bg-brand-dark/90 text-white text-xs font-bold shadow transition active:scale-95 disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                 >
                   {savingSearches ? (
                     <>

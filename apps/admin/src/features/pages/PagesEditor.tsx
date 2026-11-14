@@ -173,10 +173,7 @@ export function PagesEditor() {
             <button
               type="submit"
               disabled={saving}
-              className="py-2.5 px-6 rounded-xl text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
-              style={{
-                background: "var(--color-primary)",
-              }}
+              className="py-2.5 px-6 rounded-xl bg-brand-dark hover:bg-brand-dark/90 text-white font-semibold text-xs transition active:scale-95 shadow-sm cursor-pointer disabled:opacity-60 flex items-center space-x-2"
             >
               {saving ? (
                 <>
