@@ -168,3 +168,4 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.get_order_by_id(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_order_by_id(text, text) TO anon, authenticated, service_role;
+
