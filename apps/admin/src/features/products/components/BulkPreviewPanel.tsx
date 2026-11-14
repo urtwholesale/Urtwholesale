@@ -10,7 +10,7 @@ import {
   AlertCircle,
   ShieldAlert,
 } from "lucide-react";
-import type { BulkOpResult } from "@urbanrat/shared";
+import { type BulkOpResult, sanitizeSpreadsheetRow } from "@urbanrat/shared";
 import { triggerHaptic } from "../../../utils/haptics";
 
 export interface BulkPreviewPanelProps {
@@ -101,7 +101,8 @@ export function BulkPreviewPanel({
       Warnings: (item.warnings || []).join(" | "),
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const sanitizedExportRows = exportRows.map((r) => sanitizeSpreadsheetRow(r));
+    const ws = XLSX.utils.json_to_sheet(sanitizedExportRows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Bulk Preview");
     XLSX.writeFile(wb, `bulk_edit_preview_${Date.now().toString(36)}.xlsx`);

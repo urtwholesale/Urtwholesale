@@ -7,9 +7,12 @@
  * can be interpreted as executable formulas or DDE macros by spreadsheet software.
  * Prepending a single quote (') forces spreadsheet applications to treat the cell
  * content strictly as plain text.
+ *
+ * NOTE: Formula triggers are stored as discrete checks to completely avoid regex range
+ * hazards (such as /^[=+@-|\t\r]/ which accidentally creates an ASCII range from '@' to '|').
  */
 
-const FORMULA_TRIGGER_REGEX = /^[=+@\-\t\r]/;
+const FORMULA_TRIGGERS = new Set<string>(["=", "+", "-", "@"]);
 
 /**
  * Sanitizes a single cell value to prevent formula injection.
@@ -20,8 +23,15 @@ export function sanitizeSpreadsheetCell(value: unknown): unknown {
     return value;
   }
 
-  const trimmed = value.trim();
-  if (trimmed.length > 0 && FORMULA_TRIGGER_REGEX.test(trimmed)) {
+  // Neutralize tab or carriage return at the very beginning of the raw string
+  if (value.startsWith("\t") || value.startsWith("\r")) {
+    return `'${value}`;
+  }
+
+  // Neutralize formula trigger characters (=, +, -, @) even after leading spaces
+  const trimmed = value.trimStart();
+  const firstChar = trimmed[0];
+  if (firstChar && FORMULA_TRIGGERS.has(firstChar)) {
     return `'${value}`;
   }
 

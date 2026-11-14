@@ -117,7 +117,8 @@ export function downloadCatalogTemplate(category: Category, categoryPath: string
   const wb = XLSX.utils.book_new();
 
   // 1. Template sheet
-  const wsTemplate = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+  const sanitizedSampleRows = sampleRows.map((r) => sanitizeSpreadsheetRow(r));
+  const wsTemplate = XLSX.utils.aoa_to_sheet([headers, ...sanitizedSampleRows]);
   wsTemplate["!cols"] = [
     { wch: 30 }, // Product Name
     { wch: 20 }, // SKU

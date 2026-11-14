@@ -13,7 +13,7 @@ import {
   AlertCircle,
   FileText,
 } from "lucide-react";
-import type { BulkStockMode, BulkStockItemPayload } from "@urbanrat/shared";
+import { type BulkStockMode, type BulkStockItemPayload, sanitizeSpreadsheetRow } from "@urbanrat/shared";
 import { BulkPreviewPanel } from "./BulkPreviewPanel";
 import { bulkAdjustStock } from "../../../lib/adminService";
 import { supabase } from "../../../lib/supabase";
@@ -67,7 +67,8 @@ export function BulkStockTab({
         Reason: "",
       }));
 
-      const ws = XLSX.utils.json_to_sheet(rows);
+      const sanitizedRows = rows.map((r) => sanitizeSpreadsheetRow(r));
+      const ws = XLSX.utils.json_to_sheet(sanitizedRows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Stock Update");
       XLSX.writeFile(wb, `stock_sheet_${productIds.length}_products.xlsx`);

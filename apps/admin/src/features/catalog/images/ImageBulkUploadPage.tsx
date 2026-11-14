@@ -34,6 +34,7 @@ import {
 import {
   parseSkuFromFilename,
   parseImageIndex,
+  sanitizeSpreadsheetRow,
 } from "@urbanrat/shared";
 import { formatBytes } from "../../../utils/imageCompressor";
 import { triggerHaptic } from "../../../utils/haptics";
@@ -430,7 +431,8 @@ export function ImageBulkUploadPage() {
       };
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const sanitizedRows = rows.map((r) => sanitizeSpreadsheetRow(r));
+    const worksheet = XLSX.utils.json_to_sheet(sanitizedRows);
     worksheet["!cols"] = [
       { wch: 30 },
       { wch: 18 },
