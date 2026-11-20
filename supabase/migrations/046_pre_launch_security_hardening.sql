@@ -90,7 +90,8 @@ BEGIN
         'reason_code', r.reason_code,
         'reason', r.reason,
         'description', r.description,
-        'evidence_urls', r.evidence_urls,
+        'evidence_paths', r.evidence_paths,
+        'evidence_urls', r.evidence_paths,
         'resolution_notes', r.resolution_notes,
         'created_at', r.created_at,
         'updated_at', r.updated_at,
@@ -101,16 +102,17 @@ BEGIN
                 'id', ri.id,
                 'return_id', ri.return_id,
                 'product_id', ri.product_id,
-                'sku', ri.sku,
-                'name', ri.name,
+                'sku', p.sku,
+                'name', p.name,
                 'quantity', ri.quantity,
-                'unit_price', ri.unit_price,
-                'total_price', ri.total_price
+                'unit_price', p.price,
+                'total_price', round(p.price * ri.quantity, 2)
               )
             ), '[]'::jsonb
           )
           FROM public.return_items ri
-          WHERE ri.return_id = r.id OR ri.return_request_id = r.id
+          LEFT JOIN public.products p ON p.id = ri.product_id
+          WHERE ri.return_id = r.id
         )
       ) ORDER BY r.created_at DESC
     ), '[]'::jsonb

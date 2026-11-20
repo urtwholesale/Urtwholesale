@@ -110,9 +110,9 @@
   --color-ring: var(--color-ring);
 
   /* Legacy Brand Aliases */
-  --color-brand-light: var(--color-brand-light);
-  --color-brand: var(--color-brand);
-  --color-brand-dark: var(--color-brand-dark);
+  --color-brand-light: var(--color-brand-light, #CFEFF4);
+  --color-brand: var(--color-ring, #1EAFC7);
+  --color-brand-dark: var(--color-primary, #087799);
 
   /* Surfaces */
   --color-surface: var(--color-surface);

@@ -767,7 +767,10 @@ export function MyOrdersPage({ onAddToCart }: MyOrdersPageProps) {
                     key={order.id}
                     onClick={() => {
                       triggerHaptic("selection");
-                      navigate(`/order/${order.id}`);
+                      const tokenParam = order.public_token
+                        ? `?t=${encodeURIComponent(order.public_token)}`
+                        : "";
+                      navigate(`/order/${order.id}${tokenParam}`);
                     }}
                     className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-white/10 hover:border-slate-200 dark:hover:border-white/20 transition-all p-4 sm:p-5 shadow-2xs hover:shadow-xs cursor-pointer group"
                   >
