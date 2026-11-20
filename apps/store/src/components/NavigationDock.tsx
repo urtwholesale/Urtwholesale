@@ -15,133 +15,237 @@ export function NavigationDock({
   const { t } = useLanguage();
 
   return (
-    <div className="md:hidden fixed z-40 dock-bottom-offset left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-90 transition-all duration-300">
-      {/* ── Frosted Glass Capsule Dock ── */}
+    <div className="md:hidden fixed z-40 dock-bottom-offset left-1/2 -translate-x-1/2 w-[calc(100%-24px)] min-[360px]:w-[calc(100%-28px)] sm:w-[calc(100%-32px)] max-w-105 transition-all duration-300">
+      {/* ── Frosted Glass Capsule Dock with Labeled Sections ── */}
       <nav
         aria-label="Main Navigation"
-        className="glass-dock rounded-full px-2 py-1.5 flex items-center justify-between"
+        className="glass-dock rounded-2xl sm:rounded-full px-1.5 py-1.5 flex items-center justify-between shadow-lg"
       >
         {/* 1. Home */}
         <NavLink
           to="/"
           end
-          aria-label={t("nav.home")}
+          aria-label={t("nav.home", "Home")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
-            `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            `group flex-1 flex flex-col items-center justify-center py-0.5 px-0.5 rounded-xl transition-all duration-200 cursor-pointer select-none min-w-0 ${
               isActive && !isMenuOpen
-                ? "bg-primary text-on-primary shadow-xs scale-105"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                ? "text-primary dark:text-brand-light"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`
           }
         >
-          {({ isActive }) => (
-            <Home
-              className={`w-5 h-5 transition-transform duration-200 ${
-                isActive && !isMenuOpen
-                  ? "text-white stroke-[2.4]"
-                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
-              }`}
-            />
-          )}
+          {({ isActive }) => {
+            const active = isActive && !isMenuOpen;
+            return (
+              <>
+                <div
+                  className={`w-8.5 h-6.5 min-[360px]:w-9.5 min-[360px]:h-7 sm:w-10 sm:h-7.5 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    active
+                      ? "bg-primary text-on-primary shadow-xs scale-105"
+                      : "group-hover:bg-black/5 dark:group-hover:bg-white/10"
+                  }`}
+                >
+                  <Home
+                    className={`w-4 h-4 min-[360px]:w-4.5 min-[360px]:h-4.5 transition-transform duration-200 ${
+                      active
+                        ? "text-white stroke-[2.4]"
+                        : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110"
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-[9.5px] sm:text-[10px] tracking-tight leading-none mt-1 transition-colors text-center truncate max-w-full ${
+                    active
+                      ? "text-primary dark:text-brand-light font-black"
+                      : "text-slate-600 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-white"
+                  }`}
+                >
+                  {t("nav.home", "Home")}
+                </span>
+              </>
+            );
+          }}
         </NavLink>
 
         {/* 2. Marketplace */}
         <NavLink
           to="/marketplace"
-          aria-label={t("nav.marketplace")}
+          aria-label={t("nav.marketplace", "Marketplace")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
-            `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            `group flex-1 flex flex-col items-center justify-center py-0.5 px-0.5 rounded-xl transition-all duration-200 cursor-pointer select-none min-w-0 ${
               isActive && !isMenuOpen
-                ? "bg-primary text-on-primary shadow-xs scale-105"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                ? "text-primary dark:text-brand-light"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`
           }
         >
-          {({ isActive }) => (
-            <ShoppingBag
-              className={`w-5 h-5 transition-transform duration-200 ${
-                isActive && !isMenuOpen
-                  ? "text-white stroke-[2.4]"
-                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
-              }`}
-            />
-          )}
+          {({ isActive }) => {
+            const active = isActive && !isMenuOpen;
+            return (
+              <>
+                <div
+                  className={`w-8.5 h-6.5 min-[360px]:w-9.5 min-[360px]:h-7 sm:w-10 sm:h-7.5 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    active
+                      ? "bg-primary text-on-primary shadow-xs scale-105"
+                      : "group-hover:bg-black/5 dark:group-hover:bg-white/10"
+                  }`}
+                >
+                  <ShoppingBag
+                    className={`w-4 h-4 min-[360px]:w-4.5 min-[360px]:h-4.5 transition-transform duration-200 ${
+                      active
+                        ? "text-white stroke-[2.4]"
+                        : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110"
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-[9.5px] sm:text-[10px] tracking-tight leading-none mt-1 transition-colors text-center truncate max-w-full ${
+                    active
+                      ? "text-primary dark:text-brand-light font-black"
+                      : "text-slate-600 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-white"
+                  }`}
+                >
+                  {t("nav.marketplace", "Marketplace")}
+                </span>
+              </>
+            );
+          }}
         </NavLink>
 
-        {/* 3. Center Urbanrat Logo Button — Unified with Dock Buttons */}
+        {/* 3. Center Urbanrat Logo Button */}
         <NavLink
           to="/urbanrat"
-          aria-label={t("nav.urbanrat")}
+          aria-label={t("nav.urbanrat", "Urbanrat")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
-            `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            `group flex-1 flex flex-col items-center justify-center py-0.5 px-0.5 rounded-xl transition-all duration-200 cursor-pointer select-none min-w-0 ${
               isActive && !isMenuOpen
-                ? "bg-primary text-on-primary shadow-xs scale-105"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                ? "text-primary dark:text-brand-light"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`
           }
         >
-          {({ isActive }) => (
-            <img
-              src="/logo.png"
-              alt="Urbanrat"
-              className={`rounded-full object-cover transition-transform duration-200 ${
-                isActive && !isMenuOpen
-                  ? "w-7 h-7 sm:w-7.5 sm:h-7.5 scale-105 drop-shadow-sm"
-                  : "w-6.5 h-6.5 sm:w-7 sm:h-7 group-hover:scale-110"
-              }`}
-            />
-          )}
+          {({ isActive }) => {
+            const active = isActive && !isMenuOpen;
+            return (
+              <>
+                <div
+                  className={`w-8.5 h-6.5 min-[360px]:w-9.5 min-[360px]:h-7 sm:w-10 sm:h-7.5 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    active
+                      ? "bg-primary text-on-primary shadow-xs scale-105"
+                      : "group-hover:bg-black/5 dark:group-hover:bg-white/10"
+                  }`}
+                >
+                  <img
+                    src="/logo.png"
+                    alt="Urbanrat"
+                    className={`w-4.5 h-4.5 min-[360px]:w-5 min-[360px]:h-5 rounded-full object-cover transition-transform duration-200 ${
+                      active
+                        ? "scale-105 drop-shadow-sm"
+                        : "group-hover:scale-110"
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-[9.5px] sm:text-[10px] tracking-tight leading-none mt-1 transition-colors text-center truncate max-w-full ${
+                    active
+                      ? "text-primary dark:text-brand-light font-black"
+                      : "text-slate-600 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-white"
+                  }`}
+                >
+                  {t("nav.urbanrat", "Urbanrat")}
+                </span>
+              </>
+            );
+          }}
         </NavLink>
 
         {/* 4. Categories */}
         <NavLink
           to="/categories"
-          aria-label={t("nav.categories")}
+          aria-label={t("nav.categories", "Categories")}
           onClick={() => triggerHaptic("selection")}
           className={({ isActive }) =>
-            `group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+            `group flex-1 flex flex-col items-center justify-center py-0.5 px-0.5 rounded-xl transition-all duration-200 cursor-pointer select-none min-w-0 ${
               isActive && !isMenuOpen
-                ? "bg-primary text-on-primary shadow-xs scale-105"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                ? "text-primary dark:text-brand-light"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`
           }
         >
-          {({ isActive }) => (
-            <LayoutGrid
-              className={`w-5 h-5 transition-transform duration-200 ${
-                isActive && !isMenuOpen
-                  ? "text-white stroke-[2.4]"
-                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
-              }`}
-            />
-          )}
+          {({ isActive }) => {
+            const active = isActive && !isMenuOpen;
+            return (
+              <>
+                <div
+                  className={`w-8.5 h-6.5 min-[360px]:w-9.5 min-[360px]:h-7 sm:w-10 sm:h-7.5 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    active
+                      ? "bg-primary text-on-primary shadow-xs scale-105"
+                      : "group-hover:bg-black/5 dark:group-hover:bg-white/10"
+                  }`}
+                >
+                  <LayoutGrid
+                    className={`w-4 h-4 min-[360px]:w-4.5 min-[360px]:h-4.5 transition-transform duration-200 ${
+                      active
+                        ? "text-white stroke-[2.4]"
+                        : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110"
+                    }`}
+                  />
+                </div>
+                <span
+                  className={`text-[9.5px] sm:text-[10px] tracking-tight leading-none mt-1 transition-colors text-center truncate max-w-full ${
+                    active
+                      ? "text-primary dark:text-brand-light font-black"
+                      : "text-slate-600 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-white"
+                  }`}
+                >
+                  {t("nav.categories", "Categories")}
+                </span>
+              </>
+            );
+          }}
         </NavLink>
 
-        {/* 5. Actual Menu Opener Button */}
+        {/* 5. Menu */}
         <button
           type="button"
           onClick={() => {
             triggerHaptic("selection");
             onOpenMenu?.();
           }}
-          aria-label={t("nav.menu")}
-          className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+          aria-label={t("nav.menu", "Menu")}
+          className={`group flex-1 flex flex-col items-center justify-center py-0.5 px-0.5 rounded-xl transition-all duration-200 cursor-pointer select-none min-w-0 ${
             isMenuOpen
-              ? "bg-primary text-on-primary shadow-xs scale-105"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+              ? "text-primary dark:text-brand-light"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
-
         >
-          <Menu
-            className={`w-5 h-5 transition-transform duration-200 ${
+          <div
+            className={`w-8.5 h-6.5 min-[360px]:w-9.5 min-[360px]:h-7 sm:w-10 sm:h-7.5 rounded-full flex items-center justify-center transition-all duration-200 ${
               isMenuOpen
-                ? "text-white stroke-[2.4]"
-                : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110 group-hover:text-slate-900 dark:group-hover:text-white"
+                ? "bg-primary text-on-primary shadow-xs scale-105"
+                : "group-hover:bg-black/5 dark:group-hover:bg-white/10"
             }`}
-          />
+          >
+            <Menu
+              className={`w-4 h-4 min-[360px]:w-4.5 min-[360px]:h-4.5 transition-transform duration-200 ${
+                isMenuOpen
+                  ? "text-white stroke-[2.4]"
+                  : "text-slate-600 dark:text-slate-400 stroke-2 group-hover:scale-110"
+              }`}
+            />
+          </div>
+          <span
+            className={`text-[9.5px] sm:text-[10px] tracking-tight leading-none mt-1 transition-colors text-center truncate max-w-full ${
+              isMenuOpen
+                ? "text-primary dark:text-brand-light font-black"
+                : "text-slate-600 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-white"
+            }`}
+          >
+            {t("nav.menu", "Menu")}
+          </span>
         </button>
       </nav>
     </div>
