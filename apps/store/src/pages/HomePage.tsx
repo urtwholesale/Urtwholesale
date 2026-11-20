@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router";
 import { CategoryChipsSkeleton } from "../components/Skeletons";
 import { ErrorState } from "../components/ErrorState";
@@ -6,6 +6,7 @@ import { HeroStackedCarousel } from "../components/HeroStackedCarousel";
 import { CursorPhobicDots } from "../components/CursorPhobicDots";
 import { WholesaleMarquee } from "../components/WholesaleMarquee";
 import { CategoryProductSlider } from "../components/CategoryProductSlider";
+import { triggerHaptic } from "../utils/haptics";
 import {
   fetchCategories,
   fetchProducts,
@@ -35,6 +36,8 @@ import {
   Crown,
   Headphones,
   Trophy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface HomePageProps {
@@ -101,6 +104,28 @@ export function HomePage({ onAddToCart }: HomePageProps) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const homeCategoriesRailRef = useRef<HTMLDivElement | null>(null);
+
+  const handleScrollHomeCategories = (direction: "left" | "right") => {
+    triggerHaptic("selection");
+    const el = homeCategoriesRailRef.current;
+    if (!el) return;
+    const step = Math.max(220, Math.floor(el.clientWidth * 0.65));
+    if (direction === "left") {
+      if (el.scrollLeft <= 5) {
+        el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: -step, behavior: "smooth" });
+      }
+    } else {
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: step, behavior: "smooth" });
+      }
+    }
+  };
 
   // Active homepage divisions derived from store_settings or factory defaults
   const activeSections = useMemo(() => {
@@ -261,48 +286,79 @@ export function HomePage({ onAddToCart }: HomePageProps) {
           {loading ? (
             <CategoryChipsSkeleton count={8} />
           ) : categories.length > 0 ? (
-            <div className="w-full overflow-x-auto scrollbar-none no-scrollbar py-2 px-0.5">
-              <div className="flex items-start space-x-4 sm:space-x-6 md:space-x-8 min-w-max">
-                {/* "All Products" Circle Tile */}
-                <Link
-                  to="/marketplace"
-                  className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
-                >
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                    <img
-                      src={getCategoryThemeImage("all", isDark)}
-                      alt={t("footer.all_products", "All Products")}
-                      className="w-full h-full object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <span className="mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-brand-dark dark:group-hover:text-brand-light leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors">
-                    {t("footer.all_products", "All Products")}
-                  </span>
-                </Link>
+            <div className="relative group/rail">
+              {/* Left Scroll Button */}
+              <button
+                type="button"
+                onClick={() => handleScrollHomeCategories("left")}
+                aria-label={isHindi ? "श्रेणियां बाईं ओर स्क्रॉल करें" : "Scroll categories left"}
+                title={isHindi ? "पिछली श्रेणियां" : "Scroll left"}
+                className="absolute -left-1 sm:-left-2 top-[38%] -translate-y-1/2 z-20 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.14)] flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-primary dark:hover:text-primary hover:bg-white dark:hover:bg-slate-800 hover:scale-110 active:scale-90 transition-all cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+              </button>
 
-                {/* boAt Circular Category Tiles (Clean Transparent, High Visibility) */}
-                {categories.map((cat) => (
+              {/* Right Scroll Button */}
+              <button
+                type="button"
+                onClick={() => handleScrollHomeCategories("right")}
+                aria-label={isHindi ? "श्रेणियां दाईं ओर स्क्रॉल करें" : "Scroll categories right"}
+                title={isHindi ? "अगली श्रेणियां" : "Scroll right"}
+                className="absolute -right-1 sm:-right-2 top-[38%] -translate-y-1/2 z-20 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.14)] flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-primary dark:hover:text-primary hover:bg-white dark:hover:bg-slate-800 hover:scale-110 active:scale-90 transition-all cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+              </button>
+
+              {/* Scroll Track */}
+              <div
+                ref={homeCategoriesRailRef}
+                className="w-full overflow-x-auto scrollbar-none no-scrollbar py-2 px-3 sm:px-4 scroll-smooth"
+                tabIndex={0}
+                role="region"
+                aria-label={isHindi ? "उत्पाद श्रेणियां" : "Product categories"}
+              >
+                <div className="flex items-start space-x-4 sm:space-x-6 md:space-x-8 min-w-max">
+                  {/* "All Products" Circle Tile */}
                   <Link
-                    key={cat.id}
-                    to={`/marketplace?category=${cat.slug}`}
+                    to="/marketplace"
                     className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
                   >
                     <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                       <img
-                        src={getCategoryThemeImage(cat, isDark)}
-                        alt={cat.name}
+                        src={getCategoryThemeImage("all", isDark)}
+                        alt={t("footer.all_products", "All Products")}
                         className="w-full h-full object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300"
                         loading="lazy"
                         decoding="async"
                       />
                     </div>
                     <span className="mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-brand-dark dark:group-hover:text-brand-light leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors">
-                      {translateCategoryName(cat.name, isHindi)}
+                      {t("footer.all_products", "All Products")}
                     </span>
                   </Link>
-                ))}
+
+                  {/* boAt Circular Category Tiles (Clean Transparent, High Visibility) */}
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      to={`/marketplace?category=${cat.slug}`}
+                      className="group flex flex-col items-center shrink-0 w-22 sm:w-26 md:w-28 text-center cursor-pointer select-none"
+                    >
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                        <img
+                          src={getCategoryThemeImage(cat, isDark)}
+                          alt={cat.name}
+                          className="w-full h-full object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <span className="mt-2 text-xs sm:text-[13px] md:text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-brand-dark dark:group-hover:text-brand-light leading-snug line-clamp-2 max-w-22 sm:max-w-26 md:max-w-28 transition-colors">
+                        {translateCategoryName(cat.name, isHindi)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           ) : null}

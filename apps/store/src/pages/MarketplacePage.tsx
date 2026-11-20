@@ -20,6 +20,8 @@ import {
   RotateCcw,
   Sparkles,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Layers,
   X,
   Loader2,
@@ -75,7 +77,28 @@ export function MarketplacePage({
   const [sortOption, setSortOption] = useState<"featured" | "newest" | "price_asc" | "price_desc">(initialSort);
   const [priceBracketIndex, setPriceBracketIndex] = useState(0);
 
+  const categoriesRailRef = useRef<HTMLDivElement | null>(null);
   const activeCategoryButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleScrollRail = (direction: "left" | "right") => {
+    triggerHaptic("selection");
+    const el = categoriesRailRef.current;
+    if (!el) return;
+    const step = Math.max(220, Math.floor(el.clientWidth * 0.65));
+    if (direction === "left") {
+      if (el.scrollLeft <= 5) {
+        el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: -step, behavior: "smooth" });
+      }
+    } else {
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: step, behavior: "smooth" });
+      }
+    }
+  };
 
   // Smoothly center the active category card in the horizontal rail
   useEffect(() => {
@@ -386,7 +409,37 @@ export function MarketplacePage({
 
   // Reusable category rail with boAt-style clean transparent floating cutouts and large visibility
   const categoryChips = (
-    <div className="flex items-start space-x-4 sm:space-x-6 overflow-x-auto scrollbar-none no-scrollbar py-2 px-1">
+    <div className="relative group/rail">
+      {/* Left Scroll Button */}
+      <button
+        type="button"
+        onClick={() => handleScrollRail("left")}
+        aria-label={isHindi ? "श्रेणियां बाईं ओर स्क्रॉल करें" : "Scroll categories left"}
+        title={isHindi ? "पिछली श्रेणियां" : "Scroll left"}
+        className="absolute -left-1 sm:-left-2 top-[38%] -translate-y-1/2 z-20 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.14)] flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-primary dark:hover:text-primary hover:bg-white dark:hover:bg-slate-800 hover:scale-110 active:scale-90 transition-all cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+      </button>
+
+      {/* Right Scroll Button */}
+      <button
+        type="button"
+        onClick={() => handleScrollRail("right")}
+        aria-label={isHindi ? "श्रेणियां दाईं ओर स्क्रॉल करें" : "Scroll categories right"}
+        title={isHindi ? "अगली श्रेणियां" : "Scroll right"}
+        className="absolute -right-1 sm:-right-2 top-[38%] -translate-y-1/2 z-20 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.14)] flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-primary dark:hover:text-primary hover:bg-white dark:hover:bg-slate-800 hover:scale-110 active:scale-90 transition-all cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+      </button>
+
+      {/* Scrollable Categories Track */}
+      <div
+        ref={categoriesRailRef}
+        className="flex items-start space-x-4 sm:space-x-6 overflow-x-auto scrollbar-none no-scrollbar py-2 px-3 sm:px-4 scroll-smooth"
+        tabIndex={0}
+        role="region"
+        aria-label={isHindi ? "उत्पाद श्रेणियां" : "Product categories"}
+      >
       {/* "All Products" Card */}
       <button
         ref={selectedCategory === "all" ? activeCategoryButtonRef : null}
@@ -473,6 +526,7 @@ export function MarketplacePage({
           </button>
         );
       })}
+      </div>
     </div>
   );
 
